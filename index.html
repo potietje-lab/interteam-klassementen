@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Interteam klassementen heenmatchen</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f3f4f6;
+            color: #222;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 32px;
+        }
+
+        .documents {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .document {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .document-title {
+            font-size: 19px;
+            font-weight: bold;
+        }
+
+        .pdf-button {
+            display: inline-block;
+            background: #1976d2;
+            color: white;
+            text-decoration: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .pdf-button:hover {
+            background: #125ca3;
+        }
+
+        @media (max-width: 700px) {
+
+            .container {
+                margin: 15px auto;
+                padding: 10px;
+            }
+
+            .documents {
+                grid-template-columns: 1fr;
+            }
+
+            .document {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .pdf-button {
+                width: 100%;
+                text-align: center;
+            }
+
+            .header h1 {
+                font-size: 26px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>Interteam klassementen heenmatchen</h1>
+    </div>
+
+
+    <div class="documents">
+
+        <div class="document">
+            <div class="document-title">Speeldag 1</div>
+            <a class="pdf-button" href="speeldag-01.pdf" target="_blank">
+                📄 PDF bekijken
+            </a>
+        </div>
+
+        <div class="document">
+            <div class="document-title">Speeldag 2</div>
+            <a class="pdf-button" href="speeldag-02.pdf" target="_blank">
+                📄 PDF bekijken
+            </a>
+        </div>
+
+        <div class="document">
+            <div class="document-title">Speeldag 3</div>
+            <a class="pdf-button" href="speeldag-03.pdf" target="_blank">
+                📄 PDF bekijken
+            </a>
+        </div>
+
+        <div class="document">
+            <div class="document-title">Speeldag 4</div>
+            <a class="pdf-button" href="speeldag-04.pdf" target="_blank">
+                📄 PDF bekijken
+            </a>
+        </div>
+
+        <div class="document">
+            <div class="document-title">Speeldag 5</div>
+            <a class="pdf-button" href="speeldag-05.pdf" target="_blank">
+                📄 PDF bekijken
+            </a>
+        </div>
+
+        <div class="document">
+            <div class="document-title">Speeldag 6</div>
+            <a class="pdf-button" href="speeldag-06.pdf" target="_blank">
+                📄 PDF bekijken
+            </a>
+        </div>
+
+        <div class="document">
+            <div class="document-title">Speeldag 7</div>
+            <a class="pdf-button" href="speeldag-07.pdf" target="_blank">
+                📄 PDF bekijken
+            </a>
+        </div>
+
+        <div class="document">
+            <div class="document-title">Speeldag 8</div>
+            <a class="pdf-button" href="speeldag-08.pdf" target="_blank">
+                📄 PDF bekijken
+            </a>
+        </div>
+
+        <div class="document">
+            <div class="document-title">Speeldag 9</div>
+            <a class="pdf-button" href="speeldag-09.pdf" target="_blank">
+                📄 PDF bekijken
+            </a>
+        </div>
+
+        <div class="document">
+            <div class="document-title">Speeldag 10</div>
+            <a class="pdf-button" href="speeldag-10.pdf" target="_blank">
+                📄 PDF bekijken
+            </a>
+        </div>
+
+        <div class="document">
+            <div class="document-title">Speeldag 11</div>
+            <a class="pdf-button" href="speeldag-11.pdf" target="_blank">
+                📄 PDF bekijken
+            </a>
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
