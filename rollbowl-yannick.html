@@ -1,0 +1,333 @@
+```html
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yannick - Evolutie gemiddelde</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 15px;
+    font-family: Arial, sans-serif;
+    background: white;
+}
+
+.container {
+    width: 100%;
+    max-width: 900px;
+    margin: auto;
+}
+
+h2 {
+    text-align: center;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.subtitel {
+    text-align: center;
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.grafiek {
+    position: relative;
+    width: 100%;
+    height: 420px;
+}
+
+.status {
+    text-align: center;
+    font-size: 14px;
+    margin-bottom: 10px;
+    color: #666;
+}
+
+@media (max-width: 600px) {
+    body { padding: 5px; }
+    h2 { font-size: 20px; }
+    .grafiek { height: 320px; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>🎳 Yannick</h2>
+
+<div class="subtitel">
+Evolutie gemiddelde per speeldatum
+</div>
+
+<div id="status" class="status">
+Gemiddelden worden geladen...
+</div>
+
+<div class="grafiek">
+<canvas id="grafiek"></canvas>
+</div>
+
+</div>
+
+<script>
+
+const SUPABASE_URL =
+"https://wnsvbtskynkewxggmjem.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+
+const supabaseClient =
+supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
+
+const SPELER = "Yannick";
+
+const speeldatums = [
+"2026-09-04","2026-09-11","2026-09-18",
+"2026-09-25","2026-10-02","2026-10-09",
+"2026-10-16","2026-11-20","2026-11-27",
+"2026-12-04","2026-12-11","2027-01-15",
+"2027-01-22","2027-01-29","2027-02-19",
+"2027-02-26","2027-03-19","2027-03-26",
+"2027-04-16","2027-04-23","2027-05-07",
+"2027-05-14"
+];
+
+function toonDatum(datum) {
+    const delen = datum.split("-");
+    return delen[2] + "/" + delen[1];
+}
+
+function berekenGemiddelde(score) {
+
+    const games = [
+        Number(score.game1) || 0,
+        Number(score.game2) || 0,
+        Number(score.game3) || 0
+    ];
+
+    const geldigeGames =
+        games.filter(game => game > 0);
+
+    if (!geldigeGames.length) return null;
+
+    const totaal =
+        geldigeGames.reduce(
+            (som, game) => som + game,
+            0
+        );
+
+    return Number(
+        (totaal / geldigeGames.length).toFixed(2)
+    );
+}
+
+async function laadScores() {
+
+    const status =
+        document.getElementById("status");
+
+    const { data, error } =
+        await supabaseClient
+        .from("bowling_scores")
+        .select("speeldatum, game1, game2, game3")
+        .eq("speler", SPELER)
+        .order("speeldatum", { ascending: true });
+
+    if (error) {
+
+        console.error(error);
+
+        status.innerText =
+        "❌ Fout bij laden van Supabase.";
+
+        return;
+    }
+
+    const gegevens = [];
+
+    speeldatums.forEach(datum => {
+
+        const score =
+            data.find(
+                item => item.speeldatum === datum
+            );
+
+        if (!score) return;
+
+        const gemiddelde =
+            berekenGemiddelde(score);
+
+        if (gemiddelde === null) return;
+
+        gegevens.push({
+            datum: datum,
+            gemiddelde: gemiddelde
+        });
+
+    });
+
+    if (!gegevens.length) {
+
+        status.innerText =
+        "Nog geen scores beschikbaar voor Yannick.";
+
+        return;
+    }
+
+    status.innerText =
+    "Live gegevens uit Supabase";
+
+    maakGrafiek(gegevens);
+}
+
+function maakGrafiek(gegevens) {
+
+    const labels =
+        gegevens.map(
+            item => toonDatum(item.datum)
+        );
+
+    const waarden =
+        gegevens.map(
+            item => item.gemiddelde
+        );
+
+    new Chart(
+        document.getElementById("grafiek"),
+        {
+            type: "line",
+
+            data: {
+                labels: labels,
+
+                datasets: [{
+                    label: "Gemiddelde",
+                    data: waarden,
+                    tension: 0.25,
+                    fill: false,
+                    borderWidth: 3,
+                    pointRadius: 6,
+                    pointHoverRadius: 8
+                }]
+            },
+
+            options: {
+
+                responsive: true,
+                maintainAspectRatio: false,
+
+                layout: {
+                    padding: {
+                        top: 25,
+                        right: 15,
+                        left: 10,
+                        bottom: 10
+                    }
+                },
+
+                plugins: {
+
+                    legend: {
+                        display: false
+                    },
+
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return "Gemiddelde: " +
+                                Number(
+                                    context.parsed.y
+                                ).toFixed(2);
+                            }
+                        }
+                    }
+
+                },
+
+                scales: {
+
+                    x: {
+                        title: {
+                            display: true,
+                            text: "Speeldatum"
+                        }
+                    },
+
+                    y: {
+                        title: {
+                            display: true,
+                            text: "Gemiddelde"
+                        },
+                        beginAtZero: false
+                    }
+
+                }
+
+            },
+
+            plugins: [{
+
+                id: "gemiddeldeLabels",
+
+                afterDatasetsDraw: function(chart) {
+
+                    const ctx = chart.ctx;
+                    const meta =
+                        chart.getDatasetMeta(0);
+                    const dataset =
+                        chart.data.datasets[0];
+
+                    ctx.save();
+
+                    ctx.font =
+                        "bold 12px Arial";
+
+                    ctx.textAlign =
+                        "center";
+
+                    ctx.textBaseline =
+                        "bottom";
+
+                    meta.data.forEach(
+                        (point, index) => {
+
+                            ctx.fillText(
+                                Number(
+                                    dataset.data[index]
+                                ).toFixed(2),
+                                point.x,
+                                point.y - 12
+                            );
+
+                        }
+                    );
+
+                    ctx.restore();
+                }
+
+            }]
+
+        }
+    );
+}
+
+laadScores();
+
+</script>
+
+</body>
+</html>
+```
