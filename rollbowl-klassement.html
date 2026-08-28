@@ -1,0 +1,1949 @@
+```html
+<!DOCTYPE html>
+<html lang="nl">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>Rollbowl - Klassementen</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f2f2f2;
+    margin: 0;
+    padding: 15px;
+}
+
+.container {
+    max-width: 1100px;
+    margin: auto;
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 3px 15px rgba(0,0,0,0.15);
+}
+
+h1 {
+    text-align: center;
+    margin-top: 0;
+}
+
+h2 {
+    margin-top: 30px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 8px;
+}
+
+.message {
+    text-align: center;
+    margin: 15px 0;
+    font-weight: bold;
+}
+
+select {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 7px;
+    background: white;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+th,
+td {
+    border: 1px solid #ddd;
+    padding: 9px;
+    text-align: center;
+}
+
+th {
+    background: #eee;
+}
+
+tr:nth-child(even) {
+    background: #fafafa;
+}
+
+.rang {
+    font-weight: bold;
+}
+
+.speler {
+    text-align: left;
+    font-weight: bold;
+}
+
+.gemiddelde {
+    font-weight: bold;
+}
+
+
+/* ========================================= */
+/* GAME VAN 200 OF MEER = GROEN              */
+/* ========================================= */
+
+.score200 {
+    color: #168a3a;
+    font-weight: bold;
+}
+
+
+/* ========================================= */
+/* TOTAAL VAN 540 OF MEER = ROOD             */
+/* ========================================= */
+
+.score540 {
+    color: red;
+    font-weight: bold;
+}
+
+
+/* ========================================= */
+/* INFO                                      */
+/* ========================================= */
+
+.info {
+    background: #f5f5f5;
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 15px;
+    line-height: 1.5;
+}
+
+
+/* ========================================= */
+/* KNOP                                      */
+/* ========================================= */
+
+button {
+    width: 100%;
+    padding: 13px;
+    margin-top: 15px;
+    border: none;
+    border-radius: 8px;
+    background: #222;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #444;
+}
+
+
+/* ========================================= */
+/* GRAFIEKEN                                 */
+/* ========================================= */
+
+.grafiek-container {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    margin-top: 20px;
+}
+
+.grafiek-box {
+    margin-top: 25px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background: #fafafa;
+}
+
+.grafiek-selectie {
+    margin-top: 15px;
+}
+
+
+/* ========================================= */
+/* GSM                                       */
+/* ========================================= */
+
+@media (max-width: 600px) {
+
+    body {
+        padding: 8px;
+    }
+
+    .container {
+        padding: 12px;
+        border-radius: 10px;
+    }
+
+    h1 {
+        font-size: 24px;
+    }
+
+    h2 {
+        font-size: 20px;
+    }
+
+    th,
+    td {
+        padding: 7px;
+        font-size: 14px;
+    }
+
+    .grafiek-container {
+        height: 300px;
+    }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+<h1>🎳 Rollbowl</h1>
+
+
+<div id="melding"
+     class="message">
+
+Gegevens worden geladen...
+
+</div>
+
+
+
+<!-- ================================================= -->
+<!-- INDIVIDUEEL KLASSEMENT -->
+<!-- ================================================= -->
+
+<h2>🏆 Individueel klassement</h2>
+
+
+<div class="table-wrapper">
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Rang</th>
+
+<th>Speler</th>
+
+<th>Speeldagen</th>
+
+<th>Games</th>
+
+<th>Totaal pins</th>
+
+<th>Gemiddelde</th>
+
+</tr>
+
+</thead>
+
+
+<tbody id="individueel">
+
+</tbody>
+
+</table>
+
+</div>
+
+
+
+<!-- ================================================= -->
+<!-- GRAFIEK GEMIDDELDE -->
+<!-- ================================================= -->
+
+<h2>📊 Gemiddelde per speler</h2>
+
+
+<div class="grafiek-box">
+
+<div class="grafiek-container">
+
+<canvas id="grafiekPins"></canvas>
+
+</div>
+
+</div>
+
+
+
+<!-- ================================================= -->
+<!-- KLASSEMENT PER SPEELDAG -->
+<!-- ================================================= -->
+
+<h2>📅 Klassement per speeldag</h2>
+
+
+<select id="speeldatum"
+        onchange="toonSpeeldag()">
+
+<option value="">
+
+-- Kies een speeldatum --
+
+</option>
+
+</select>
+
+
+<div class="table-wrapper">
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Rang</th>
+
+<th>Speler</th>
+
+<th>Game 1</th>
+
+<th>Game 2</th>
+
+<th>Game 3</th>
+
+<th>Totaal</th>
+
+<th>Gemiddelde</th>
+
+</tr>
+
+</thead>
+
+
+<tbody id="speeldag">
+
+</tbody>
+
+</table>
+
+</div>
+
+
+
+<!-- ================================================= -->
+<!-- EVOLUTIE -->
+<!-- ================================================= -->
+
+<h2>📈 Evolutie gemiddelde per speeldatum</h2>
+
+
+<div class="grafiek-box">
+
+
+<label for="grafiekSpeler">
+
+Kies speler:
+
+</label>
+
+
+<div class="grafiek-selectie">
+
+<select id="grafiekSpeler"
+        onchange="maakEvolutieGrafiek()">
+
+<option value="">
+
+-- Kies speler --
+
+</option>
+
+</select>
+
+</div>
+
+
+<div class="grafiek-container">
+
+<canvas id="grafiekEvolutie"></canvas>
+
+</div>
+
+
+</div>
+
+
+
+<!-- ================================================= -->
+<!-- INFO -->
+<!-- ================================================= -->
+
+<div class="info">
+
+<strong>Legende:</strong>
+
+<br><br>
+
+🟢 Een individuele game van
+<strong>200 of meer</strong> wordt groen.
+
+<br>
+
+🔴 Een totaal van
+<strong>540 of meer</strong> wordt rood.
+
+<br><br>
+
+<strong>Grafiek:</strong>
+
+<br>
+
+🟢 Gemiddelde boven of gelijk aan het
+ploeggemiddelde.
+
+<br>
+
+🟠 Gemiddelde onder het ploeggemiddelde.
+
+<br>
+
+🔴 Rode stippellijn =
+ploeggemiddelde.
+
+</div>
+
+
+
+<button onclick="start()">
+
+🔄 Klassement vernieuwen
+
+</button>
+
+
+</div>
+
+
+
+<script>
+
+
+// =====================================================
+// SUPABASE
+// =====================================================
+
+const SUPABASE_URL =
+    "https://wnsvbtskynkewxggmjem.supabase.co";
+
+
+/*
+    PLAATS HIER JE BESTAANDE
+    SUPABASE PUBLISHABLE KEY
+*/
+
+const SUPABASE_KEY =
+    "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+
+
+const supabaseClient =
+    supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+
+// =====================================================
+// GEGEVENS
+// =====================================================
+
+let alleScores = [];
+
+let grafiekPins = null;
+
+let grafiekEvolutie = null;
+
+
+
+// =====================================================
+// SCORES OPHALEN
+// =====================================================
+
+async function laadScores() {
+
+
+    const { data, error } =
+
+        await supabaseClient
+
+        .from("bowling_scores")
+
+        .select(
+            "speeldatum, speler, game1, game2, game3, totaal"
+        );
+
+
+    if (error) {
+
+        console.error(error);
+
+        melding(
+            "❌ Fout bij laden: " +
+            error.message
+        );
+
+        return false;
+
+    }
+
+
+    alleScores = data || [];
+
+
+    return true;
+
+}
+
+
+
+// =====================================================
+// INDIVIDUEEL KLASSEMENT
+// =====================================================
+
+function maakIndividueelKlassement() {
+
+
+    const spelers = {};
+
+
+    alleScores.forEach(
+        score => {
+
+
+            const naam =
+                score.speler;
+
+
+            if (!spelers[naam]) {
+
+                spelers[naam] = {
+
+                    speeldagen:
+                        new Set(),
+
+                    games: 0,
+
+                    pins: 0
+
+                };
+
+            }
+
+
+            spelers[naam]
+                .speeldagen
+                .add(
+                    score.speeldatum
+                );
+
+
+            const games = [
+
+                Number(score.game1) || 0,
+
+                Number(score.game2) || 0,
+
+                Number(score.game3) || 0
+
+            ];
+
+
+            games.forEach(
+                game => {
+
+
+                    if (game > 0) {
+
+                        spelers[naam].games++;
+
+                        spelers[naam].pins +=
+                            game;
+
+                    }
+
+                }
+            );
+
+        }
+    );
+
+
+
+    const klassement =
+
+        Object.entries(spelers)
+
+        .map(
+            ([naam, gegevens]) => {
+
+
+                const gemiddelde =
+
+                    gegevens.games > 0
+
+                    ? gegevens.pins /
+                      gegevens.games
+
+                    : 0;
+
+
+                return {
+
+                    naam:
+                        naam,
+
+                    speeldagen:
+                        gegevens.speeldagen.size,
+
+                    games:
+                        gegevens.games,
+
+                    pins:
+                        gegevens.pins,
+
+                    gemiddelde:
+                        gemiddelde
+
+                };
+
+            }
+        );
+
+
+
+    klassement.sort(
+        (a, b) => {
+
+
+            if (
+                b.gemiddelde !==
+                a.gemiddelde
+            ) {
+
+                return (
+                    b.gemiddelde -
+                    a.gemiddelde
+                );
+
+            }
+
+
+            return (
+                b.pins -
+                a.pins
+            );
+
+        }
+    );
+
+
+
+    const tbody =
+
+        document.getElementById(
+            "individueel"
+        );
+
+
+    tbody.innerHTML = "";
+
+
+
+    klassement.forEach(
+        (speler, index) => {
+
+
+            const rij =
+
+                document.createElement(
+                    "tr"
+                );
+
+
+            rij.innerHTML = `
+
+                <td class="rang">
+
+                    ${index + 1}
+
+                </td>
+
+
+                <td class="speler">
+
+                    ${escapeHtml(
+                        speler.naam
+                    )}
+
+                </td>
+
+
+                <td>
+
+                    ${speler.speeldagen}
+
+                </td>
+
+
+                <td>
+
+                    ${speler.games}
+
+                </td>
+
+
+                <td>
+
+                    ${speler.pins}
+
+                </td>
+
+
+                <td class="gemiddelde">
+
+                    ${speler.gemiddelde
+                        .toFixed(2)}
+
+                </td>
+
+            `;
+
+
+            tbody.appendChild(
+                rij
+            );
+
+        }
+    );
+
+
+    return klassement;
+
+}
+
+
+
+// =====================================================
+// GRAFIEK GEMIDDELDE
+// =====================================================
+
+function maakPinsGrafiek(
+    klassement
+) {
+
+
+    if (
+        !klassement ||
+        klassement.length === 0
+    ) {
+
+        return;
+
+    }
+
+
+
+    const labels =
+
+        klassement.map(
+            speler =>
+                speler.naam
+        );
+
+
+    const waarden =
+
+        klassement.map(
+            speler =>
+                speler.gemiddelde
+        );
+
+
+
+    // -----------------------------------------------
+    // PLOEGGEMIDDELDE
+    // -----------------------------------------------
+
+    let totaalPins = 0;
+
+    let totaalGames = 0;
+
+
+    klassement.forEach(
+        speler => {
+
+            totaalPins +=
+                speler.pins;
+
+            totaalGames +=
+                speler.games;
+
+        }
+    );
+
+
+    const ploegGemiddelde =
+
+        totaalGames > 0
+
+        ? totaalPins /
+          totaalGames
+
+        : 0;
+
+
+
+    // -----------------------------------------------
+    // KLEUREN STAVEN
+    // -----------------------------------------------
+
+    const kleuren =
+
+        waarden.map(
+            waarde =>
+
+                waarde >=
+                ploegGemiddelde
+
+                ? "#2e8b57"
+
+                : "#f39c12"
+
+        );
+
+
+
+    const canvas =
+
+        document.getElementById(
+            "grafiekPins"
+        );
+
+
+
+    if (grafiekPins) {
+
+        grafiekPins.destroy();
+
+    }
+
+
+
+    // -----------------------------------------------
+    // GRAFIEK
+    // -----------------------------------------------
+
+    grafiekPins =
+
+        new Chart(
+
+            canvas,
+
+            {
+
+                plugins: [
+
+                    ChartDataLabels
+
+                ],
+
+
+                data: {
+
+                    labels:
+                        labels,
+
+
+                    datasets: [
+
+                        {
+
+                            type:
+                                "bar",
+
+                            label:
+                                "Gemiddelde",
+
+                            data:
+                                waarden,
+
+                            backgroundColor:
+                                kleuren,
+
+                            borderWidth:
+                                0
+
+                        },
+
+
+                        {
+
+                            type:
+                                "line",
+
+                            label:
+                                "Ploeggemiddelde",
+
+                            data:
+
+                                labels.map(
+                                    () =>
+                                        ploegGemiddelde
+                                ),
+
+                            borderColor:
+                                "#d00000",
+
+                            borderWidth:
+                                2,
+
+                            borderDash:
+                                [8, 5],
+
+                            pointRadius:
+                                0,
+
+                            fill:
+                                false,
+
+                            tension:
+                                0
+
+                        }
+
+                    ]
+
+                },
+
+
+                options: {
+
+                    responsive:
+                        true,
+
+                    maintainAspectRatio:
+                        false,
+
+
+                    plugins: {
+
+                        legend: {
+
+                            display:
+                                true
+
+                        },
+
+
+                        datalabels: {
+
+                            display:
+                                function(
+                                context
+                                ) {
+
+                                    return (
+
+                                        context.dataset.type ===
+                                        "bar"
+
+                                    );
+
+                                },
+
+
+                            anchor:
+                                "end",
+
+
+                            align:
+                                "top",
+
+
+                            offset:
+                                2,
+
+
+                            formatter:
+                                function(
+                                value
+                                ) {
+
+                                    return value
+                                        .toFixed(2);
+
+                                },
+
+
+                            font: {
+
+                                weight:
+                                    "bold",
+
+                                size:
+                                    12
+
+                            }
+
+                        },
+
+
+                        tooltip: {
+
+                            callbacks: {
+
+                                label:
+                                    function(
+                                    context
+                                    ) {
+
+                                        return (
+
+                                            context.dataset.label +
+
+                                            ": " +
+
+                                            context.parsed.y
+                                                .toFixed(2)
+
+                                        );
+
+                                    }
+
+                            }
+
+                        }
+
+                    },
+
+
+                    scales: {
+
+                        y: {
+
+                            beginAtZero:
+                                false,
+
+                            title: {
+
+                                display:
+                                    true,
+
+                                text:
+                                    "Gemiddelde pins"
+
+                            }
+
+                        },
+
+
+                        x: {
+
+                            title: {
+
+                                display:
+                                    true,
+
+                                text:
+                                    "Speler"
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        );
+
+}
+
+
+
+// =====================================================
+// SPEELDATUMS
+// =====================================================
+
+function maakSpeeldatums() {
+
+
+    const select =
+
+        document.getElementById(
+            "speeldatum"
+        );
+
+
+    const oudeWaarde =
+        select.value;
+
+
+    const datums =
+
+        [
+
+            ...new Set(
+
+                alleScores.map(
+
+                    score =>
+                        score.speeldatum
+
+                )
+
+            )
+
+        ];
+
+
+    datums.sort();
+
+
+    select.innerHTML = `
+
+        <option value="">
+
+            -- Kies een speeldatum --
+
+        </option>
+
+    `;
+
+
+    datums.forEach(
+        datum => {
+
+
+            const option =
+
+                document.createElement(
+                    "option"
+                );
+
+
+            option.value =
+                datum;
+
+
+            option.textContent =
+                formatDatum(
+                    datum
+                );
+
+
+            select.appendChild(
+                option
+            );
+
+        }
+    );
+
+
+    if (
+        datums.includes(
+            oudeWaarde
+        )
+    ) {
+
+        select.value =
+            oudeWaarde;
+
+        toonSpeeldag();
+
+    }
+
+}
+
+
+
+// =====================================================
+// KLASSEMENT PER SPEELDAG
+// =====================================================
+
+function toonSpeeldag() {
+
+
+    const datum =
+
+        document.getElementById(
+            "speeldatum"
+        ).value;
+
+
+    const tbody =
+
+        document.getElementById(
+            "speeldag"
+        );
+
+
+    tbody.innerHTML = "";
+
+
+    if (!datum) {
+
+        return;
+
+    }
+
+
+
+    const scores =
+
+        alleScores
+
+        .filter(
+
+            score =>
+                score.speeldatum ===
+                datum
+
+        );
+
+
+
+    scores.sort(
+
+        (a, b) =>
+
+            (Number(b.totaal) || 0) -
+
+            (Number(a.totaal) || 0)
+
+    );
+
+
+
+    scores.forEach(
+        (score, index) => {
+
+
+            const game1 =
+                Number(score.game1) || 0;
+
+
+            const game2 =
+                Number(score.game2) || 0;
+
+
+            const game3 =
+                Number(score.game3) || 0;
+
+
+            const totaal =
+                Number(score.totaal) || 0;
+
+
+
+            // -----------------------------------------
+            // GAME 1
+            // -----------------------------------------
+
+            const game1Html =
+
+                game1 >= 200
+
+                ? `<span class="score200">
+                    ${game1}
+                   </span>`
+
+                : (
+                    score.game1 ?? ""
+                );
+
+
+
+            // -----------------------------------------
+            // GAME 2
+            // -----------------------------------------
+
+            const game2Html =
+
+                game2 >= 200
+
+                ? `<span class="score200">
+                    ${game2}
+                   </span>`
+
+                : (
+                    score.game2 ?? ""
+                );
+
+
+
+            // -----------------------------------------
+            // GAME 3
+            // -----------------------------------------
+
+            const game3Html =
+
+                game3 >= 200
+
+                ? `<span class="score200">
+                    ${game3}
+                   </span>`
+
+                : (
+                    score.game3 ?? ""
+                );
+
+
+
+            // -----------------------------------------
+            // TOTAAL 540 OF MEER = ROOD
+            // -----------------------------------------
+
+            const totaalHtml =
+
+                totaal >= 540
+
+                ? `<span class="score540">
+                    ${totaal}
+                   </span>`
+
+                : totaal;
+
+
+
+            // -----------------------------------------
+            // GEMIDDELDE
+            // -----------------------------------------
+
+            const games = [
+
+                game1,
+
+                game2,
+
+                game3
+
+            ];
+
+
+            const geldigeGames =
+
+                games.filter(
+                    game =>
+                        game > 0
+                );
+
+
+            const gemiddelde =
+
+                geldigeGames.length > 0
+
+                ? totaal /
+                  geldigeGames.length
+
+                : 0;
+
+
+
+            // -----------------------------------------
+            // RIJ
+            // -----------------------------------------
+
+            const rij =
+
+                document.createElement(
+                    "tr"
+                );
+
+
+            rij.innerHTML = `
+
+                <td class="rang">
+
+                    ${index + 1}
+
+                </td>
+
+
+                <td class="speler">
+
+                    ${escapeHtml(
+                        score.speler
+                    )}
+
+                </td>
+
+
+                <td>
+
+                    ${game1Html}
+
+                </td>
+
+
+                <td>
+
+                    ${game2Html}
+
+                </td>
+
+
+                <td>
+
+                    ${game3Html}
+
+                </td>
+
+
+                <td>
+
+                    <strong>
+
+                        ${totaalHtml}
+
+                    </strong>
+
+                </td>
+
+
+                <td>
+
+                    ${gemiddelde.toFixed(2)}
+
+                </td>
+
+            `;
+
+
+            tbody.appendChild(
+                rij
+            );
+
+        }
+    );
+
+}
+
+
+
+// =====================================================
+// SPELERS SELECTIE
+// =====================================================
+
+function maakSpelerSelectie() {
+
+
+    const select =
+
+        document.getElementById(
+            "grafiekSpeler"
+        );
+
+
+    const oudeWaarde =
+        select.value;
+
+
+    const spelers =
+
+        [
+
+            ...new Set(
+
+                alleScores.map(
+
+                    score =>
+                        score.speler
+
+                )
+
+            )
+
+        ];
+
+
+    spelers.sort();
+
+
+    select.innerHTML = `
+
+        <option value="">
+
+            -- Kies speler --
+
+        </option>
+
+    `;
+
+
+    spelers.forEach(
+        speler => {
+
+
+            const option =
+
+                document.createElement(
+                    "option"
+                );
+
+
+            option.value =
+                speler;
+
+
+            option.textContent =
+                speler;
+
+
+            select.appendChild(
+                option
+            );
+
+        }
+    );
+
+
+    if (
+        spelers.includes(
+            oudeWaarde
+        )
+    ) {
+
+        select.value =
+            oudeWaarde;
+
+        maakEvolutieGrafiek();
+
+    }
+
+}
+
+
+
+// =====================================================
+// EVOLUTIEGRAFIEK
+// =====================================================
+
+function maakEvolutieGrafiek() {
+
+
+    const speler =
+
+        document.getElementById(
+            "grafiekSpeler"
+        ).value;
+
+
+    const canvas =
+
+        document.getElementById(
+            "grafiekEvolutie"
+        );
+
+
+    if (grafiekEvolutie) {
+
+        grafiekEvolutie.destroy();
+
+        grafiekEvolutie =
+            null;
+
+    }
+
+
+    if (!speler) {
+
+        return;
+
+    }
+
+
+
+    const scores =
+
+        alleScores
+
+        .filter(
+
+            score =>
+                score.speler ===
+                speler
+
+        );
+
+
+    scores.sort(
+
+        (a, b) =>
+
+            a.speeldatum.localeCompare(
+                b.speeldatum
+            )
+
+    );
+
+
+
+    const labels = [];
+
+    const gemiddelden = [];
+
+
+
+    scores.forEach(
+        score => {
+
+
+            const games = [
+
+                Number(score.game1) || 0,
+
+                Number(score.game2) || 0,
+
+                Number(score.game3) || 0
+
+            ];
+
+
+            const geldigeGames =
+
+                games.filter(
+                    game =>
+                        game > 0
+                );
+
+
+            if (
+                geldigeGames.length === 0
+            ) {
+
+                return;
+
+            }
+
+
+            const totaal =
+
+                geldigeGames.reduce(
+
+                    (som, game) =>
+                        som + game,
+
+                    0
+
+                );
+
+
+            const gemiddelde =
+
+                totaal /
+                geldigeGames.length;
+
+
+
+            labels.push(
+
+                formatDatum(
+                    score.speeldatum
+                )
+
+            );
+
+
+            gemiddelden.push(
+
+                Number(
+                    gemiddelde.toFixed(2)
+                )
+
+            );
+
+        }
+    );
+
+
+
+    grafiekEvolutie =
+
+        new Chart(
+
+            canvas,
+
+            {
+
+                type:
+                    "line",
+
+
+                data: {
+
+                    labels:
+                        labels,
+
+
+                    datasets: [
+
+                        {
+
+                            label:
+                                "Gemiddelde",
+
+                            data:
+                                gemiddelden,
+
+                            tension:
+                                0.2,
+
+                            fill:
+                                false,
+
+                            borderWidth:
+                                2,
+
+                            pointRadius:
+                                4
+
+                        }
+
+                    ]
+
+                },
+
+
+                options: {
+
+                    responsive:
+                        true,
+
+                    maintainAspectRatio:
+                        false,
+
+
+                    plugins: {
+
+                        legend: {
+
+                            display:
+                                true
+
+                        }
+
+                    },
+
+
+                    scales: {
+
+                        y: {
+
+                            beginAtZero:
+                                false,
+
+                            title: {
+
+                                display:
+                                    true,
+
+                                text:
+                                    "Gemiddelde pins"
+
+                            }
+
+                        },
+
+
+                        x: {
+
+                            title: {
+
+                                display:
+                                    true,
+
+                                text:
+                                    "Speeldatum"
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        );
+
+}
+
+
+
+// =====================================================
+// DATUM FORMATTEREN
+// =====================================================
+
+function formatDatum(
+    datum
+) {
+
+
+    const delen =
+        datum.split("-");
+
+
+    if (
+        delen.length !== 3
+    ) {
+
+        return datum;
+
+    }
+
+
+    return (
+
+        delen[2] +
+        "/" +
+        delen[1] +
+        "/" +
+        delen[0]
+
+    );
+
+}
+
+
+
+// =====================================================
+// HTML VEILIG MAKEN
+// =====================================================
+
+function escapeHtml(
+    tekst
+) {
+
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+
+    div.textContent =
+        tekst;
+
+
+    return div.innerHTML;
+
+}
+
+
+
+// =====================================================
+// MELDING
+// =====================================================
+
+function melding(
+    tekst
+) {
+
+    document.getElementById(
+        "melding"
+    ).innerText =
+        tekst;
+
+}
+
+
+
+// =====================================================
+// START
+// =====================================================
+
+async function start() {
+
+
+    melding(
+        "Gegevens worden geladen..."
+    );
+
+
+    const gelukt =
+        await laadScores();
+
+
+    if (!gelukt) {
+
+        return;
+
+    }
+
+
+    const klassement =
+
+        maakIndividueelKlassement();
+
+
+    maakPinsGrafiek(
+        klassement
+    );
+
+
+    maakSpeeldatums();
+
+
+    maakSpelerSelectie();
+
+
+    melding(
+        "✅ Klassement bijgewerkt"
+    );
+
+}
+
+
+start();
+
+
+</script>
+
+
+</body>
+
+</html>
+```
