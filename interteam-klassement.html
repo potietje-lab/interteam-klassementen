@@ -1,0 +1,1597 @@
+
+<!DOCTYPE html>
+<html lang="nl">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>Rollbowl - Interteam Klassement</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 15px;
+    font-family: Arial, sans-serif;
+    background: #f1f3f5;
+    color: #222;
+}
+
+.container {
+    max-width: 1100px;
+    margin: auto;
+}
+
+.section {
+    background: white;
+    margin-bottom: 25px;
+    padding: 22px;
+    border-radius: 15px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.10);
+}
+
+h1 {
+    text-align: center;
+    margin: 5px 0 30px 0;
+    font-size: 30px;
+}
+
+h2 {
+    margin-top: 0;
+    margin-bottom: 18px;
+    font-size: 22px;
+}
+
+
+/* =========================
+   STATUS
+   ========================= */
+
+.status {
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.status.info {
+    background: #e8f0fe;
+    color: #174ea6;
+}
+
+.status.success {
+    background: #e6f4ea;
+    color: #137333;
+}
+
+.status.warning {
+    background: #fff4ce;
+    color: #8a5a00;
+}
+
+.status.error {
+    background: #fce8e6;
+    color: #b00020;
+}
+
+
+/* =========================
+   TABELLEN
+   ========================= */
+
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+}
+
+th {
+    background: #222;
+    color: white;
+    padding: 11px 8px;
+    text-align: center;
+    font-size: 14px;
+}
+
+td {
+    padding: 10px 8px;
+    border-bottom: 1px solid #ddd;
+    text-align: center;
+    font-size: 14px;
+}
+
+td.team-name {
+    text-align: left;
+    font-weight: bold;
+}
+
+tr:nth-child(even) {
+    background: #f8f8f8;
+}
+
+tr:hover {
+    background: #eeeeee;
+}
+
+
+/* =========================
+   POSITIE
+   ========================= */
+
+.position {
+    font-weight: bold;
+    width: 55px;
+}
+
+.rnb-row {
+    background: #fff2a8 !important;
+    font-weight: bold;
+}
+
+
+/* =========================
+   DROPDOWN
+   ========================= */
+
+select {
+    width: 100%;
+    max-width: 400px;
+    padding: 12px;
+    border: 1px solid #aaa;
+    border-radius: 8px;
+    font-size: 16px;
+    background: white;
+}
+
+
+/* =========================
+   GRAFIEK
+   ========================= */
+
+.chart-wrapper {
+    position: relative;
+    width: 100%;
+    height: 390px;
+    margin-top: 20px;
+}
+
+canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+
+/* =========================
+   STATISTIEK
+   ========================= */
+
+.stat-title {
+    margin-top: 5px;
+    margin-bottom: 15px;
+    font-size: 19px;
+    font-weight: bold;
+}
+
+.no-data {
+    text-align: center;
+    padding: 20px;
+    color: #777;
+}
+
+
+/* =========================
+   MOBIEL
+   ========================= */
+
+@media (max-width: 700px) {
+
+    body {
+        padding: 7px;
+    }
+
+    .section {
+        padding: 13px;
+        border-radius: 10px;
+        margin-bottom: 15px;
+    }
+
+    h1 {
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+
+    h2 {
+        font-size: 19px;
+    }
+
+    th,
+    td {
+        font-size: 12px;
+        padding: 8px 5px;
+    }
+
+    .chart-wrapper {
+        height: 300px;
+    }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+<h1>🎳 Interteam Klassement</h1>
+
+
+<div
+    id="status"
+    class="status info">
+
+    Gegevens worden geladen...
+
+</div>
+
+
+<!-- =================================================
+     1. ALGEMEEN CUMULATIEF KLASSEMENT
+     ================================================= -->
+
+<div class="section">
+
+<h2>
+    🏆 Algemeen cumulatief klassement
+</h2>
+
+
+<div class="table-wrapper">
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Plaats</th>
+
+<th style="text-align:left;">
+    Ploeg
+</th>
+
+<th>Punten</th>
+
+<th>Kegels</th>
+
+<th>Gemiddelde</th>
+
+</tr>
+
+</thead>
+
+
+<tbody id="algemeenKlassement">
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+
+
+<!-- =================================================
+     2. KLASSEMENT PER SPEELDAG
+     ================================================= -->
+
+<div class="section">
+
+<h2>
+    📅 Klassement per speeldag
+</h2>
+
+
+<select
+    id="datumSelect"
+    onchange="toonSpeeldag()">
+
+</select>
+
+
+<div
+    class="table-wrapper"
+    style="margin-top:20px;">
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Plaats</th>
+
+<th style="text-align:left;">
+    Ploeg
+</th>
+
+<th>Punten</th>
+
+<th>Kegels</th>
+
+<th>Gemiddelde</th>
+
+</tr>
+
+</thead>
+
+
+<tbody id="speeldagKlassement">
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+
+
+<!-- =================================================
+     3. EVOLUTIE RNB
+     ================================================= -->
+
+<div class="section">
+
+<h2>
+    📈 Evolutie RNB Geenens Construct-Vapor
+</h2>
+
+
+<div class="chart-wrapper">
+
+<canvas id="rnbChart"></canvas>
+
+</div>
+
+</div>
+
+
+
+<!-- =================================================
+     4. STATISTIEK RNB
+     ================================================= -->
+
+<div class="section">
+
+<h2>
+    📊 Statistiek RNB Geenens Construct-Vapor
+</h2>
+
+
+<div class="stat-title">
+    Resultaten per speeldag
+</div>
+
+
+<div class="table-wrapper">
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Datum</th>
+
+<th style="text-align:left;">
+    Tegenploeg
+</th>
+
+<th>Punten</th>
+
+<th>Kegels</th>
+
+<th>Gemiddelde</th>
+
+</tr>
+
+</thead>
+
+
+<tbody id="rnbStatistiek">
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+
+</div>
+
+
+
+<script>
+
+
+// =====================================================
+// SUPABASE
+// =====================================================
+
+const SUPABASE_URL =
+    "https://wnsvbtskynkewxggmjem.supabase.co";
+
+
+const SUPABASE_KEY =
+    "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+
+
+const supabaseClient =
+    supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+// =====================================================
+// INSTELLINGEN
+// =====================================================
+
+const SCORE_TABEL =
+    "interteam_scores";
+
+
+const RNB =
+    "RNB Geenens Construct-Vapor";
+
+
+const AANTAL_SPELERS =
+    15;
+
+
+const DATUMS = [
+
+    "2026-09-04",
+    "2026-09-11",
+    "2026-09-18",
+    "2026-09-25",
+    "2026-10-02",
+    "2026-10-09",
+    "2026-10-16",
+    "2026-11-20",
+    "2026-11-27",
+    "2026-12-04",
+    "2026-12-11",
+    "2027-01-15",
+    "2027-01-22",
+    "2027-01-29",
+    "2027-02-19",
+    "2027-02-26",
+    "2027-03-19",
+    "2027-03-26",
+    "2027-04-16",
+    "2027-04-23",
+    "2027-05-07",
+    "2027-05-14"
+
+];
+
+
+// =====================================================
+// TEGENPLOEGEN RNB
+// =====================================================
+
+const RNB_TEGENPLOEGEN = {
+
+    "2026-09-04":
+        "FLP Argenta Hamme",
+
+    "2026-09-11":
+        "BC Ledeganck 2 Burtline",
+
+    "2026-09-18":
+        "Wuitens",
+
+    "2026-09-25":
+        "Royal Ghent 3",
+
+    "2026-10-02":
+        "BC Ajuin",
+
+    "2026-10-09":
+        "TSZ Bieshoop",
+
+    "2026-10-16":
+        "DCG Yok Tha",
+
+    "2026-11-20":
+        "FLP ALLCORE IT",
+
+    "2026-11-27":
+        "LAT Esento",
+
+    "2026-12-04":
+        "Oilsjt 2 Yok Tha",
+
+    "2026-12-11":
+        "Stene - Pleisterwerken Delrue JP",
+
+    "2027-01-15":
+        "BC Ajuin",
+
+    "2027-01-22":
+        "FLP Argenta Hamme",
+
+    "2027-01-29":
+        "Royal Ghent 3",
+
+    "2027-02-19":
+        "TSZ Bieshoop",
+
+    "2027-02-26":
+        "Wuitens",
+
+    "2027-03-19":
+        "DCG Yok Tha",
+
+    "2027-03-26":
+        "LAT Esento",
+
+    "2027-04-16":
+        "FLP ALLCORE IT",
+
+    "2027-04-23":
+        "Oilsjt 2 Yok Tha",
+
+    "2027-05-07":
+        "Stene - Pleisterwerken Delrue JP",
+
+    "2027-05-14":
+        "BC Ledeganck 2 Burtline"
+
+};
+
+
+// =====================================================
+// DATA
+// =====================================================
+
+let alleScores = [];
+
+let rnbChart = null;
+
+
+// =====================================================
+// STATUS
+// =====================================================
+
+function statusMelding(
+    tekst,
+    type
+) {
+
+    const el =
+        document.getElementById(
+            "status"
+        );
+
+
+    el.innerText =
+        tekst;
+
+
+    el.className =
+        "status " + type;
+
+}
+
+
+// =====================================================
+// DATUM OMZETTEN
+// =====================================================
+
+function datumTekst(
+    datum
+) {
+
+    const d =
+        datum.split("-");
+
+
+    return (
+        d[2] +
+        "/" +
+        d[1] +
+        "/" +
+        d[0]
+    );
+
+}
+
+
+// =====================================================
+// NORMALISEREN
+// =====================================================
+
+function normaliseer(
+    naam
+) {
+
+    return String(
+        naam || ""
+    )
+    .replace(
+        /\s+/g,
+        " "
+    )
+    .trim()
+    .toLowerCase();
+
+}
+
+
+// =====================================================
+// DATA OPHALEN
+// =====================================================
+
+async function laadData() {
+
+    statusMelding(
+        "Gegevens worden geladen...",
+        "info"
+    );
+
+
+    const { data, error } =
+        await supabaseClient
+
+        .from(
+            SCORE_TABEL
+        )
+
+        .select(
+            "speeldatum, ploeg, kegels, punten"
+        );
+
+
+    if (error) {
+
+        console.error(
+            "Supabase fout:",
+            error
+        );
+
+
+        statusMelding(
+            "❌ Fout bij laden van de gegevens.",
+            "error"
+        );
+
+
+        return;
+
+    }
+
+
+    alleScores =
+        data || [];
+
+
+    laadDatumDropdown();
+
+    toonAlgemeenKlassement();
+
+    toonSpeeldag();
+
+    toonRNBStatistiek();
+
+    tekenRNBGrafiek();
+
+
+    statusMelding(
+        "✅ Klassement geladen.",
+        "success"
+    );
+
+}
+
+
+// =====================================================
+// DATUM DROPDOWN
+// =====================================================
+
+function laadDatumDropdown() {
+
+    const select =
+        document.getElementById(
+            "datumSelect"
+        );
+
+
+    select.innerHTML = "";
+
+
+    const beschikbareDatums =
+        DATUMS.filter(
+            datum =>
+                alleScores.some(
+                    score =>
+                        score.speeldatum ===
+                        datum
+                )
+        );
+
+
+    if (
+        beschikbareDatums.length === 0
+    ) {
+
+        const option =
+            document.createElement(
+                "option"
+            );
+
+
+        option.value = "";
+
+        option.textContent =
+            "Nog geen scores beschikbaar";
+
+
+        select.appendChild(
+            option
+        );
+
+
+        return;
+
+    }
+
+
+    beschikbareDatums.forEach(
+        datum => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+
+            option.value =
+                datum;
+
+
+            option.textContent =
+                datumTekst(
+                    datum
+                );
+
+
+            select.appendChild(
+                option
+            );
+
+        }
+    );
+
+
+    // Laatste beschikbare datum
+
+    select.value =
+        beschikbareDatums[
+            beschikbareDatums.length - 1
+        ];
+
+}
+
+
+// =====================================================
+// 1. ALGEMEEN CUMULATIEF KLASSEMENT
+// =====================================================
+
+function toonAlgemeenKlassement() {
+
+    const tbody =
+        document.getElementById(
+            "algemeenKlassement"
+        );
+
+
+    tbody.innerHTML = "";
+
+
+    const teams = {};
+
+
+    alleScores.forEach(
+        score => {
+
+            const naam =
+                score.ploeg;
+
+
+            if (
+                !teams[naam]
+            ) {
+
+                teams[naam] = {
+
+                    ploeg:
+                        naam,
+
+                    punten:
+                        0,
+
+                    kegels:
+                        0,
+
+                    datums:
+                        new Set()
+
+                };
+
+            }
+
+
+            teams[naam].punten +=
+                Number(
+                    score.punten
+                ) || 0;
+
+
+            teams[naam].kegels +=
+                Number(
+                    score.kegels
+                ) || 0;
+
+
+            teams[naam].datums.add(
+                score.speeldatum
+            );
+
+        }
+    );
+
+
+    const lijst =
+        Object.values(
+            teams
+        );
+
+
+    // Sorteren op punten.
+    // Bij gelijk aantal punten:
+    // hoogste kegels eerst.
+
+    lijst.sort(
+        (a,b) => {
+
+            if (
+                b.punten !==
+                a.punten
+            ) {
+
+                return (
+                    b.punten -
+                    a.punten
+                );
+
+            }
+
+
+            return (
+                b.kegels -
+                a.kegels
+            );
+
+        }
+    );
+
+
+    lijst.forEach(
+        (team, index) => {
+
+            const tr =
+                document.createElement(
+                    "tr"
+                );
+
+
+            if (
+                normaliseer(
+                    team.ploeg
+                ) ===
+                normaliseer(
+                    RNB
+                )
+            ) {
+
+                tr.classList.add(
+                    "rnb-row"
+                );
+
+            }
+
+
+            /*
+             * CORRECT CUMULATIEF GEMIDDELDE
+             *
+             * Totaal kegels /
+             * (aantal gespeelde speeldagen × 15)
+             */
+
+            const aantalSpeeldagen =
+                team.datums.size;
+
+
+            const gem =
+                aantalSpeeldagen > 0
+                    ? team.kegels /
+                      (
+                          aantalSpeeldagen *
+                          AANTAL_SPELERS
+                      )
+                    : 0;
+
+
+            tr.innerHTML = `
+
+                <td class="position">
+                    ${index + 1}
+                </td>
+
+                <td class="team-name">
+                    ${escapeHtml(
+                        team.ploeg
+                    )}
+                </td>
+
+                <td>
+                    ${team.punten}
+                </td>
+
+                <td>
+                    ${team.kegels}
+                </td>
+
+                <td>
+                    ${gem.toFixed(2)}
+                </td>
+
+            `;
+
+
+            tbody.appendChild(
+                tr
+            );
+
+        }
+    );
+
+}
+
+
+// =====================================================
+// 2. KLASSEMENT PER SPEELDAG
+// =====================================================
+
+function toonSpeeldag() {
+
+    const select =
+        document.getElementById(
+            "datumSelect"
+        );
+
+
+    const datum =
+        select.value;
+
+
+    const tbody =
+        document.getElementById(
+            "speeldagKlassement"
+        );
+
+
+    tbody.innerHTML = "";
+
+
+    if (!datum) {
+
+        return;
+
+    }
+
+
+    const lijst =
+        alleScores.filter(
+            score =>
+                score.speeldatum ===
+                datum
+        );
+
+
+    lijst.sort(
+        (a,b) => {
+
+            if (
+                Number(b.punten) !==
+                Number(a.punten)
+            ) {
+
+                return (
+                    Number(b.punten) -
+                    Number(a.punten)
+                );
+
+            }
+
+
+            return (
+                Number(b.kegels) -
+                Number(a.kegels)
+            );
+
+        }
+    );
+
+
+    lijst.forEach(
+        (score, index) => {
+
+            const tr =
+                document.createElement(
+                    "tr"
+                );
+
+
+            if (
+                normaliseer(
+                    score.ploeg
+                ) ===
+                normaliseer(
+                    RNB
+                )
+            ) {
+
+                tr.classList.add(
+                    "rnb-row"
+                );
+
+            }
+
+
+            // Gemiddelde van deze speeldag
+
+            const gem =
+                Number(
+                    score.kegels
+                ) /
+                AANTAL_SPELERS;
+
+
+            tr.innerHTML = `
+
+                <td class="position">
+                    ${index + 1}
+                </td>
+
+                <td class="team-name">
+                    ${escapeHtml(
+                        score.ploeg
+                    )}
+                </td>
+
+                <td>
+                    ${Number(
+                        score.punten
+                    )}
+                </td>
+
+                <td>
+                    ${Number(
+                        score.kegels
+                    )}
+                </td>
+
+                <td>
+                    ${gem.toFixed(2)}
+                </td>
+
+            `;
+
+
+            tbody.appendChild(
+                tr
+            );
+
+        }
+    );
+
+}
+
+
+// =====================================================
+// 3. RNB STATISTIEK
+// =====================================================
+
+function toonRNBStatistiek() {
+
+    const tbody =
+        document.getElementById(
+            "rnbStatistiek"
+        );
+
+
+    tbody.innerHTML = "";
+
+
+    const lijst =
+        alleScores.filter(
+            score =>
+                normaliseer(
+                    score.ploeg
+                ) ===
+                normaliseer(
+                    RNB
+                )
+        );
+
+
+    /*
+     * Sortering:
+     * 1. Hoogste punten
+     * 2. Bij gelijk punten: hoogste kegels
+     */
+
+    lijst.sort(
+        (a,b) => {
+
+            if (
+                Number(b.punten) !==
+                Number(a.punten)
+            ) {
+
+                return (
+                    Number(b.punten) -
+                    Number(a.punten)
+                );
+
+            }
+
+
+            return (
+                Number(b.kegels) -
+                Number(a.kegels)
+            );
+
+        }
+    );
+
+
+    if (
+        lijst.length === 0
+    ) {
+
+        tbody.innerHTML = `
+
+            <tr>
+
+                <td
+                    colspan="5"
+                    class="no-data">
+
+                    Nog geen gegevens voor
+                    RNB Geenens Construct-Vapor.
+
+                </td>
+
+            </tr>
+
+        `;
+
+
+        return;
+
+    }
+
+
+    lijst.forEach(
+        score => {
+
+            const tr =
+                document.createElement(
+                    "tr"
+                );
+
+
+            /*
+             * Gemiddelde van deze speeldag:
+             *
+             * kegels / 15 spelers
+             */
+
+            const gem =
+                Number(
+                    score.kegels
+                ) /
+                AANTAL_SPELERS;
+
+
+            const tegenstander =
+                RNB_TEGENPLOEGEN[
+                    score.speeldatum
+                ] ||
+                "Onbekend";
+
+
+            tr.innerHTML = `
+
+                <td>
+                    ${datumTekst(
+                        score.speeldatum
+                    )}
+                </td>
+
+                <td class="team-name">
+                    ${escapeHtml(
+                        tegenstander
+                    )}
+                </td>
+
+                <td>
+                    ${Number(
+                        score.punten
+                    )}
+                </td>
+
+                <td>
+                    ${Number(
+                        score.kegels
+                    )}
+                </td>
+
+                <td>
+                    ${gem.toFixed(2)}
+                </td>
+
+            `;
+
+
+            tbody.appendChild(
+                tr
+            );
+
+        }
+    );
+
+}
+
+
+// =====================================================
+// 4. RNB EVOLUTIEGRAFIEK
+// =====================================================
+
+function tekenRNBGrafiek() {
+
+    const canvas =
+        document.getElementById(
+            "rnbChart"
+        );
+
+
+    if (!canvas) {
+        return;
+    }
+
+
+    const gegevens =
+        alleScores
+
+        .filter(
+            score =>
+                normaliseer(
+                    score.ploeg
+                ) ===
+                normaliseer(
+                    RNB
+                )
+        )
+
+        .sort(
+            (a,b) =>
+                a.speeldatum.localeCompare(
+                    b.speeldatum
+                )
+        );
+
+
+    const labels =
+        gegevens.map(
+            score =>
+                datumTekst(
+                    score.speeldatum
+                )
+        );
+
+
+    const punten =
+        gegevens.map(
+            score =>
+                Number(
+                    score.punten
+                )
+        );
+
+
+    if (
+        rnbChart
+    ) {
+
+        rnbChart.destroy();
+
+    }
+
+
+    rnbChart =
+        new Chart(
+            canvas,
+            {
+
+                type:
+                    "line",
+
+                data: {
+
+                    labels:
+                        labels,
+
+                    datasets: [
+
+                        {
+
+                            label:
+                                "Punten",
+
+                            data:
+                                punten,
+
+                            borderWidth:
+                                3,
+
+                            pointRadius:
+                                6,
+
+                            pointHoverRadius:
+                                8,
+
+                            tension:
+                                0.2,
+
+                            fill:
+                                false
+
+                        }
+
+                    ]
+
+                },
+
+
+                options: {
+
+                    responsive:
+                        true,
+
+                    maintainAspectRatio:
+                        false,
+
+
+                    scales: {
+
+                        y: {
+
+                            beginAtZero:
+                                true,
+
+                            suggestedMax:
+                                31,
+
+                            title: {
+
+                                display:
+                                    true,
+
+                                text:
+                                    "Punten"
+
+                            }
+
+                        },
+
+
+                        x: {
+
+                            title: {
+
+                                display:
+                                    true,
+
+                                text:
+                                    "Speeldatum"
+
+                            }
+
+                        }
+
+                    },
+
+
+                    plugins: {
+
+                        legend: {
+
+                            display:
+                                true
+
+                        },
+
+
+                        tooltip: {
+
+                            callbacks: {
+
+                                label:
+                                    function(
+                                        context
+                                    ) {
+
+                                        return (
+                                            "Punten: " +
+                                            context.raw
+                                        );
+
+                                    }
+
+                            }
+
+                        }
+
+                    }
+
+                },
+
+
+                plugins: [
+
+                    {
+
+                        id:
+                            "puntenOpGrafiek",
+
+
+                        afterDatasetsDraw:
+                            function(
+                                chart
+                            ) {
+
+                                const ctx =
+                                    chart.ctx;
+
+
+                                const dataset =
+                                    chart.getDatasetMeta(
+                                        0
+                                    );
+
+
+                                dataset.data.forEach(
+                                    (
+                                        point,
+                                        index
+                                    ) => {
+
+                                        const value =
+                                            punten[
+                                                index
+                                            ];
+
+
+                                        ctx.save();
+
+
+                                        ctx.font =
+                                            "bold 13px Arial";
+
+
+                                        ctx.textAlign =
+                                            "center";
+
+
+                                        ctx.fillText(
+                                            value,
+                                            point.x,
+                                            point.y - 12
+                                        );
+
+
+                                        ctx.restore();
+
+                                    }
+                                );
+
+                            }
+
+                    }
+
+                ]
+
+            }
+        );
+
+}
+
+
+// =====================================================
+// HTML VEILIG MAKEN
+// =====================================================
+
+function escapeHtml(
+    tekst
+) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+
+    div.textContent =
+        tekst;
+
+
+    return div.innerHTML;
+
+}
+
+
+// =====================================================
+// START
+// =====================================================
+
+laadData();
+
+</script>
+
+
+</body>
+
+</html>
+```
