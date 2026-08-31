@@ -1,0 +1,1433 @@
+
+<!DOCTYPE html>
+<html lang="nl">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>Interteam Wedstrijden</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+
+/* =========================================
+   BASIS
+   ========================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 12px;
+    font-family: Arial, sans-serif;
+    background: #f1f3f5;
+    color: #222;
+}
+
+.container {
+    max-width: 1100px;
+    margin: auto;
+}
+
+.section {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.10);
+}
+
+h1 {
+    text-align: center;
+    font-size: 28px;
+    margin: 5px 0 25px;
+}
+
+h2 {
+    text-align: center;
+    font-size: 21px;
+    margin: 5px 0 20px;
+}
+
+
+/* =========================================
+   DATUM
+   ========================================= */
+
+.datum-box {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.datum-box label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+select {
+    width: 100%;
+    max-width: 350px;
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid #aaa;
+    border-radius: 8px;
+    background: white;
+}
+
+
+/* =========================================
+   WEDSTRIJD
+   ========================================= */
+
+.wedstrijd {
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        55px
+        55px
+        75px
+        minmax(0, 1fr)
+        55px
+        55px
+        75px;
+
+    align-items: center;
+
+    gap: 5px;
+
+    padding: 12px 8px;
+
+    margin-bottom: 10px;
+
+    border-radius: 10px;
+
+    background: #f7f7f7;
+
+    border: 1px solid #ddd;
+}
+
+
+/* =========================================
+   PLOEGEN
+   ========================================= */
+
+.team {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.team-links {
+    text-align: left;
+}
+
+.team-rechts {
+    text-align: right;
+}
+
+
+/* =========================================
+   CIJFERS
+   ========================================= */
+
+.kop {
+    font-size: 11px;
+    color: #777;
+    text-align: center;
+    margin-bottom: 3px;
+}
+
+.cijfer {
+    text-align: center;
+    font-weight: bold;
+    font-size: 15px;
+}
+
+.gem {
+    text-align: center;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+
+/* =========================================
+   0 PUNTEN ROOD
+   ========================================= */
+
+.zero-punten {
+    color: red;
+    font-weight: bold;
+}
+
+
+/* =========================================
+   RNB
+   ========================================= */
+
+.rnb {
+    background: #fff2a8;
+}
+
+
+/* =========================================
+   GEEN GEGEVENS
+   ========================================= */
+
+.no-data {
+    text-align: center;
+    padding: 25px;
+    color: #777;
+}
+
+
+/* =========================================
+   MOBIEL
+   ========================================= */
+
+@media (max-width: 700px) {
+
+    body {
+        padding: 6px;
+    }
+
+    .section {
+        padding: 12px;
+        border-radius: 10px;
+    }
+
+    h1 {
+        font-size: 23px;
+    }
+
+    h2 {
+        font-size: 18px;
+    }
+
+    .wedstrijd {
+
+        grid-template-columns:
+            minmax(0, 1fr)
+            45px
+            45px
+            55px
+            minmax(0, 1fr)
+            45px
+            45px
+            55px;
+
+        gap: 3px;
+
+        padding: 9px 4px;
+
+    }
+
+    .team {
+        font-size: 11px;
+    }
+
+    .cijfer {
+        font-size: 12px;
+    }
+
+    .gem {
+        font-size: 11px;
+    }
+
+}
+
+
+/* =========================================
+   HEEL KLEIN SCHERM
+   ========================================= */
+
+@media (max-width: 480px) {
+
+    .wedstrijd {
+
+        grid-template-columns:
+            minmax(0, 1fr)
+            40px
+            40px
+            48px
+            minmax(0, 1fr)
+            40px
+            40px
+            48px;
+
+    }
+
+    .team {
+        font-size: 10px;
+    }
+
+    .cijfer {
+        font-size: 11px;
+    }
+
+    .gem {
+        font-size: 10px;
+    }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+<div class="section">
+
+
+<h1>🎳 Interteam Wedstrijden</h1>
+
+
+<h2 id="titelDatum">
+    Speeldag
+</h2>
+
+
+<div class="datum-box">
+
+<label for="datumSelect">
+    Kies een speeldatum
+</label>
+
+
+<select
+    id="datumSelect"
+    onchange="toonWedstrijden()">
+
+</select>
+
+</div>
+
+
+<div id="wedstrijden">
+
+    Gegevens worden geladen...
+
+</div>
+
+
+</div>
+
+</div>
+
+
+
+<script>
+
+
+// =====================================================
+// SUPABASE
+// =====================================================
+
+const SUPABASE_URL =
+    "https://wnsvbtskynkewxggmjem.supabase.co";
+
+
+const SUPABASE_KEY =
+    "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+
+
+const supabaseClient =
+    supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+// =====================================================
+// SUPABASE TABEL
+// =====================================================
+
+const SCORE_TABEL =
+    "interteam_scores";
+
+
+// =====================================================
+// AANTAL SPELERS
+// =====================================================
+
+const AANTAL_SPELERS =
+    15;
+
+
+// =====================================================
+// RNB
+// =====================================================
+
+const RNB =
+    "RNB Geenens Construct-Vapor";
+
+
+// =====================================================
+// SPEELDATA
+// =====================================================
+
+const DATUMS = [
+
+    "2026-09-04",
+    "2026-09-11",
+    "2026-09-18",
+    "2026-09-25",
+    "2026-10-02",
+    "2026-10-09",
+    "2026-10-16",
+    "2026-11-20",
+    "2026-11-27",
+    "2026-12-04",
+    "2026-12-11",
+    "2027-01-15",
+    "2027-01-22",
+    "2027-01-29",
+    "2027-02-19",
+    "2027-02-26",
+    "2027-03-19",
+    "2027-03-26",
+    "2027-04-16",
+    "2027-04-23",
+    "2027-05-07",
+    "2027-05-14"
+
+];
+
+
+// =====================================================
+// WEDSTRIJDEN PER SPEELDATUM
+// =====================================================
+
+const WEDSTRIJDEN = {
+
+
+"2026-09-04": [
+
+    ["BC Ajuin","DCG Yok Tha"],
+
+    ["BC Ledeganck 2 Burtline","LAT Esento"],
+
+    ["TSZ Bieshoop","FLP ALLCORE IT"],
+
+    ["RNB Geenens Construct-Vapor","FLP Argenta Hamme"],
+
+    ["Royal Ghent 3","Stene - Pleisterwerken Delrue JP"],
+
+    ["Oilsjt 2 Yok Tha","Wuitens"]
+
+],
+
+
+"2026-09-11": [
+
+    ["FLP ALLCORE IT","BC Ajuin"],
+
+    ["Stene - Pleisterwerken Delrue JP","FLP Argenta Hamme"],
+
+    ["LAT Esento","Royal Ghent 3"],
+
+    ["Wuitens","DCG Yok Tha"],
+
+    ["Oilsjt 2 Yok Tha","TSZ Bieshoop"],
+
+    ["RNB Geenens Construct-Vapor","BC Ledeganck 2 Burtline"]
+
+],
+
+
+"2026-09-18": [
+
+    ["Royal Ghent 3","FLP ALLCORE IT"],
+
+    ["FLP Argenta Hamme","Wuitens"],
+
+    ["DCG Yok Tha","LAT Esento"],
+
+    ["BC Ajuin","Stene - Pleisterwerken Delrue JP"],
+
+    ["TSZ Bieshoop","RNB Geenens Construct-Vapor"],
+
+    ["BC Ledeganck 2 Burtline","Oilsjt 2 Yok Tha"]
+
+],
+
+
+"2026-09-25": [
+
+    ["Royal Ghent 3","RNB Geenens Construct-Vapor"],
+
+    ["Wuitens","BC Ajuin"],
+
+    ["FLP Argenta Hamme","BC Ledeganck 2 Burtline"],
+
+    ["Oilsjt 2 Yok Tha","LAT Esento"],
+
+    ["Stene - Pleisterwerken Delrue JP","TSZ Bieshoop"],
+
+    ["FLP ALLCORE IT","DCG Yok Tha"]
+
+],
+
+
+"2026-10-02": [
+
+    ["BC Ledeganck 2 Burtline","FLP ALLCORE IT"],
+
+    ["LAT Esento","FLP Argenta Hamme"],
+
+    ["RNB Geenens Construct-Vapor","Stene - Pleisterwerken Delrue JP"],
+
+    ["DCG Yok Tha","Oilsjt 2 Yok Tha"],
+
+    ["BC Ajuin","Royal Ghent 3"],
+
+    ["TSZ Bieshoop","Wuitens"]
+
+],
+
+
+"2026-10-09": [
+
+    ["FLP Argenta Hamme","FLP ALLCORE IT"],
+
+    ["LAT Esento","Wuitens"],
+
+    ["Stene - Pleisterwerken Delrue JP","DCG Yok Tha"],
+
+    ["Oilsjt 2 Yok Tha","Royal Ghent 3"],
+
+    ["BC Ajuin","RNB Geenens Construct-Vapor"],
+
+    ["TSZ Bieshoop","BC Ledeganck 2 Burtline"]
+
+],
+
+
+"2026-10-16": [
+
+    ["FLP ALLCORE IT","LAT Esento"],
+
+    ["FLP Argenta Hamme","Oilsjt 2 Yok Tha"],
+
+    ["Wuitens","Stene - Pleisterwerken Delrue JP"],
+
+    ["BC Ledeganck 2 Burtline","BC Ajuin"],
+
+    ["DCG Yok Tha","RNB Geenens Construct-Vapor"],
+
+    ["Royal Ghent 3","TSZ Bieshoop"]
+
+],
+
+
+"2026-11-20": [
+
+    ["Stene - Pleisterwerken Delrue JP","FLP ALLCORE IT"],
+
+    ["Royal Ghent 3","FLP Argenta Hamme"],
+
+    ["RNB Geenens Construct-Vapor","LAT Esento"],
+
+    ["BC Ajuin","Oilsjt 2 Yok Tha"],
+
+    ["Wuitens","BC Ledeganck 2 Burtline"],
+
+    ["DCG Yok Tha","TSZ Bieshoop"]
+
+],
+
+
+"2026-11-27": [
+
+    ["FLP Argenta Hamme","DCG Yok Tha"],
+
+    ["LAT Esento","Stene - Pleisterwerken Delrue JP"],
+
+    ["BC Ledeganck 2 Burtline","Royal Ghent 3"],
+
+    ["Oilsjt 2 Yok Tha","RNB Geenens Construct-Vapor"],
+
+    ["TSZ Bieshoop","BC Ajuin"],
+
+    ["FLP ALLCORE IT","Wuitens"]
+
+],
+
+
+"2026-12-04": [
+
+    ["LAT Esento","BC Ajuin"],
+
+    ["Wuitens","Royal Ghent 3"],
+
+    ["FLP ALLCORE IT","RNB Geenens Construct-Vapor"],
+
+    ["FLP Argenta Hamme","TSZ Bieshoop"],
+
+    ["Stene - Pleisterwerken Delrue JP","Oilsjt 2 Yok Tha"],
+
+    ["DCG Yok Tha","BC Ledeganck 2 Burtline"]
+
+],
+
+
+"2026-12-11": [
+
+    ["Royal Ghent 3","DCG Yok Tha"],
+
+    ["BC Ajuin","FLP Argenta Hamme"],
+
+    ["BC Ledeganck 2 Burtline","Stene - Pleisterwerken Delrue JP"],
+
+    ["Oilsjt 2 Yok Tha","FLP ALLCORE IT"],
+
+    ["RNB Geenens Construct-Vapor","Wuitens"],
+
+    ["TSZ Bieshoop","LAT Esento"]
+
+],
+
+
+"2027-01-15": [
+
+    ["DCG Yok Tha","BC Ajuin"],
+
+    ["LAT Esento","BC Ledeganck 2 Burtline"],
+
+    ["FLP ALLCORE IT","TSZ Bieshoop"],
+
+    ["FLP Argenta Hamme","RNB Geenens Construct-Vapor"],
+
+    ["Stene - Pleisterwerken Delrue JP","Royal Ghent 3"],
+
+    ["Wuitens","Oilsjt 2 Yok Tha"]
+
+],
+
+
+"2027-01-22": [
+
+    ["BC Ajuin","FLP ALLCORE IT"],
+
+    ["FLP Argenta Hamme","Stene - Pleisterwerken Delrue JP"],
+
+    ["Royal Ghent 3","LAT Esento"],
+
+    ["DCG Yok Tha","Wuitens"],
+
+    ["TSZ Bieshoop","Oilsjt 2 Yok Tha"],
+
+    ["BC Ledeganck 2 Burtline","RNB Geenens Construct-Vapor"]
+
+],
+
+
+"2027-01-29": [
+
+    ["FLP ALLCORE IT","Royal Ghent 3"],
+
+    ["Wuitens","FLP Argenta Hamme"],
+
+    ["LAT Esento","DCG Yok Tha"],
+
+    ["Stene - Pleisterwerken Delrue JP","BC Ajuin"],
+
+    ["RNB Geenens Construct-Vapor","TSZ Bieshoop"],
+
+    ["Oilsjt 2 Yok Tha","BC Ledeganck 2 Burtline"]
+
+],
+
+
+"2027-02-19": [
+
+    ["RNB Geenens Construct-Vapor","Royal Ghent 3"],
+
+    ["BC Ajuin","Wuitens"],
+
+    ["BC Ledeganck 2 Burtline","FLP Argenta Hamme"],
+
+    ["LAT Esento","Oilsjt 2 Yok Tha"],
+
+    ["TSZ Bieshoop","Stene - Pleisterwerken Delrue JP"],
+
+    ["DCG Yok Tha","FLP ALLCORE IT"]
+
+],
+
+
+"2027-02-26": [
+
+    ["FLP ALLCORE IT","BC Ledeganck 2 Burtline"],
+
+    ["FLP Argenta Hamme","LAT Esento"],
+
+    ["Stene - Pleisterwerken Delrue JP","RNB Geenens Construct-Vapor"],
+
+    ["Oilsjt 2 Yok Tha","DCG Yok Tha"],
+
+    ["Royal Ghent 3","BC Ajuin"],
+
+    ["Wuitens","TSZ Bieshoop"]
+
+],
+
+
+"2027-03-19": [
+
+    ["FLP ALLCORE IT","FLP Argenta Hamme"],
+
+    ["Wuitens","LAT Esento"],
+
+    ["DCG Yok Tha","Stene - Pleisterwerken Delrue JP"],
+
+    ["Royal Ghent 3","Oilsjt 2 Yok Tha"],
+
+    ["RNB Geenens Construct-Vapor","BC Ajuin"],
+
+    ["BC Ledeganck 2 Burtline","TSZ Bieshoop"]
+
+],
+
+
+"2027-03-26": [
+
+    ["LAT Esento","FLP ALLCORE IT"],
+
+    ["Oilsjt 2 Yok Tha","FLP Argenta Hamme"],
+
+    ["Stene - Pleisterwerken Delrue JP","Wuitens"],
+
+    ["BC Ajuin","BC Ledeganck 2 Burtline"],
+
+    ["RNB Geenens Construct-Vapor","DCG Yok Tha"],
+
+    ["TSZ Bieshoop","Royal Ghent 3"]
+
+],
+
+
+"2027-04-16": [
+
+    ["FLP ALLCORE IT","Stene - Pleisterwerken Delrue JP"],
+
+    ["FLP Argenta Hamme","Royal Ghent 3"],
+
+    ["LAT Esento","RNB Geenens Construct-Vapor"],
+
+    ["Oilsjt 2 Yok Tha","BC Ajuin"],
+
+    ["BC Ledeganck 2 Burtline","Wuitens"],
+
+    ["TSZ Bieshoop","DCG Yok Tha"]
+
+],
+
+
+"2027-04-23": [
+
+    ["DCG Yok Tha","FLP Argenta Hamme"],
+
+    ["Stene - Pleisterwerken Delrue JP","LAT Esento"],
+
+    ["Royal Ghent 3","BC Ledeganck 2 Burtline"],
+
+    ["RNB Geenens Construct-Vapor","Oilsjt 2 Yok Tha"],
+
+    ["BC Ajuin","TSZ Bieshoop"],
+
+    ["Wuitens","FLP ALLCORE IT"]
+
+],
+
+
+"2027-05-07": [
+
+    ["BC Ajuin","LAT Esento"],
+
+    ["Royal Ghent 3","Wuitens"],
+
+    ["RNB Geenens Construct-Vapor","FLP ALLCORE IT"],
+
+    ["TSZ Bieshoop","FLP Argenta Hamme"],
+
+    ["Oilsjt 2 Yok Tha","Stene - Pleisterwerken Delrue JP"],
+
+    ["BC Ledeganck 2 Burtline","DCG Yok Tha"]
+
+],
+
+
+"2027-05-14": [
+
+    ["DCG Yok Tha","Royal Ghent 3"],
+
+    ["FLP Argenta Hamme","BC Ajuin"],
+
+    ["Stene - Pleisterwerken Delrue JP","BC Ledeganck 2 Burtline"],
+
+    ["FLP ALLCORE IT","Oilsjt 2 Yok Tha"],
+
+    ["Wuitens","RNB Geenens Construct-Vapor"],
+
+    ["LAT Esento","TSZ Bieshoop"]
+
+]
+
+};
+
+
+// =====================================================
+// ALLE SCOREGEGEVENS
+// =====================================================
+
+let alleScores = [];
+
+
+// =====================================================
+// DATUM OPMAAK
+// =====================================================
+
+function datumTekst(datum) {
+
+    const d =
+        datum.split("-");
+
+    return (
+        d[2] +
+        "/" +
+        d[1] +
+        "/" +
+        d[0]
+    );
+
+}
+
+
+// =====================================================
+// NAAM NORMALISEREN
+// =====================================================
+
+function normaliseer(naam) {
+
+    return String(
+        naam || ""
+    )
+    .replace(
+        /\s+/g,
+        " "
+    )
+    .trim()
+    .toLowerCase();
+
+}
+
+
+// =====================================================
+// HTML VEILIG MAKEN
+// =====================================================
+
+function escapeHtml(tekst) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+    div.textContent =
+        tekst;
+
+    return div.innerHTML;
+
+}
+
+
+// =====================================================
+// DATUM DROPDOWN LADEN
+// =====================================================
+
+function laadDatums() {
+
+    const select =
+        document.getElementById(
+            "datumSelect"
+        );
+
+
+    select.innerHTML = "";
+
+
+    DATUMS.forEach(
+        datum => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+            option.value =
+                datum;
+
+            option.textContent =
+                datumTekst(
+                    datum
+                );
+
+            select.appendChild(
+                option
+            );
+
+        }
+    );
+
+
+    /*
+     * Zoek de laatste speeldatum
+     * waarvoor minstens één score
+     * in Supabase staat.
+     */
+
+    const gespeeldeDatums =
+        DATUMS.filter(
+            datum =>
+                alleScores.some(
+                    score =>
+                        score.speeldatum ===
+                        datum
+                )
+        );
+
+
+    if (
+        gespeeldeDatums.length > 0
+    ) {
+
+        select.value =
+            gespeeldeDatums[
+                gespeeldeDatums.length - 1
+            ];
+
+    } else {
+
+        select.value =
+            DATUMS[0];
+
+    }
+
+}
+
+
+// =====================================================
+// SCORE OPZOEKEN
+// =====================================================
+
+function zoekScore(
+    ploeg,
+    datum
+) {
+
+    const gevonden =
+        alleScores.find(
+            score =>
+
+                score.speeldatum ===
+                datum &&
+
+                normaliseer(
+                    score.ploeg
+                ) ===
+                normaliseer(
+                    ploeg
+                )
+        );
+
+
+    if (!gevonden) {
+
+        return null;
+
+    }
+
+
+    return {
+
+        kegels:
+            Number(
+                gevonden.kegels
+            ) || 0,
+
+        punten:
+            Number(
+                gevonden.punten
+            ) || 0
+
+    };
+
+}
+
+
+// =====================================================
+// GEMIDDELDE
+// =====================================================
+
+function berekenGemiddelde(
+    kegels
+) {
+
+    if (
+        kegels === null ||
+        kegels === undefined
+    ) {
+
+        return null;
+
+    }
+
+
+    return (
+        Number(kegels) /
+        AANTAL_SPELERS
+    );
+
+}
+
+
+// =====================================================
+// WEDSTRIJDEN TONEN
+// =====================================================
+
+function toonWedstrijden() {
+
+    const select =
+        document.getElementById(
+            "datumSelect"
+        );
+
+
+    const datum =
+        select.value;
+
+
+    const container =
+        document.getElementById(
+            "wedstrijden"
+        );
+
+
+    const titel =
+        document.getElementById(
+            "titelDatum"
+        );
+
+
+    titel.innerText =
+        "Speeldag " +
+        datumTekst(
+            datum
+        );
+
+
+    container.innerHTML = "";
+
+
+    const wedstrijden =
+        WEDSTRIJDEN[
+            datum
+        ] || [];
+
+
+    if (
+        wedstrijden.length === 0
+    ) {
+
+        container.innerHTML = `
+
+            <div class="no-data">
+
+                Geen wedstrijden gevonden.
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    wedstrijden.forEach(
+        wedstrijd => {
+
+            const ploeg1 =
+                wedstrijd[0];
+
+            const ploeg2 =
+                wedstrijd[1];
+
+
+            const score1 =
+                zoekScore(
+                    ploeg1,
+                    datum
+                );
+
+
+            const score2 =
+                zoekScore(
+                    ploeg2,
+                    datum
+                );
+
+
+            const gem1 =
+                score1
+                    ? berekenGemiddelde(
+                        score1.kegels
+                      )
+                    : null;
+
+
+            const gem2 =
+                score2
+                    ? berekenGemiddelde(
+                        score2.kegels
+                      )
+                    : null;
+
+
+            const punten1 =
+                score1
+                    ? score1.punten
+                    : "—";
+
+
+            const punten2 =
+                score2
+                    ? score2.punten
+                    : "—";
+
+
+            const kegels1 =
+                score1
+                    ? score1.kegels
+                    : "—";
+
+
+            const kegels2 =
+                score2
+                    ? score2.kegels
+                    : "—";
+
+
+            const gemiddelde1 =
+                gem1 !== null
+                    ? gem1.toFixed(2)
+                    : "—";
+
+
+            const gemiddelde2 =
+                gem2 !== null
+                    ? gem2.toFixed(2)
+                    : "—";
+
+
+            const isZero1 =
+                score1 &&
+                Number(
+                    score1.punten
+                ) === 0;
+
+
+            const isZero2 =
+                score2 &&
+                Number(
+                    score2.punten
+                ) === 0;
+
+
+            const isRNB1 =
+                normaliseer(
+                    ploeg1
+                ) ===
+                normaliseer(
+                    RNB
+                );
+
+
+            const isRNB2 =
+                normaliseer(
+                    ploeg2
+                ) ===
+                normaliseer(
+                    RNB
+                );
+
+
+            const row =
+                document.createElement(
+                    "div"
+                );
+
+
+            row.className =
+                "wedstrijd";
+
+
+            if (
+                isRNB1 ||
+                isRNB2
+            ) {
+
+                row.classList.add(
+                    "rnb"
+                );
+
+            }
+
+
+            row.innerHTML = `
+
+                <!-- PLOEG 1 -->
+
+                <div class="team team-links">
+
+                    ${escapeHtml(
+                        ploeg1
+                    )}
+
+                </div>
+
+
+                <!-- KEGELS 1 -->
+
+                <div>
+
+                    <div class="kop">
+                        Kegels
+                    </div>
+
+                    <div class="cijfer">
+                        ${kegels1}
+                    </div>
+
+                </div>
+
+
+                <!-- PUNTEN 1 -->
+
+                <div>
+
+                    <div class="kop">
+                        Punten
+                    </div>
+
+                    <div
+                        class="cijfer ${
+                            isZero1
+                                ? "zero-punten"
+                                : ""
+                        }">
+
+                        ${punten1}
+
+                    </div>
+
+                </div>
+
+
+                <!-- GEMIDDELDE 1 -->
+
+                <div>
+
+                    <div class="kop">
+                        Gem.
+                    </div>
+
+                    <div class="gem">
+
+                        ${gemiddelde1}
+
+                    </div>
+
+                </div>
+
+
+                <!-- PLOEG 2 -->
+
+                <div class="team team-rechts">
+
+                    ${escapeHtml(
+                        ploeg2
+                    )}
+
+                </div>
+
+
+                <!-- KEGELS 2 -->
+
+                <div>
+
+                    <div class="kop">
+                        Kegels
+                    </div>
+
+                    <div class="cijfer">
+
+                        ${kegels2}
+
+                    </div>
+
+                </div>
+
+
+                <!-- PUNTEN 2 -->
+
+                <div>
+
+                    <div class="kop">
+                        Punten
+                    </div>
+
+                    <div
+                        class="cijfer ${
+                            isZero2
+                                ? "zero-punten"
+                                : ""
+                        }">
+
+                        ${punten2}
+
+                    </div>
+
+                </div>
+
+
+                <!-- GEMIDDELDE 2 -->
+
+                <div>
+
+                    <div class="kop">
+                        Gem.
+                    </div>
+
+                    <div class="gem">
+
+                        ${gemiddelde2}
+
+                    </div>
+
+                </div>
+
+            `;
+
+
+            container.appendChild(
+                row
+            );
+
+        }
+    );
+
+}
+
+
+// =====================================================
+// SUPABASE LADEN
+// =====================================================
+
+async function laadScores() {
+
+    const container =
+        document.getElementById(
+            "wedstrijden"
+        );
+
+
+    container.innerHTML =
+        "Gegevens worden geladen...";
+
+
+    const {
+        data,
+        error
+    } = await supabaseClient
+
+        .from(
+            SCORE_TABEL
+        )
+
+        .select(
+            "speeldatum, ploeg, kegels, punten"
+        );
+
+
+    if (error) {
+
+        console.error(
+            "Supabase fout:",
+            error
+        );
+
+
+        container.innerHTML = `
+
+            <div
+                class="no-data"
+                style="color:red;">
+
+                ❌ Fout bij het ophalen
+                van de gegevens uit Supabase.
+
+            </div>
+
+        `;
+
+
+        return;
+
+    }
+
+
+    alleScores =
+        data || [];
+
+
+    // Dropdown vullen
+
+    laadDatums();
+
+
+    // Laatste gespeelde datum tonen
+
+    toonWedstrijden();
+
+}
+
+
+// =====================================================
+// START
+// =====================================================
+
+laadScores();
+
+
+</script>
+
+
+</body>
+
+</html>
+```
