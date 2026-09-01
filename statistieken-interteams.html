@@ -1,0 +1,1414 @@
+
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Statistieken van onze ploeg</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f8;
+        margin: 0;
+        padding: 20px;
+        color: #222;
+    }
+
+    .container {
+        max-width: 1000px;
+        margin: auto;
+    }
+
+    h1 {
+        text-align: center;
+        margin-bottom: 5px;
+    }
+
+    .subtitle {
+        text-align: center;
+        color: #666;
+        margin-bottom: 25px;
+    }
+
+    .select-box {
+        text-align: center;
+        margin-bottom: 25px;
+    }
+
+    select {
+        padding: 10px 15px;
+        font-size: 16px;
+        border-radius: 8px;
+        border: 1px solid #bbb;
+        min-width: 220px;
+    }
+
+    .wedstrijden {
+        display: grid;
+        gap: 10px;
+    }
+
+    .wedstrijd {
+        background: white;
+        border-radius: 10px;
+        padding: 14px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    .wedstrijd.rnb {
+        background: #fff3a6;
+        border: 2px solid #e0c800;
+    }
+
+    .teams {
+        display: grid;
+        grid-template-columns: 1fr 70px 1fr;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .team {
+        font-weight: bold;
+    }
+
+    .team.right {
+        text-align: right;
+    }
+
+    .punten {
+        text-align: center;
+        font-size: 20px;
+        font-weight: bold;
+    }
+
+    .details {
+        display: grid;
+        grid-template-columns: 1fr 70px 1fr;
+        gap: 10px;
+        margin-top: 7px;
+        color: #555;
+        font-size: 14px;
+    }
+
+    .details div:nth-child(2) {
+        text-align: center;
+    }
+
+    .details div:last-child {
+        text-align: right;
+    }
+
+    .nul {
+        color: red;
+    }
+
+    .sectie {
+        margin-top: 30px;
+    }
+
+    .sectie h2 {
+        margin-bottom: 12px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .stat {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    .stat-title {
+        font-weight: bold;
+        margin-bottom: 6px;
+    }
+
+    .stat-value {
+        font-size: 17px;
+        font-weight: bold;
+    }
+
+    .stat-extra {
+        margin-top: 4px;
+        color: #666;
+        font-size: 14px;
+    }
+
+    .loading,
+    .error {
+        text-align: center;
+        padding: 20px;
+    }
+
+    .error {
+        color: red;
+    }
+
+    @media (max-width: 700px) {
+        body {
+            padding: 10px;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .teams {
+            grid-template-columns: 1fr 60px 1fr;
+        }
+
+        .details {
+            grid-template-columns: 1fr 60px 1fr;
+        }
+
+        .team {
+            font-size: 14px;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>📊 Statistieken van onze ploeg</h1>
+    <div class="subtitle">
+        Van wedstrijden tot nog toe gespeeld 
+    </div>
+
+    <div class="select-box">
+        <select id="speeldatumSelect"></select>
+    </div>
+
+    <div id="wedstrijden" class="wedstrijden">
+        <div class="loading">Gegevens laden...</div>
+    </div>
+
+    <!-- PUNTEN -->
+    <div class="sectie">
+        <h2>🟦 Punten</h2>
+
+        <div class="stats-grid">
+
+            <div class="stat">
+                <div class="stat-title">Spannendste wedstrijd (kleinste puntenverschil)</div>
+                <div class="stat-value" id="spannendste">-</div>
+                <div class="stat-extra" id="spannendsteExtra"></div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-title">Grootste overwinning (grootste puntenverschil)</div>
+                <div class="stat-value" id="grootsteOverwinning">-</div>
+                <div class="stat-extra" id="grootsteOverwinningExtra"></div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-title">Meeste punten in een wedstrijd (1ste plaats)</div>
+                <div class="stat-value" id="meestePunten">-</div>
+                <div class="stat-extra" id="meestePuntenExtra"></div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-title">Meeste punten tegen een ploeg</div>
+                <div class="stat-value" id="meesteTegenstander">-</div>
+                <div class="stat-extra" id="meesteTegenstanderExtra"></div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-title">Minste punten tegen een ploeg</div>
+                <div class="stat-value" id="minsteTegenstander">-</div>
+                <div class="stat-extra" id="minsteTegenstanderExtra"></div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- KEGELS -->
+    <div class="sectie">
+        <h2>🟩 Kegels & gemiddelden</h2>
+
+        <div class="stats-grid">
+
+            <div class="stat">
+                <div class="stat-title">Hoogste RNB-score</div>
+                <div class="stat-value" id="hoogsteScore">-</div>
+                <div class="stat-extra" id="hoogsteScoreExtra"></div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-title">Grootste kegelsverschil</div>
+                <div class="stat-value" id="grootsteKegelVerschil">-</div>
+                <div class="stat-extra" id="grootsteKegelVerschilExtra"></div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-title">Kleinste kegelsverschil</div>
+                <div class="stat-value" id="kleinsteKegelVerschil">-</div>
+                <div class="stat-extra" id="kleinsteKegelVerschilExtra"></div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-title">Hoogste gemiddelde</div>
+                <div class="stat-value" id="hoogsteGemiddelde">-</div>
+                <div class="stat-extra" id="hoogsteGemiddeldeExtra"></div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-title">Laagste gemiddelde</div>
+                <div class="stat-value" id="laagsteGemiddelde">-</div>
+                <div class="stat-extra" id="laagsteGemiddeldeExtra"></div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- AANTALLEN -->
+    <div class="sectie">
+        <h2>🟧 Matchen</h2>
+
+        <div class="stats-grid">
+
+            <div class="stat">
+                <div class="stat-title">Thuiswedstrijden</div>
+                <div class="stat-value" id="thuis">-</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-title">Uitwedstrijden</div>
+                <div class="stat-value" id="uit">-</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-title">Totaal wedstrijden</div>
+                <div class="stat-value" id="totaal">-</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-title">Heenwedstrijden</div>
+                <div class="stat-value" id="heen">-</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-title">Terugwedstrijden</div>
+                <div class="stat-value" id="terug">-</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-title">Hoogste positie</div>
+                <div class="stat-value" id="hoogstePositie">-</div>
+                <div class="stat-extra" id="hoogstePositieExtra"></div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-title">Laagste positie</div>
+                <div class="stat-value" id="laagstePositie">-</div>
+                <div class="stat-extra" id="laagstePositieExtra"></div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+
+<script>
+
+/* ============================================================
+   SUPABASE
+   ============================================================ */
+
+const SUPABASE_URL =
+    "https://wnsvbtskynkewxggmjem.supabase.co";
+
+const SUPABASE_KEY =
+    "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+
+const supabaseClient =
+    supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+
+/* ============================================================
+   ALGEMENE INSTELLINGEN
+   ============================================================ */
+
+const RNB = "RNB Geenens Construct-Vapor";
+
+const SPEELDATUMS = [
+    "2026-09-04",
+    "2026-09-11",
+    "2026-09-18",
+    "2026-09-25",
+    "2026-10-02",
+    "2026-10-09",
+    "2026-10-16",
+    "2026-11-20",
+    "2026-11-27",
+    "2026-12-04",
+    "2026-12-11",
+    "2027-01-15",
+    "2027-01-22",
+    "2027-01-29",
+    "2027-02-19",
+    "2027-02-26",
+    "2027-03-19",
+    "2027-03-26",
+    "2027-04-16",
+    "2027-04-23",
+    "2027-05-07",
+    "2027-05-14"
+];
+
+
+/* ============================================================
+   WEDSTRIJDEN
+   ============================================================ */
+
+const WEDSTRIJDEN = {
+
+"2026-09-04": [
+["BC Ajuin","DCG Yok Tha"],
+["BC Ledeganck 2 Burtline","LAT Esento"],
+["TSZ Bieshoop","FLP ALLCORE IT"],
+["RNB Geenens Construct-Vapor","FLP Argenta Hamme"],
+["Royal Ghent 3","Stene - Pleisterwerken Delrue JP"],
+["Oilsjt 2 Yok Tha","Wuitens"]
+],
+
+"2026-09-11": [
+["FLP ALLCORE IT","BC Ajuin"],
+["Stene - Pleisterwerken Delrue JP","FLP Argenta Hamme"],
+["LAT Esento","Royal Ghent 3"],
+["Wuitens","DCG Yok Tha"],
+["Oilsjt 2 Yok Tha","TSZ Bieshoop"],
+["RNB Geenens Construct-Vapor","BC Ledeganck 2 Burtline"]
+],
+
+"2026-09-18": [
+["Royal Ghent 3","FLP ALLCORE IT"],
+["FLP Argenta Hamme","Wuitens"],
+["DCG Yok Tha","LAT Esento"],
+["BC Ajuin","Stene - Pleisterwerken Delrue JP"],
+["TSZ Bieshoop","RNB Geenens Construct-Vapor"],
+["BC Ledeganck 2 Burtline","Oilsjt 2 Yok Tha"]
+],
+
+"2026-09-25": [
+["Royal Ghent 3","RNB Geenens Construct-Vapor"],
+["Wuitens","BC Ajuin"],
+["FLP Argenta Hamme","BC Ledeganck 2 Burtline"],
+["Oilsjt 2 Yok Tha","LAT Esento"],
+["Stene - Pleisterwerken Delrue JP","TSZ Bieshoop"],
+["FLP ALLCORE IT","DCG Yok Tha"]
+],
+
+"2026-10-02": [
+["BC Ledeganck 2 Burtline","FLP ALLCORE IT"],
+["LAT Esento","FLP Argenta Hamme"],
+["RNB Geenens Construct-Vapor","Stene - Pleisterwerken Delrue JP"],
+["DCG Yok Tha","Oilsjt 2 Yok Tha"],
+["BC Ajuin","Royal Ghent 3"],
+["TSZ Bieshoop","Wuitens"]
+],
+
+"2026-10-09": [
+["FLP Argenta Hamme","FLP ALLCORE IT"],
+["LAT Esento","Wuitens"],
+["Stene - Pleisterwerken Delrue JP","DCG Yok Tha"],
+["Oilsjt 2 Yok Tha","Royal Ghent 3"],
+["BC Ajuin","RNB Geenens Construct-Vapor"],
+["TSZ Bieshoop","BC Ledeganck 2 Burtline"]
+],
+
+"2026-10-16": [
+["FLP ALLCORE IT","LAT Esento"],
+["FLP Argenta Hamme","Oilsjt 2 Yok Tha"],
+["Wuitens","Stene - Pleisterwerken Delrue JP"],
+["BC Ledeganck 2 Burtline","BC Ajuin"],
+["DCG Yok Tha","RNB Geenens Construct-Vapor"],
+["Royal Ghent 3","TSZ Bieshoop"]
+],
+
+"2026-11-20": [
+["Stene - Pleisterwerken Delrue JP","FLP ALLCORE IT"],
+["Royal Ghent 3","FLP Argenta Hamme"],
+["RNB Geenens Construct-Vapor","LAT Esento"],
+["BC Ajuin","Oilsjt 2 Yok Tha"],
+["Wuitens","BC Ledeganck 2 Burtline"],
+["DCG Yok Tha","TSZ Bieshoop"]
+],
+
+"2026-11-27": [
+["FLP Argenta Hamme","DCG Yok Tha"],
+["LAT Esento","Stene - Pleisterwerken Delrue JP"],
+["BC Ledeganck 2 Burtline","Royal Ghent 3"],
+["Oilsjt 2 Yok Tha","RNB Geenens Construct-Vapor"],
+["TSZ Bieshoop","BC Ajuin"],
+["FLP ALLCORE IT","Wuitens"]
+],
+
+"2026-12-04": [
+["LAT Esento","BC Ajuin"],
+["Wuitens","Royal Ghent 3"],
+["FLP ALLCORE IT","RNB Geenens Construct-Vapor"],
+["FLP Argenta Hamme","TSZ Bieshoop"],
+["Stene - Pleisterwerken Delrue JP","Oilsjt 2 Yok Tha"],
+["DCG Yok Tha","BC Ledeganck 2 Burtline"]
+],
+
+"2026-12-11": [
+["Royal Ghent 3","DCG Yok Tha"],
+["BC Ajuin","FLP Argenta Hamme"],
+["BC Ledeganck 2 Burtline","Stene - Pleisterwerken Delrue JP"],
+["Oilsjt 2 Yok Tha","FLP ALLCORE IT"],
+["RNB Geenens Construct-Vapor","Wuitens"],
+["TSZ Bieshoop","LAT Esento"]
+],
+
+"2027-01-15": [
+["DCG Yok Tha","BC Ajuin"],
+["LAT Esento","BC Ledeganck 2 Burtline"],
+["FLP ALLCORE IT","TSZ Bieshoop"],
+["FLP Argenta Hamme","RNB Geenens Construct-Vapor"],
+["Stene - Pleisterwerken Delrue JP","Royal Ghent 3"],
+["Wuitens","Oilsjt 2 Yok Tha"]
+],
+
+"2027-01-22": [
+["BC Ajuin","FLP ALLCORE IT"],
+["FLP Argenta Hamme","Stene - Pleisterwerken Delrue JP"],
+["Royal Ghent 3","LAT Esento"],
+["DCG Yok Tha","Wuitens"],
+["TSZ Bieshoop","Oilsjt 2 Yok Tha"],
+["BC Ledeganck 2 Burtline","RNB Geenens Construct-Vapor"]
+],
+
+"2027-01-29": [
+["FLP ALLCORE IT","Royal Ghent 3"],
+["Wuitens","FLP Argenta Hamme"],
+["LAT Esento","DCG Yok Tha"],
+["Stene - Pleisterwerken Delrue JP","BC Ajuin"],
+["RNB Geenens Construct-Vapor","TSZ Bieshoop"],
+["Oilsjt 2 Yok Tha","BC Ledeganck 2 Burtline"]
+],
+
+"2027-02-19": [
+["RNB Geenens Construct-Vapor","Royal Ghent 3"],
+["BC Ajuin","Wuitens"],
+["BC Ledeganck 2 Burtline","FLP Argenta Hamme"],
+["LAT Esento","Oilsjt 2 Yok Tha"],
+["TSZ Bieshoop","Stene - Pleisterwerken Delrue JP"],
+["DCG Yok Tha","FLP ALLCORE IT"]
+],
+
+"2027-02-26": [
+["FLP ALLCORE IT","BC Ledeganck 2 Burtline"],
+["FLP Argenta Hamme","LAT Esento"],
+["Stene - Pleisterwerken Delrue JP","RNB Geenens Construct-Vapor"],
+["Oilsjt 2 Yok Tha","DCG Yok Tha"],
+["Royal Ghent 3","BC Ajuin"],
+["Wuitens","TSZ Bieshoop"]
+],
+
+"2027-03-19": [
+["FLP ALLCORE IT","FLP Argenta Hamme"],
+["Wuitens","LAT Esento"],
+["DCG Yok Tha","Stene - Pleisterwerken Delrue JP"],
+["Royal Ghent 3","Oilsjt 2 Yok Tha"],
+["RNB Geenens Construct-Vapor","BC Ajuin"],
+["BC Ledeganck 2 Burtline","TSZ Bieshoop"]
+],
+
+"2027-03-26": [
+["LAT Esento","FLP ALLCORE IT"],
+["Oilsjt 2 Yok Tha","FLP Argenta Hamme"],
+["Stene - Pleisterwerken Delrue JP","Wuitens"],
+["BC Ajuin","BC Ledeganck 2 Burtline"],
+["RNB Geenens Construct-Vapor","DCG Yok Tha"],
+["TSZ Bieshoop","Royal Ghent 3"]
+],
+
+"2027-04-16": [
+["FLP ALLCORE IT","Stene - Pleisterwerken Delrue JP"],
+["FLP Argenta Hamme","Royal Ghent 3"],
+["LAT Esento","RNB Geenens Construct-Vapor"],
+["Oilsjt 2 Yok Tha","BC Ajuin"],
+["BC Ledeganck 2 Burtline","Wuitens"],
+["TSZ Bieshoop","DCG Yok Tha"]
+],
+
+"2027-04-23": [
+["DCG Yok Tha","FLP Argenta Hamme"],
+["Stene - Pleisterwerken Delrue JP","LAT Esento"],
+["Royal Ghent 3","BC Ledeganck 2 Burtline"],
+["RNB Geenens Construct-Vapor","Oilsjt 2 Yok Tha"],
+["BC Ajuin","TSZ Bieshoop"],
+["Wuitens","FLP ALLCORE IT"]
+],
+
+"2027-05-07": [
+["BC Ajuin","LAT Esento"],
+["Royal Ghent 3","Wuitens"],
+["RNB Geenens Construct-Vapor","FLP ALLCORE IT"],
+["TSZ Bieshoop","FLP Argenta Hamme"],
+["Oilsjt 2 Yok Tha","Stene - Pleisterwerken Delrue JP"],
+["BC Ledeganck 2 Burtline","DCG Yok Tha"]
+],
+
+"2027-05-14": [
+["DCG Yok Tha","Royal Ghent 3"],
+["FLP Argenta Hamme","BC Ajuin"],
+["Stene - Pleisterwerken Delrue JP","BC Ledeganck 2 Burtline"],
+["FLP ALLCORE IT","Oilsjt 2 Yok Tha"],
+["Wuitens","RNB Geenens Construct-Vapor"],
+["LAT Esento","TSZ Bieshoop"]
+]
+
+};
+
+
+/* ============================================================
+   DATA
+   ============================================================ */
+
+let alleScores = [];
+let gespeeldeDatums = [];
+
+
+/* ============================================================
+   DATUM
+   ============================================================ */
+
+function datumNL(datum) {
+    const d = new Date(datum + "T00:00:00");
+
+    return d.toLocaleDateString("nl-BE", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+    });
+}
+
+
+/* ============================================================
+   SUPABASE DATA LADEN
+   ============================================================ */
+
+async function laadData() {
+
+    const { data, error } = await supabaseClient
+        .from("interteam_scores")
+        .select("*")
+        .order("speeldatum", { ascending: true });
+
+    if (error) {
+        console.error(error);
+
+        document.getElementById("wedstrijden").innerHTML =
+            `<div class="error">
+                Fout bij het laden van de gegevens.<br>
+                ${error.message}
+             </div>`;
+
+        return;
+    }
+
+    alleScores = data || [];
+
+    gespeeldeDatums = SPEELDATUMS.filter(datum =>
+        alleScores.some(r => r.speeldatum === datum)
+    );
+
+    vulDropdown();
+
+    if (gespeeldeDatums.length > 0) {
+        document.getElementById("speeldatumSelect").value =
+            gespeeldeDatums[gespeeldeDatums.length - 1];
+
+        toonWedstrijden();
+        berekenStatistieken();
+    } else {
+        document.getElementById("wedstrijden").innerHTML =
+            "<div class='loading'>Nog geen gespeelde wedstrijden gevonden.</div>";
+    }
+}
+
+
+/* ============================================================
+   DROPDOWN
+   ============================================================ */
+
+function vulDropdown() {
+
+    const select = document.getElementById("speeldatumSelect");
+
+    select.innerHTML = "";
+
+    SPEELDATUMS.forEach(datum => {
+
+        const option = document.createElement("option");
+
+        option.value = datum;
+        option.textContent = datumNL(datum);
+
+        if (!gespeeldeDatums.includes(datum)) {
+            option.textContent += " — nog niet gespeeld";
+        }
+
+        select.appendChild(option);
+    });
+
+    select.addEventListener("change", () => {
+        toonWedstrijden();
+    });
+}
+
+
+/* ============================================================
+   SCORE OPHALEN
+   ============================================================ */
+
+function scoreVan(ploeg, datum) {
+
+    return alleScores.find(r =>
+        r.speeldatum === datum &&
+        r.ploeg === ploeg
+    );
+}
+
+
+/* ============================================================
+   WEDSTRIJDEN TONEN
+   ============================================================ */
+
+function toonWedstrijden() {
+
+    const datum =
+        document.getElementById("speeldatumSelect").value;
+
+    const container =
+        document.getElementById("wedstrijden");
+
+    const wedstrijden =
+        WEDSTRIJDEN[datum] || [];
+
+    container.innerHTML = "";
+
+    wedstrijden.forEach(([thuis, uit]) => {
+
+        const scoreThuis = scoreVan(thuis, datum);
+        const scoreUit = scoreVan(uit, datum);
+
+        const gespeeld =
+            scoreThuis && scoreUit;
+
+        const puntenThuis =
+            scoreThuis ? Number(scoreThuis.punten) : "-";
+
+        const puntenUit =
+            scoreUit ? Number(scoreUit.punten) : "-";
+
+        const kegelsThuis =
+            scoreThuis ? Number(scoreThuis.kegels) : "-";
+
+        const kegelsUit =
+            scoreUit ? Number(scoreUit.kegels) : "-";
+
+        const gemThuis =
+            scoreThuis
+                ? (Number(scoreThuis.kegels) / 15).toFixed(1)
+                : "-";
+
+        const gemUit =
+            scoreUit
+                ? (Number(scoreUit.kegels) / 15).toFixed(1)
+                : "-";
+
+        const isRNB =
+            thuis === RNB || uit === RNB;
+
+        const thuisNul =
+            puntenThuis === 0 ? "nul" : "";
+
+        const uitNul =
+            puntenUit === 0 ? "nul" : "";
+
+        const div =
+            document.createElement("div");
+
+        div.className =
+            "wedstrijd" + (isRNB ? " rnb" : "");
+
+        if (!gespeeld) {
+
+            div.innerHTML = `
+                <div class="teams">
+                    <div class="team">${thuis}</div>
+                    <div class="punten">-</div>
+                    <div class="team right">${uit}</div>
+                </div>
+                <div class="details">
+                    <div>nog niet gespeeld</div>
+                    <div></div>
+                    <div></div>
+                </div>
+            `;
+
+        } else {
+
+            div.innerHTML = `
+                <div class="teams">
+                    <div class="team ${thuisNul}">
+                        ${thuis}
+                    </div>
+
+                    <div class="punten">
+                        <span class="${thuisNul}">
+                            ${puntenThuis}
+                        </span>
+                        -
+                        <span class="${uitNul}">
+                            ${puntenUit}
+                        </span>
+                    </div>
+
+                    <div class="team right ${uitNul}">
+                        ${uit}
+                    </div>
+                </div>
+
+                <div class="details">
+                    <div>
+                        ${kegelsThuis} kegels
+                        (${gemThuis})
+                    </div>
+
+                    <div>gem.</div>
+
+                    <div>
+                        ${kegelsUit} kegels
+                        (${gemUit})
+                    </div>
+                </div>
+            `;
+        }
+
+        container.appendChild(div);
+    });
+}
+
+
+/* ============================================================
+   ALLE GESPEELDE RNB-WEDSTRIJDEN
+   ============================================================ */
+
+function rnbWedstrijden() {
+
+    const resultaat = [];
+
+    SPEELDATUMS.forEach(datum => {
+
+        const wedstrijden =
+            WEDSTRIJDEN[datum] || [];
+
+        wedstrijden.forEach(([thuis, uit]) => {
+
+            if (thuis !== RNB && uit !== RNB)
+                return;
+
+            const scoreThuis = scoreVan(thuis, datum);
+            const scoreUit = scoreVan(uit, datum);
+
+            if (!scoreThuis || !scoreUit)
+                return;
+
+            resultaat.push({
+                datum,
+                thuis,
+                uit,
+                puntenThuis: Number(scoreThuis.punten),
+                puntenUit: Number(scoreUit.punten),
+                kegelsThuis: Number(scoreThuis.kegels),
+                kegelsUit: Number(scoreUit.kegels),
+                rnbThuis: thuis === RNB
+            });
+
+        });
+
+    });
+
+    return resultaat;
+}
+
+
+/* ============================================================
+   PUNTEN STATISTIEKEN
+   ============================================================ */
+
+function berekenPuntenStatistieken() {
+
+    const wedstrijden = rnbWedstrijden();
+
+    if (!wedstrijden.length)
+        return;
+
+
+    /* Spannendste wedstrijd */
+
+    const spannendste =
+        [...wedstrijden].sort((a,b) =>
+            Math.abs(a.puntenThuis - a.puntenUit) -
+            Math.abs(b.puntenThuis - b.puntenUit)
+        )[0];
+
+    const verschilSpanning =
+        Math.abs(
+            spannendste.puntenThuis -
+            spannendste.puntenUit
+        );
+
+    document.getElementById("spannendste").textContent =
+        `${verschilSpanning} punten verschil`;
+
+    document.getElementById("spannendsteExtra").textContent =
+        `${spannendste.rnbThuis
+            ? spannendste.uit
+            : spannendste.thuis}
+         — ${spannendste.puntenThuis} - ${spannendste.puntenUit}
+         (${datumNL(spannendste.datum)})`;
+
+
+    /* Grootste overwinning */
+
+    const rnbOverwinningen =
+        wedstrijden.filter(w => {
+
+            const rnb =
+                w.rnbThuis
+                    ? w.puntenThuis
+                    : w.puntenUit;
+
+            const tegen =
+                w.rnbThuis
+                    ? w.puntenUit
+                    : w.puntenThuis;
+
+            return rnb > tegen;
+        });
+
+    if (rnbOverwinningen.length) {
+
+        const grootste =
+            [...rnbOverwinningen].sort((a,b) => {
+
+                const va =
+                    Math.abs(a.puntenThuis - a.puntenUit);
+
+                const vb =
+                    Math.abs(b.puntenThuis - b.puntenUit);
+
+                return vb - va;
+
+            })[0];
+
+        const verschil =
+            Math.abs(
+                grootste.puntenThuis -
+                grootste.puntenUit
+            );
+
+        document.getElementById("grootsteOverwinning").textContent =
+            `${verschil} punten`;
+
+        document.getElementById("grootsteOverwinningExtra").textContent =
+            `${grootste.rnbThuis
+                ? grootste.uit
+                : grootste.thuis}
+             — ${grootste.rnbThuis
+                ? grootste.puntenThuis + " - " + grootste.puntenUit
+                : grootste.puntenUit + " - " + grootste.puntenThuis}
+             (${datumNL(grootste.datum)})`;
+    }
+
+
+    /* Meeste punten in één wedstrijd */
+
+    const meeste =
+        [...wedstrijden].sort((a,b) => {
+
+            const pa =
+                a.rnbThuis
+                    ? a.puntenThuis
+                    : a.puntenUit;
+
+            const pb =
+                b.rnbThuis
+                    ? b.puntenThuis
+                    : b.puntenUit;
+
+            return pb - pa;
+
+        })[0];
+
+    const meesteRNB =
+        meeste.rnbThuis
+            ? meeste.puntenThuis
+            : meeste.puntenUit;
+
+    const meesteTegen =
+        meeste.rnbThuis
+            ? meeste.uit
+            : meeste.thuis;
+
+    document.getElementById("meestePunten").textContent =
+        `${meesteRNB} punten`;
+
+    document.getElementById("meestePuntenExtra").textContent =
+        `tegen ${meesteTegen}
+         — ${datumNL(meeste.datum)}`;
+
+
+    /* Punten per tegenstander */
+
+    const tegenstanders = {};
+
+    wedstrijden.forEach(w => {
+
+        const tegen =
+            w.rnbThuis ? w.uit : w.thuis;
+
+        const punten =
+            w.rnbThuis
+                ? w.puntenThuis
+                : w.puntenUit;
+
+        if (!tegenstanders[tegen])
+            tegenstanders[tegen] = 0;
+
+        tegenstanders[tegen] += punten;
+    });
+
+    const lijst =
+        Object.entries(tegenstanders);
+
+    if (lijst.length) {
+
+        lijst.sort((a,b) => b[1] - a[1]);
+
+        const max = lijst[0];
+        const min = lijst[lijst.length - 1];
+
+        document.getElementById("meesteTegenstander").textContent =
+            `${max[1]} punten`;
+
+        document.getElementById("meesteTegenstanderExtra").textContent =
+            `tegen ${max[0]}`;
+
+        document.getElementById("minsteTegenstander").textContent =
+            `${min[1]} punten`;
+
+        document.getElementById("minsteTegenstanderExtra").textContent =
+            `tegen ${min[0]}`;
+    }
+}
+
+
+/* ============================================================
+   KEGELS STATISTIEKEN
+   ============================================================ */
+
+function berekenKegelStatistieken() {
+
+    const wedstrijden = rnbWedstrijden();
+
+    if (!wedstrijden.length)
+        return;
+
+
+    /* Hoogste RNB score */
+
+    const hoogste =
+        [...wedstrijden].sort((a,b) => {
+
+            const aScore =
+                a.rnbThuis
+                    ? a.kegelsThuis
+                    : a.kegelsUit;
+
+            const bScore =
+                b.rnbThuis
+                    ? b.kegelsThuis
+                    : b.kegelsUit;
+
+            return bScore - aScore;
+
+        })[0];
+
+    const hoogsteKegels =
+        hoogste.rnbThuis
+            ? hoogste.kegelsThuis
+            : hoogste.kegelsUit;
+
+    const hoogsteGem =
+        hoogsteKegels / 15;
+
+    const hoogsteTegen =
+        hoogste.rnbThuis
+            ? hoogste.uit
+            : hoogste.thuis;
+
+    document.getElementById("hoogsteScore").textContent =
+        `${hoogsteKegels} kegels`;
+
+    document.getElementById("hoogsteScoreExtra").textContent =
+        `gem. ${hoogsteGem.toFixed(1)}
+         — tegen ${hoogsteTegen}
+         (${datumNL(hoogste.datum)})`;
+
+
+    /* Grootste kegelsverschil */
+
+    const grootste =
+        [...wedstrijden].sort((a,b) => {
+
+            const va =
+                Math.abs(a.kegelsThuis - a.kegelsUit);
+
+            const vb =
+                Math.abs(b.kegelsThuis - b.kegelsUit);
+
+            return vb - va;
+
+        })[0];
+
+    const grootsteVerschil =
+        Math.abs(
+            grootste.kegelsThuis -
+            grootste.kegelsUit
+        );
+
+    document.getElementById("grootsteKegelVerschil").textContent =
+        `${grootsteVerschil} kegels`;
+
+    document.getElementById("grootsteKegelVerschilExtra").textContent =
+        `tegen ${grootste.rnbThuis
+            ? grootste.uit
+            : grootste.thuis}
+         (${datumNL(grootste.datum)})`;
+
+
+    /* Kleinste kegelsverschil */
+
+    const kleinste =
+        [...wedstrijden].sort((a,b) => {
+
+            const va =
+                Math.abs(a.kegelsThuis - a.kegelsUit);
+
+            const vb =
+                Math.abs(b.kegelsThuis - b.kegelsUit);
+
+            return va - vb;
+
+        })[0];
+
+    const kleinsteVerschil =
+        Math.abs(
+            kleinste.kegelsThuis -
+            kleinste.kegelsUit
+        );
+
+    document.getElementById("kleinsteKegelVerschil").textContent =
+        `${kleinsteVerschil} kegels`;
+
+    document.getElementById("kleinsteKegelVerschilExtra").textContent =
+        `tegen ${kleinste.rnbThuis
+            ? kleinste.uit
+            : kleinste.thuis}
+         (${datumNL(kleinste.datum)})`;
+
+
+    /* Hoogste gemiddelde */
+
+    const hoogsteGemWedstrijd =
+        [...wedstrijden].sort((a,b) => {
+
+            const ga =
+                (a.rnbThuis
+                    ? a.kegelsThuis
+                    : a.kegelsUit) / 15;
+
+            const gb =
+                (b.rnbThuis
+                    ? b.kegelsThuis
+                    : b.kegelsUit) / 15;
+
+            return gb - ga;
+
+        })[0];
+
+    const hgKegels =
+        hoogsteGemWedstrijd.rnbThuis
+            ? hoogsteGemWedstrijd.kegelsThuis
+            : hoogsteGemWedstrijd.kegelsUit;
+
+    document.getElementById("hoogsteGemiddelde").textContent =
+        `${(hgKegels / 15).toFixed(1)}`;
+
+    document.getElementById("hoogsteGemiddeldeExtra").textContent =
+        `tegen ${hoogsteGemWedstrijd.rnbThuis
+            ? hoogsteGemWedstrijd.uit
+            : hoogsteGemWedstrijd.thuis}
+         (${datumNL(hoogsteGemWedstrijd.datum)})`;
+
+
+    /* Laagste gemiddelde */
+
+    const laagsteGemWedstrijd =
+        [...wedstrijden].sort((a,b) => {
+
+            const ga =
+                (a.rnbThuis
+                    ? a.kegelsThuis
+                    : a.kegelsUit) / 15;
+
+            const gb =
+                (b.rnbThuis
+                    ? b.kegelsThuis
+                    : b.kegelsUit) / 15;
+
+            return ga - gb;
+
+        })[0];
+
+    const lgKegels =
+        laagsteGemWedstrijd.rnbThuis
+            ? laagsteGemWedstrijd.kegelsThuis
+            : laagsteGemWedstrijd.kegelsUit;
+
+    document.getElementById("laagsteGemiddelde").textContent =
+        `${(lgKegels / 15).toFixed(1)}`;
+
+    document.getElementById("laagsteGemiddeldeExtra").textContent =
+        `tegen ${laagsteGemWedstrijd.rnbThuis
+            ? laagsteGemWedstrijd.uit
+            : laagsteGemWedstrijd.thuis}
+         (${datumNL(laagsteGemWedstrijd.datum)})`;
+}
+
+
+/* ============================================================
+   RANGSCHIKKING OP BASIS VAN CUMULATIEVE PUNTEN
+   ============================================================ */
+
+function rangschikkingOpDatum(datum) {
+
+    const teams = {};
+
+    alleScores
+        .filter(r => r.speeldatum <= datum)
+        .forEach(r => {
+
+            if (!teams[r.ploeg]) {
+                teams[r.ploeg] = {
+                    ploeg: r.ploeg,
+                    punten: 0,
+                    kegels: 0
+                };
+            }
+
+            teams[r.ploeg].punten += Number(r.punten);
+            teams[r.ploeg].kegels += Number(r.kegels);
+        });
+
+    const lijst =
+        Object.values(teams);
+
+    lijst.sort((a,b) => {
+
+        if (b.punten !== a.punten)
+            return b.punten - a.punten;
+
+        return b.kegels - a.kegels;
+    });
+
+    return lijst;
+}
+
+
+/* ============================================================
+   POSITIE STATISTIEKEN
+   ============================================================ */
+
+function berekenPosities() {
+
+    const posities = [];
+
+    SPEELDATUMS.forEach(datum => {
+
+        const rang =
+            rangschikkingOpDatum(datum);
+
+        const positie =
+            rang.findIndex(t => t.ploeg === RNB) + 1;
+
+        if (positie > 0) {
+
+            posities.push({
+                datum,
+                positie
+            });
+
+        }
+    });
+
+    if (!posities.length)
+        return;
+
+
+    const hoogste =
+        [...posities].sort((a,b) =>
+            a.positie - b.positie
+        )[0];
+
+    const laagste =
+        [...posities].sort((a,b) =>
+            b.positie - a.positie
+        )[0];
+
+
+    document.getElementById("hoogstePositie").textContent =
+        `${hoogste.positie}e plaats`;
+
+    document.getElementById("hoogstePositieExtra").textContent =
+        datumNL(hoogste.datum);
+
+
+    document.getElementById("laagstePositie").textContent =
+        `${laagste.positie}e plaats`;
+
+    document.getElementById("laagstePositieExtra").textContent =
+        datumNL(laagste.datum);
+}
+
+
+/* ============================================================
+   AANTALLEN
+   ============================================================ */
+
+function berekenAantallen() {
+
+    const wedstrijden = rnbWedstrijden();
+
+    const thuis =
+        wedstrijden.filter(w => w.rnbThuis);
+
+    const uit =
+        wedstrijden.filter(w => !w.rnbThuis);
+
+
+    function gewonnen(w) {
+
+        const rnb =
+            w.rnbThuis
+                ? w.puntenThuis
+                : w.puntenUit;
+
+        const tegen =
+            w.rnbThuis
+                ? w.puntenUit
+                : w.puntenThuis;
+
+        return rnb > tegen;
+    }
+
+
+    const thuisGewonnen =
+        thuis.filter(gewonnen).length;
+
+    const uitGewonnen =
+        uit.filter(gewonnen).length;
+
+    const totaalGewonnen =
+        wedstrijden.filter(gewonnen).length;
+
+
+    const percentage =
+        (aantal, totaal) =>
+            totaal
+                ? Math.round((aantal / totaal) * 100)
+                : 0;
+
+
+    document.getElementById("thuis").textContent =
+        `${thuisGewonnen} / ${thuis.length}
+         (${percentage(thuisGewonnen, thuis.length)}%)`;
+
+
+    document.getElementById("uit").textContent =
+        `${uitGewonnen} / ${uit.length}
+         (${percentage(uitGewonnen, uit.length)}%)`;
+
+
+    document.getElementById("totaal").textContent =
+        `${totaalGewonnen} / ${wedstrijden.length}
+         (${percentage(totaalGewonnen, wedstrijden.length)}%)`;
+
+
+    const heen =
+        wedstrijden.filter(w =>
+            SPEELDATUMS.indexOf(w.datum) < 11
+        ).length;
+
+    const terug =
+        wedstrijden.filter(w =>
+            SPEELDATUMS.indexOf(w.datum) >= 11
+        ).length;
+
+
+    document.getElementById("heen").textContent =
+        `${heen} / 11
+         (${percentage(heen,11)}%)`;
+
+
+    document.getElementById("terug").textContent =
+        `${terug} / 11
+         (${percentage(terug,11)}%)`;
+}
+
+
+/* ============================================================
+   ALLE STATISTIEKEN
+   ============================================================ */
+
+function berekenStatistieken() {
+
+    berekenPuntenStatistieken();
+    berekenKegelStatistieken();
+    berekenAantallen();
+    berekenPosities();
+}
+
+
+/* ============================================================
+   START
+   ============================================================ */
+
+laadData();
+
+</script>
+
+</body>
+</html>
+```
