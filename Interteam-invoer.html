@@ -3,11 +3,8 @@
 <html lang="nl">
 
 <head>
-
 <meta charset="UTF-8">
-
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Rollbowl - Interteam Invoer</title>
 
@@ -73,6 +70,20 @@ select {
 }
 
 
+/* INFO */
+
+.info-box {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 8px;
+    background: #eef6ff;
+    border: 1px solid #c8def5;
+    color: #174ea6;
+    font-size: 14px;
+    text-align: center;
+}
+
+
 /* STATUS */
 
 .status {
@@ -104,66 +115,66 @@ select {
 }
 
 
-/* TABEL */
+/* WEDSTRIJD */
 
-.table-wrapper {
-    width: 100%;
-    overflow-x: auto;
+.match {
+    margin-top: 18px;
+    border: 1px solid #d7d7d7;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
 }
 
-.header,
-.team {
+.match-header {
     display: grid;
-
-    grid-template-columns:
-        minmax(280px, 1fr)
-        150px
-        130px
-        100px;
-
+    grid-template-columns: 1fr 80px 80px;
     gap: 10px;
     align-items: center;
-}
-
-.header {
-    margin-top: 15px;
     padding: 10px 12px;
+    background: #f0f0f0;
     font-weight: bold;
-    border-bottom: 2px solid #333;
+    border-bottom: 1px solid #ddd;
 }
 
-.team {
+.match-title {
+    font-size: 15px;
+}
+
+.match-title .vs {
+    font-weight: normal;
+    color: #666;
+    padding: 0 5px;
+}
+
+.team-row {
+    display: grid;
+    grid-template-columns: 1fr 80px 80px;
+    gap: 10px;
+    align-items: center;
     padding: 10px 12px;
-    margin-top: 7px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background: #fafafa;
+    border-bottom: 1px solid #eee;
 }
 
-.team.saved {
-    background: #edf8ef;
-    border-color: #8bc995;
-}
-
-.team.invalid {
-    background: #ffeaea;
-    border-color: #d93025;
+.team-row:last-child {
+    border-bottom: none;
 }
 
 .team-name {
     font-weight: bold;
 }
 
-.team-number {
-    display: inline-block;
-    min-width: 28px;
-    color: #666;
+.team-name.home::before {
+    content: "🏠 ";
+}
+
+.team-name.away::before {
+    content: "   ";
 }
 
 input[type="number"] {
     width: 100%;
-    padding: 10px;
-    font-size: 16px;
+    padding: 9px 5px;
+    font-size: 15px;
     border: 1px solid #bbb;
     border-radius: 6px;
     text-align: center;
@@ -179,24 +190,26 @@ input.invalid-input {
 }
 
 
-/* RIJ STATUS */
+/* RNB */
 
-.row-status {
-    text-align: center;
-    font-size: 14px;
+.rnb-row {
+    background: #fffbe0;
+}
+
+input.auto-kegels {
+    background: #eeeeee;
+    border-color: #aaa;
     font-weight: bold;
+    color: #333;
+    cursor: not-allowed;
 }
 
-.row-status.saved {
-    color: #137333;
-}
-
-.row-status.empty {
-    color: #777;
-}
-
-.row-status.invalid {
-    color: #d93025;
+.rnb-label {
+    display: block;
+    font-size: 11px;
+    color: #8a5a00;
+    font-weight: normal;
+    margin-top: 3px;
 }
 
 
@@ -228,9 +241,35 @@ button {
 }
 
 
+/* PUNTENTOTAAL */
+
+.total-box {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+}
+
+.total-ok {
+    background: #e6f4ea;
+    color: #137333;
+    border-color: #8bc995;
+}
+
+.total-error {
+    background: #fce8e6;
+    color: #b00020;
+    border-color: #e57373;
+}
+
+
 /* MOBIEL */
 
-@media (max-width: 700px) {
+@media (max-width: 600px) {
 
     body {
         padding: 7px;
@@ -245,81 +284,42 @@ button {
         font-size: 23px;
     }
 
-    .header,
-    .team {
-        grid-template-columns:
-            minmax(150px, 1fr)
-            90px
-            75px
-            65px;
-
+    .match-header,
+    .team-row {
+        grid-template-columns: minmax(150px, 1fr) 65px 65px;
         gap: 5px;
-    }
-
-    .header {
-        font-size: 13px;
-        padding: 8px 5px;
-    }
-
-    .team {
-        padding: 8px 5px;
+        padding: 8px 6px;
     }
 
     .team-name {
         font-size: 13px;
     }
 
-    input[type="number"] {
-        padding: 8px 4px;
-        font-size: 14px;
-    }
-
-    .row-status {
-        font-size: 11px;
-    }
-
-}
-
-
-@media (max-width: 450px) {
-
-    .header,
-    .team {
-        grid-template-columns:
-            minmax(125px, 1fr)
-            75px
-            65px
-            55px;
-    }
-
-    .team-name {
-        font-size: 12px;
+    .match-title {
+        font-size: 13px;
     }
 
     input[type="number"] {
+        padding: 8px 3px;
         font-size: 13px;
     }
 
 }
 
 </style>
-
 </head>
 
 
 <body>
 
-
 <div class="container">
 
-
-<h1>🎳 Interteam Scores</h1>
+<h1>🎳 Interteam Scores invullen</h1>
 
 
 <!-- SPEELDATUM -->
 
 <h2>Speeldatum</h2>
-
 
 <div class="datum-box">
 
@@ -327,10 +327,7 @@ button {
     Kies de speeldatum:
 </label>
 
-
-<select
-    id="speeldatum"
-    onchange="laadScores()">
+<select id="speeldatum" onchange="laadScores()">
 
     <option value="2026-09-04">04/09/2026</option>
     <option value="2026-09-11">11/09/2026</option>
@@ -360,37 +357,35 @@ button {
 </div>
 
 
-<!-- STATUS -->
+<div class="info-box">
 
-<div
-    id="status"
-    class="status info">
+🎳 <strong>RNB Geenens Construct-Vapor</strong>:
+de kegels worden automatisch berekend uit de 5 spelers × 3 games.
 
-    Ploegen worden geladen...
+<br><br>
 
-</div>
-
-
-<h2>Scores per ploeg</h2>
-
-
-<!-- TABEL -->
-
-<div class="table-wrapper">
-
-
-<div class="header">
-
-    <div>Ploeg</div>
-    <div>Kegels</div>
-    <div>Punten</div>
-    <div>Status</div>
+De wedstrijden worden hieronder weergegeven
+in exact dezelfde volgorde als de kalender.
 
 </div>
 
 
-<div id="ploegen"></div>
+<div id="status" class="status info">
+    Scores worden geladen...
+</div>
 
+
+<h2>Wedstrijden</h2>
+
+
+<div id="wedstrijden"></div>
+
+
+<!-- TOTAAL -->
+
+<div id="totaalBox" class="total-box">
+
+    Totaal punten: 0 / 186
 
 </div>
 
@@ -410,7 +405,6 @@ button {
 </div>
 
 
-
 <script>
 
 
@@ -421,10 +415,8 @@ button {
 const SUPABASE_URL =
     "https://wnsvbtskynkewxggmjem.supabase.co";
 
-
 const SUPABASE_KEY =
     "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
-
 
 const supabaseClient =
     supabase.createClient(
@@ -441,12 +433,225 @@ const MAX_PUNTEN = 31;
 
 const TOTAAL_PUNTEN = 186;
 
+const AANTAL_RNB_SPELERS = 5;
+
+const AANTAL_GAMES_PER_SPELER = 3;
+
+const TOTAAL_RNB_GAMES =
+    AANTAL_RNB_SPELERS *
+    AANTAL_GAMES_PER_SPELER;
+
+const RNB =
+    "RNB Geenens Construct-Vapor";
+
 
 // =====================================================
-// PLOEGEN
+// WEDSTRIJDEN / KALENDER
+// Eerste ploeg = thuis
+// Tweede ploeg = uit
 // =====================================================
 
-let ploegen = [];
+const WEDSTRIJDEN = {
+
+"2026-09-04": [
+["BC Ajuin","DCG Yok Tha"],
+["BC Ledeganck 2 Burtline","LAT Esento"],
+["TSZ Bieshoop","FLP ALLCORE IT"],
+["RNB Geenens Construct-Vapor","FLP Argenta Hamme"],
+["Royal Ghent 3","Stene - Pleisterwerken Delrue JP"],
+["Oilsjt 2 Yok Tha","Wuitens"]
+],
+
+"2026-09-11": [
+["FLP ALLCORE IT","BC Ajuin"],
+["Stene - Pleisterwerken Delrue JP","FLP Argenta Hamme"],
+["LAT Esento","Royal Ghent 3"],
+["Wuitens","DCG Yok Tha"],
+["Oilsjt 2 Yok Tha","TSZ Bieshoop"],
+["RNB Geenens Construct-Vapor","BC Ledeganck 2 Burtline"]
+],
+
+"2026-09-18": [
+["Royal Ghent 3","FLP ALLCORE IT"],
+["FLP Argenta Hamme","Wuitens"],
+["DCG Yok Tha","LAT Esento"],
+["BC Ajuin","Stene - Pleisterwerken Delrue JP"],
+["TSZ Bieshoop","RNB Geenens Construct-Vapor"],
+["BC Ledeganck 2 Burtline","Oilsjt 2 Yok Tha"]
+],
+
+"2026-09-25": [
+["Royal Ghent 3","RNB Geenens Construct-Vapor"],
+["Wuitens","BC Ajuin"],
+["FLP Argenta Hamme","BC Ledeganck 2 Burtline"],
+["Oilsjt 2 Yok Tha","LAT Esento"],
+["Stene - Pleisterwerken Delrue JP","TSZ Bieshoop"],
+["FLP ALLCORE IT","DCG Yok Tha"]
+],
+
+"2026-10-02": [
+["BC Ledeganck 2 Burtline","FLP ALLCORE IT"],
+["LAT Esento","FLP Argenta Hamme"],
+["RNB Geenens Construct-Vapor","Stene - Pleisterwerken Delrue JP"],
+["DCG Yok Tha","Oilsjt 2 Yok Tha"],
+["BC Ajuin","Royal Ghent 3"],
+["TSZ Bieshoop","Wuitens"]
+],
+
+"2026-10-09": [
+["FLP Argenta Hamme","FLP ALLCORE IT"],
+["LAT Esento","Wuitens"],
+["Stene - Pleisterwerken Delrue JP","DCG Yok Tha"],
+["Oilsjt 2 Yok Tha","Royal Ghent 3"],
+["BC Ajuin","RNB Geenens Construct-Vapor"],
+["TSZ Bieshoop","BC Ledeganck 2 Burtline"]
+],
+
+"2026-10-16": [
+["FLP ALLCORE IT","LAT Esento"],
+["FLP Argenta Hamme","Oilsjt 2 Yok Tha"],
+["Wuitens","Stene - Pleisterwerken Delrue JP"],
+["BC Ledeganck 2 Burtline","BC Ajuin"],
+["DCG Yok Tha","RNB Geenens Construct-Vapor"],
+["Royal Ghent 3","TSZ Bieshoop"]
+],
+
+"2026-11-20": [
+["Stene - Pleisterwerken Delrue JP","FLP ALLCORE IT"],
+["Royal Ghent 3","FLP Argenta Hamme"],
+["RNB Geenens Construct-Vapor","LAT Esento"],
+["BC Ajuin","Oilsjt 2 Yok Tha"],
+["Wuitens","BC Ledeganck 2 Burtline"],
+["DCG Yok Tha","TSZ Bieshoop"]
+],
+
+"2026-11-27": [
+["FLP Argenta Hamme","DCG Yok Tha"],
+["LAT Esento","Stene - Pleisterwerken Delrue JP"],
+["BC Ledeganck 2 Burtline","Royal Ghent 3"],
+["Oilsjt 2 Yok Tha","RNB Geenens Construct-Vapor"],
+["TSZ Bieshoop","BC Ajuin"],
+["FLP ALLCORE IT","Wuitens"]
+],
+
+"2026-12-04": [
+["LAT Esento","BC Ajuin"],
+["Wuitens","Royal Ghent 3"],
+["FLP ALLCORE IT","RNB Geenens Construct-Vapor"],
+["FLP Argenta Hamme","TSZ Bieshoop"],
+["Stene - Pleisterwerken Delrue JP","Oilsjt 2 Yok Tha"],
+["DCG Yok Tha","BC Ledeganck 2 Burtline"]
+],
+
+"2026-12-11": [
+["Royal Ghent 3","DCG Yok Tha"],
+["BC Ajuin","FLP Argenta Hamme"],
+["BC Ledeganck 2 Burtline","Stene - Pleisterwerken Delrue JP"],
+["Oilsjt 2 Yok Tha","FLP ALLCORE IT"],
+["RNB Geenens Construct-Vapor","Wuitens"],
+["TSZ Bieshoop","LAT Esento"]
+],
+
+"2027-01-15": [
+["DCG Yok Tha","BC Ajuin"],
+["LAT Esento","BC Ledeganck 2 Burtline"],
+["FLP ALLCORE IT","TSZ Bieshoop"],
+["FLP Argenta Hamme","RNB Geenens Construct-Vapor"],
+["Stene - Pleisterwerken Delrue JP","Royal Ghent 3"],
+["Wuitens","Oilsjt 2 Yok Tha"]
+],
+
+"2027-01-22": [
+["BC Ajuin","FLP ALLCORE IT"],
+["FLP Argenta Hamme","Stene - Pleisterwerken Delrue JP"],
+["Royal Ghent 3","LAT Esento"],
+["DCG Yok Tha","Wuitens"],
+["TSZ Bieshoop","Oilsjt 2 Yok Tha"],
+["BC Ledeganck 2 Burtline","RNB Geenens Construct-Vapor"]
+],
+
+"2027-01-29": [
+["FLP ALLCORE IT","Royal Ghent 3"],
+["Wuitens","FLP Argenta Hamme"],
+["LAT Esento","DCG Yok Tha"],
+["Stene - Pleisterwerken Delrue JP","BC Ajuin"],
+["RNB Geenens Construct-Vapor","TSZ Bieshoop"],
+["Oilsjt 2 Yok Tha","BC Ledeganck 2 Burtline"]
+],
+
+"2027-02-19": [
+["RNB Geenens Construct-Vapor","Royal Ghent 3"],
+["BC Ajuin","Wuitens"],
+["BC Ledeganck 2 Burtline","FLP Argenta Hamme"],
+["LAT Esento","Oilsjt 2 Yok Tha"],
+["TSZ Bieshoop","Stene - Pleisterwerken Delrue JP"],
+["DCG Yok Tha","FLP ALLCORE IT"]
+],
+
+"2027-02-26": [
+["FLP ALLCORE IT","BC Ledeganck 2 Burtline"],
+["FLP Argenta Hamme","LAT Esento"],
+["Stene - Pleisterwerken Delrue JP","RNB Geenens Construct-Vapor"],
+["Oilsjt 2 Yok Tha","DCG Yok Tha"],
+["Royal Ghent 3","BC Ajuin"],
+["Wuitens","TSZ Bieshoop"]
+],
+
+"2027-03-19": [
+["FLP ALLCORE IT","FLP Argenta Hamme"],
+["Wuitens","LAT Esento"],
+["DCG Yok Tha","Stene - Pleisterwerken Delrue JP"],
+["Royal Ghent 3","Oilsjt 2 Yok Tha"],
+["RNB Geenens Construct-Vapor","BC Ajuin"],
+["BC Ledeganck 2 Burtline","TSZ Bieshoop"]
+],
+
+"2027-03-26": [
+["LAT Esento","FLP ALLCORE IT"],
+["Oilsjt 2 Yok Tha","FLP Argenta Hamme"],
+["Stene - Pleisterwerken Delrue JP","Wuitens"],
+["BC Ajuin","BC Ledeganck 2 Burtline"],
+["RNB Geenens Construct-Vapor","DCG Yok Tha"],
+["TSZ Bieshoop","Royal Ghent 3"]
+],
+
+"2027-04-16": [
+["FLP ALLCORE IT","Stene - Pleisterwerken Delrue JP"],
+["FLP Argenta Hamme","Royal Ghent 3"],
+["LAT Esento","RNB Geenens Construct-Vapor"],
+["Oilsjt 2 Yok Tha","BC Ajuin"],
+["BC Ledeganck 2 Burtline","Wuitens"],
+["TSZ Bieshoop","DCG Yok Tha"]
+],
+
+"2027-04-23": [
+["DCG Yok Tha","FLP Argenta Hamme"],
+["Stene - Pleisterwerken Delrue JP","LAT Esento"],
+["Royal Ghent 3","BC Ledeganck 2 Burtline"],
+["RNB Geenens Construct-Vapor","Oilsjt 2 Yok Tha"],
+["BC Ajuin","TSZ Bieshoop"],
+["Wuitens","FLP ALLCORE IT"]
+],
+
+"2027-05-07": [
+["BC Ajuin","LAT Esento"],
+["Royal Ghent 3","Wuitens"],
+["RNB Geenens Construct-Vapor","FLP ALLCORE IT"],
+["TSZ Bieshoop","FLP Argenta Hamme"],
+["Oilsjt 2 Yok Tha","Stene - Pleisterwerken Delrue JP"],
+["BC Ledeganck 2 Burtline","DCG Yok Tha"]
+],
+
+"2027-05-14": [
+["DCG Yok Tha","Royal Ghent 3"],
+["FLP Argenta Hamme","BC Ajuin"],
+["Stene - Pleisterwerken Delrue JP","BC Ledeganck 2 Burtline"],
+["FLP ALLCORE IT","Oilsjt 2 Yok Tha"],
+["Wuitens","RNB Geenens Construct-Vapor"],
+["LAT Esento","TSZ Bieshoop"]
+]
+
+};
 
 
 // =====================================================
@@ -464,7 +669,19 @@ function normaliseerNaam(naam) {
 
 
 // =====================================================
-// STATUSMELDING
+// IS RNB?
+// =====================================================
+
+function isRNB(naam) {
+
+    return normaliseerNaam(naam) ===
+           normaliseerNaam(RNB);
+
+}
+
+
+// =====================================================
+// STATUS
 // =====================================================
 
 function statusMelding(
@@ -473,19 +690,10 @@ function statusMelding(
 ) {
 
     const element =
-        document.getElementById(
-            "status"
-        );
-
-
-    if (!element) {
-        return;
-    }
-
+        document.getElementById("status");
 
     element.innerText =
         tekst;
-
 
     element.className =
         "status " + type;
@@ -494,176 +702,395 @@ function statusMelding(
 
 
 // =====================================================
-// PLOEGEN LADEN
+// RNB KEGELS BEREKENEN
 // =====================================================
 
-async function laadPloegen() {
+async function berekenRNBKegels(
+    datum
+) {
 
-    statusMelding(
-        "Ploegen worden geladen...",
-        "info"
-    );
+    const {
+        data,
+        error
+    } = await supabaseClient
 
-
-    const { data, error } =
-        await supabaseClient
-
-        .from(
-            "Interteams 2026-2027 afdeling 3A"
-        )
+        .from("bowling_scores")
 
         .select(
-            "id, ploeg, actief"
+            "speeldatum, speler, game1, game2, game3"
         )
 
         .eq(
-            "actief",
-            true
-        )
-
-        .order(
-            "id",
-            {
-                ascending: true
-            }
+            "speeldatum",
+            datum
         );
 
 
     if (error) {
 
         console.error(
-            "Fout bij laden ploegen:",
             error
         );
 
-
-        statusMelding(
-            "❌ Fout bij laden van de ploegen.",
-            "error"
-        );
-
-
-        return;
+        return {
+            success: false,
+            kegels: null,
+            spelers: 0,
+            games: 0
+        };
 
     }
 
 
-    ploegen =
+    const scores =
         data || [];
 
 
-    if (
-        ploegen.length === 0
-    ) {
+    let totaal =
+        0;
 
-        statusMelding(
-            "⚠️ Geen actieve ploegen gevonden.",
-            "warning"
-        );
+    let games =
+        0;
 
 
-        return;
+    scores.forEach(
+        speler => {
 
-    }
+            [
+                speler.game1,
+                speler.game2,
+                speler.game3
+            ].forEach(
+                game => {
+
+                    if (
+                        game !== null &&
+                        game !== undefined &&
+                        game !== ""
+                    ) {
+
+                        const waarde =
+                            Number(game);
+
+                        if (
+                            Number.isFinite(
+                                waarde
+                            )
+                        ) {
+
+                            totaal +=
+                                waarde;
+
+                            games++;
+
+                        }
+
+                    }
+
+                }
+            );
+
+        }
+    );
 
 
-    toonPloegen();
+    const volledig =
+        scores.length ===
+        AANTAL_RNB_SPELERS &&
+        games ===
+        TOTAAL_RNB_GAMES;
 
 
-    await laadScores();
+    return {
+
+        success:
+            volledig,
+
+        kegels:
+            volledig
+                ? totaal
+                : null,
+
+        spelers:
+            scores.length,
+
+        games:
+            games
+
+    };
 
 }
 
 
 // =====================================================
-// PLOEGEN TONEN
+// WEDSTRIJDEN TONEN
 // =====================================================
 
-function toonPloegen() {
+function toonWedstrijden(
+    datum,
+    opgeslagenScores = []
+) {
 
     const container =
         document.getElementById(
-            "ploegen"
+            "wedstrijden"
         );
 
 
-    if (!container) {
-        return;
-    }
+    container.innerHTML =
+        "";
 
 
-    container.innerHTML = "";
+    const wedstrijden =
+        WEDSTRIJDEN[datum] || [];
 
 
-    ploegen.forEach(
-        (ploeg, index) => {
+    wedstrijden.forEach(
+        (wedstrijd, wedstrijdIndex) => {
 
-            const rij =
+            const thuis =
+                wedstrijd[0];
+
+            const uit =
+                wedstrijd[1];
+
+
+            const thuisScore =
+                vindScore(
+                    opgeslagenScores,
+                    thuis
+                );
+
+
+            const uitScore =
+                vindScore(
+                    opgeslagenScores,
+                    uit
+                );
+
+
+            const match =
                 document.createElement(
                     "div"
                 );
 
 
-            rij.className =
-                "team";
+            match.className =
+                "match";
 
 
-            rij.id =
-                "team-" +
-                ploeg.id;
+            match.innerHTML = `
 
+                <div class="match-header">
 
-            rij.innerHTML = `
+                    <div class="match-title">
 
-                <div class="team-name">
+                        ${wedstrijdIndex + 1}.
+                        ${escapeHtml(thuis)}
 
-                    <span class="team-number">
-                        ${index + 1}.
-                    </span>
+                        <span class="vs">
+                            tegen
+                        </span>
 
-                    ${escapeHtml(
-                        ploeg.ploeg
-                    )}
+                        ${escapeHtml(uit)}
 
-                </div>
+                    </div>
 
+                    <div>Kegels</div>
 
-                <input
-                    type="number"
-                    min="0"
-                    id="kegels-${ploeg.id}"
-                    placeholder="Kegels"
-                    oninput="controleerRij(${ploeg.id})"
-                >
-
-
-                <input
-                    type="number"
-                    min="0"
-                    max="31"
-                    id="punten-${ploeg.id}"
-                    placeholder="0 - 31"
-                    oninput="controleerRij(${ploeg.id})"
-                >
-
-
-                <div
-                    class="row-status empty"
-                    id="status-${ploeg.id}">
-
-                    Niet ingevuld
+                    <div>Punten</div>
 
                 </div>
+
+
+                ${maakTeamRij(
+                    thuis,
+                    thuisScore,
+                    "home",
+                    wedstrijdIndex,
+                    "thuis"
+                )}
+
+
+                ${maakTeamRij(
+                    uit,
+                    uitScore,
+                    "away",
+                    wedstrijdIndex,
+                    "uit"
+                )}
 
             `;
 
 
             container.appendChild(
-                rij
+                match
             );
 
         }
     );
+
+
+    updateTotaal();
+
+}
+
+
+// =====================================================
+// TEAM RIJ MAKEN
+// =====================================================
+
+function maakTeamRij(
+    ploeg,
+    score,
+    positie,
+    wedstrijdIndex,
+    kant
+) {
+
+    const rnb =
+        isRNB(
+            ploeg
+        );
+
+
+    const id =
+        maakId(
+            wedstrijdIndex,
+            kant
+        );
+
+
+    const kegelsWaarde =
+        rnb
+            ? ""
+            : (
+                score &&
+                score.kegels !== null &&
+                score.kegels !== undefined
+                    ? score.kegels
+                    : ""
+            );
+
+
+    const puntenWaarde =
+        score &&
+        score.punten !== null &&
+        score.punten !== undefined
+            ? score.punten
+            : "";
+
+
+    return `
+
+        <div
+            class="team-row ${
+                rnb ? "rnb-row" : ""
+            }">
+
+            <div class="team-name ${positie}">
+
+                ${escapeHtml(ploeg)}
+
+                ${
+                    rnb
+                        ? `
+                            <span class="rnb-label">
+                                Kegels automatisch uit spelersscores
+                            </span>
+                          `
+                        : ""
+                }
+
+            </div>
+
+
+            <input
+                type="number"
+                min="0"
+                id="kegels-${id}"
+                value="${kegelsWaarde}"
+                placeholder="${
+                    rnb
+                        ? "Auto"
+                        : "Kegels"
+                }"
+                class="${
+                    rnb
+                        ? "auto-kegels"
+                        : ""
+                }"
+                ${
+                    rnb
+                        ? "readonly"
+                        : ""
+                }
+                ${
+                    rnb
+                        ? ""
+                        : `oninput="updateTotaal()"`
+                }
+            >
+
+
+            <input
+                type="number"
+                min="0"
+                max="31"
+                id="punten-${id}"
+                value="${puntenWaarde}"
+                placeholder="0-31"
+                oninput="updateTotaal()"
+            >
+
+        </div>
+
+    `;
+
+}
+
+
+// =====================================================
+// ID MAKEN
+// =====================================================
+
+function maakId(
+    wedstrijdIndex,
+    kant
+) {
+
+    return (
+        wedstrijdIndex +
+        "-" +
+        kant
+    );
+
+}
+
+
+// =====================================================
+// SCORE VINDEN
+// =====================================================
+
+function vindScore(
+    scores,
+    ploeg
+) {
+
+    const naam =
+        normaliseerNaam(
+            ploeg
+        );
+
+
+    return (
+        scores || []
+    ).find(
+        score =>
+            normaliseerNaam(
+                score.ploeg
+            ) === naam
+    ) || null;
 
 }
 
@@ -673,13 +1100,6 @@ function toonPloegen() {
 // =====================================================
 
 async function laadScores() {
-
-    if (
-        ploegen.length === 0
-    ) {
-        return;
-    }
-
 
     const datum =
         document.getElementById(
@@ -693,81 +1113,12 @@ async function laadScores() {
     );
 
 
-    // Eerst alle velden leegmaken
+    const {
+        data,
+        error
+    } = await supabaseClient
 
-    ploegen.forEach(
-        ploeg => {
-
-            const kegels =
-                document.getElementById(
-                    "kegels-" +
-                    ploeg.id
-                );
-
-
-            const punten =
-                document.getElementById(
-                    "punten-" +
-                    ploeg.id
-                );
-
-
-            const rij =
-                document.getElementById(
-                    "team-" +
-                    ploeg.id
-                );
-
-
-            const status =
-                document.getElementById(
-                    "status-" +
-                    ploeg.id
-                );
-
-
-            if (kegels) {
-                kegels.value = "";
-            }
-
-
-            if (punten) {
-                punten.value = "";
-            }
-
-
-            if (rij) {
-
-                rij.classList.remove(
-                    "saved",
-                    "invalid"
-                );
-
-            }
-
-
-            if (status) {
-
-                status.innerText =
-                    "Niet ingevuld";
-
-                status.className =
-                    "row-status empty";
-
-            }
-
-        }
-    );
-
-
-    // Scores ophalen
-
-    const { data, error } =
-        await supabaseClient
-
-        .from(
-            "interteam_scores"
-        )
+        .from("interteam_scores")
 
         .select(
             "speeldatum, ploeg, kegels, punten"
@@ -782,13 +1133,12 @@ async function laadScores() {
     if (error) {
 
         console.error(
-            "Fout bij ophalen scores:",
             error
         );
 
 
         statusMelding(
-            "❌ Fout bij laden van de scores.",
+            "❌ Fout bij laden van scores.",
             "error"
         );
 
@@ -798,284 +1148,181 @@ async function laadScores() {
     }
 
 
-    console.log(
-        "Scores uit Supabase:",
-        data
+    // Eerst kalender tonen
+    toonWedstrijden(
+        datum,
+        data || []
     );
 
 
-    // Geen gegevens
-
-    if (
-        !data ||
-        data.length === 0
-    ) {
-
-        statusMelding(
-            datumNaarTekst(datum) +
-            ": nog geen scores ingevoerd.",
-            "warning"
+    // Daarna RNB automatisch berekenen
+    const rnb =
+        await berekenRNBKegels(
+            datum
         );
 
 
-        return;
+    if (
+        rnb.success
+    ) {
+
+        zetRNBKegels(
+            rnb.kegels
+        );
+
+
+        if (
+            data &&
+            data.length > 0
+        ) {
+
+            statusMelding(
+                datumNaarTekst(datum) +
+                ": scores geladen. RNB-kegels automatisch berekend.",
+                "success"
+            );
+
+        }
+        else {
+
+            statusMelding(
+                datumNaarTekst(datum) +
+                ": nieuwe invoer. RNB-kegels automatisch beschikbaar.",
+                "info"
+            );
+
+        }
+
+    }
+
+    else {
+
+        statusMelding(
+            datumNaarTekst(datum) +
+            ": RNB heeft " +
+            rnb.spelers +
+            "/5 spelers en " +
+            rnb.games +
+            "/15 games ingevuld.",
+            "warning"
+        );
 
     }
 
 
-    // Scores invullen
+    updateTotaal();
 
-    data.forEach(
-        score => {
-
-            const opgeslagenNaam =
-                normaliseerNaam(
-                    score.ploeg
-                );
+}
 
 
-            const ploeg =
-                ploegen.find(
-                    p =>
-                        normaliseerNaam(
-                            p.ploeg
-                        ) ===
-                        opgeslagenNaam
-                );
+// =====================================================
+// RNB KEGELS IN ALLE RNB-VELDEN ZETTEN
+// =====================================================
+
+function zetRNBKegels(
+    kegels
+) {
+
+    const velden =
+        document.querySelectorAll(
+            ".auto-kegels"
+        );
 
 
-            if (!ploeg) {
+    velden.forEach(
+        veld => {
 
-                console.warn(
-                    "Ploeg niet gevonden:",
-                    score.ploeg
-                );
-
-
-                return;
-
-            }
-
-
-            const kegels =
-                document.getElementById(
-                    "kegels-" +
-                    ploeg.id
-                );
-
-
-            const punten =
-                document.getElementById(
-                    "punten-" +
-                    ploeg.id
-                );
-
-
-            if (kegels) {
-
-                kegels.value =
-                    score.kegels ?? "";
-
-            }
-
-
-            if (punten) {
-
-                punten.value =
-                    score.punten ?? "";
-
-            }
-
-
-            const rij =
-                document.getElementById(
-                    "team-" +
-                    ploeg.id
-                );
-
-
-            const status =
-                document.getElementById(
-                    "status-" +
-                    ploeg.id
-                );
-
-
-            if (rij) {
-
-                rij.classList.add(
-                    "saved"
-                );
-
-            }
-
-
-            if (status) {
-
-                status.innerText =
-                    "✓ Opgeslagen";
-
-                status.className =
-                    "row-status saved";
-
-            }
+            veld.value =
+                kegels;
 
         }
-    );
-
-
-    statusMelding(
-        datumNaarTekst(datum) +
-        ": opgeslagen scores geladen.",
-        "success"
     );
 
 }
 
 
 // =====================================================
-// RIJ CONTROLEREN
+// TOTAAL PUNTEN
 // =====================================================
 
-function controleerRij(
-    id
-) {
+function updateTotaal() {
 
-    const kegels =
+    let totaal =
+        0;
+
+
+    document
+        .querySelectorAll(
+            'input[id^="punten-"]'
+        )
+        .forEach(
+            veld => {
+
+                if (
+                    veld.value !== ""
+                ) {
+
+                    const waarde =
+                        Number(
+                            veld.value
+                        );
+
+
+                    if (
+                        Number.isFinite(
+                            waarde
+                        )
+                    ) {
+
+                        totaal +=
+                            waarde;
+
+                    }
+
+                }
+
+            }
+        );
+
+
+    const box =
         document.getElementById(
-            "kegels-" +
-            id
+            "totaalBox"
         );
 
 
-    const punten =
-        document.getElementById(
-            "punten-" +
-            id
-        );
+    box.innerText =
+        "Totaal punten: " +
+        totaal +
+        " / " +
+        TOTAAL_PUNTEN;
 
 
-    const rij =
-        document.getElementById(
-            "team-" +
-            id
-        );
-
-
-    const status =
-        document.getElementById(
-            "status-" +
-            id
-        );
-
-
-    if (
-        !kegels ||
-        !punten ||
-        !rij ||
-        !status
-    ) {
-        return;
-    }
-
-
-    // Maximaal 31 punten
-
-    if (
-        punten.value !== "" &&
-        Number(punten.value) >
-        MAX_PUNTEN
-    ) {
-
-        punten.classList.add(
-            "invalid-input"
-        );
-
-
-        rij.classList.add(
-            "invalid"
-        );
-
-
-        rij.classList.remove(
-            "saved"
-        );
-
-
-        status.innerText =
-            "❌ Max. 31";
-
-
-        status.className =
-            "row-status invalid";
-
-
-        return;
-
-    }
-
-
-    punten.classList.remove(
-        "invalid-input"
-    );
-
-
-    rij.classList.remove(
-        "invalid"
+    box.classList.remove(
+        "total-ok",
+        "total-error"
     );
 
 
     if (
-        kegels.value !== "" &&
-        punten.value !== ""
+        totaal ===
+        TOTAAL_PUNTEN
     ) {
 
-        rij.classList.add(
-            "saved"
+        box.classList.add(
+            "total-ok"
         );
-
-
-        status.innerText =
-            "✓ Klaar";
-
-
-        status.className =
-            "row-status saved";
 
     }
 
     else if (
-        kegels.value !== "" ||
-        punten.value !== ""
+        totaal >
+        TOTAAL_PUNTEN
     ) {
 
-        rij.classList.remove(
-            "saved"
+        box.classList.add(
+            "total-error"
         );
-
-
-        status.innerText =
-            "⚠ Onvolledig";
-
-
-        status.className =
-            "row-status empty";
-
-    }
-
-    else {
-
-        rij.classList.remove(
-            "saved"
-        );
-
-
-        status.innerText =
-            "Niet ingevuld";
-
-
-        status.className =
-            "row-status empty";
 
     }
 
@@ -1094,126 +1341,31 @@ async function opslaan() {
         ).value;
 
 
-    let records = [];
+    // -------------------------------------------------
+    // RNB opnieuw rechtstreeks uit bowling_scores
+    // berekenen
+    // -------------------------------------------------
 
-    let fouten = [];
+    const rnb =
+        await berekenRNBKegels(
+            datum
+        );
 
-    let totaal = 0;
-
-
-    // Alle ploegen controleren
-
-    ploegen.forEach(
-        ploeg => {
-
-            const kegels =
-                document.getElementById(
-                    "kegels-" +
-                    ploeg.id
-                ).value;
-
-
-            const punten =
-                document.getElementById(
-                    "punten-" +
-                    ploeg.id
-                ).value;
-
-
-            if (
-                kegels === "" ||
-                punten === ""
-            ) {
-
-                fouten.push(
-                    ploeg.ploeg +
-                    ": niet volledig ingevuld."
-                );
-
-
-                return;
-
-            }
-
-
-            const kegelsGetal =
-                Number(kegels);
-
-
-            const puntenGetal =
-                Number(punten);
-
-
-            if (
-                !Number.isFinite(
-                    kegelsGetal
-                ) ||
-                kegelsGetal < 0
-            ) {
-
-                fouten.push(
-                    ploeg.ploeg +
-                    ": ongeldig aantal kegels."
-                );
-
-
-                return;
-
-            }
-
-
-            if (
-                !Number.isFinite(
-                    puntenGetal
-                ) ||
-                puntenGetal < 0 ||
-                puntenGetal > MAX_PUNTEN
-            ) {
-
-                fouten.push(
-                    ploeg.ploeg +
-                    ": maximaal 31 punten."
-                );
-
-
-                return;
-
-            }
-
-
-            totaal +=
-                puntenGetal;
-
-
-            records.push({
-
-                speeldatum:
-                    datum,
-
-                ploeg:
-                    ploeg.ploeg,
-
-                kegels:
-                    kegelsGetal,
-
-                punten:
-                    puntenGetal
-
-            });
-
-        }
-    );
-
-
-    // Invoerfouten
 
     if (
-        fouten.length > 0
+        !rnb.success
     ) {
 
         alert(
-            "❌ Controleer de invoer:\n\n" +
-            fouten.join("\n")
+            "❌ RNB kan niet worden opgeslagen.\n\n" +
+            "Voor " +
+            datumNaarTekst(datum) +
+            " zijn " +
+            rnb.spelers +
+            " van de 5 spelers gevonden en " +
+            rnb.games +
+            " van de 15 games ingevuld.\n\n" +
+            "Alle 5 spelers en alle 3 games per speler moeten ingevuld zijn."
         );
 
 
@@ -1222,49 +1374,232 @@ async function opslaan() {
     }
 
 
-    // Totaal moet exact 186 zijn
+    let records =
+        [];
+
+
+    let fouten =
+        [];
+
+
+    let totaal =
+        0;
+
+
+    const wedstrijden =
+        WEDSTRIJDEN[datum] || [];
+
+
+    // -------------------------------------------------
+    // Alle 6 wedstrijden
+    // -------------------------------------------------
+
+    wedstrijden.forEach(
+        (wedstrijd, wedstrijdIndex) => {
+
+            const teams = [
+                {
+                    ploeg:
+                        wedstrijd[0],
+
+                    kant:
+                        "thuis"
+                },
+                {
+                    ploeg:
+                        wedstrijd[1],
+
+                    kant:
+                        "uit"
+                }
+            ];
+
+
+            teams.forEach(
+                team => {
+
+                    const id =
+                        maakId(
+                            wedstrijdIndex,
+                            team.kant
+                        );
+
+
+                    const puntenElement =
+                        document.getElementById(
+                            "punten-" +
+                            id
+                        );
+
+
+                    if (
+                        !puntenElement
+                    ) {
+
+                        fouten.push(
+                            team.ploeg +
+                            ": puntenveld ontbreekt."
+                        );
+
+                        return;
+
+                    }
+
+
+                    const punten =
+                        puntenElement.value;
+
+
+                    if (
+                        punten === ""
+                    ) {
+
+                        fouten.push(
+                            team.ploeg +
+                            ": punten niet ingevuld."
+                        );
+
+                        return;
+
+                    }
+
+
+                    const puntenGetal =
+                        Number(
+                            punten
+                        );
+
+
+                    if (
+                        !Number.isFinite(
+                            puntenGetal
+                        ) ||
+                        puntenGetal < 0 ||
+                        puntenGetal > MAX_PUNTEN
+                    ) {
+
+                        fouten.push(
+                            team.ploeg +
+                            ": maximaal 31 punten."
+                        );
+
+                        return;
+
+                    }
+
+
+                    let kegelsGetal;
+
+
+                    // ---------------------------------
+                    // RNB
+                    // ---------------------------------
+
+                    if (
+                        isRNB(
+                            team.ploeg
+                        )
+                    ) {
+
+                        kegelsGetal =
+                            rnb.kegels;
+
+                    }
+
+                    // ---------------------------------
+                    // Andere ploeg
+                    // ---------------------------------
+
+                    else {
+
+                        const kegelsElement =
+                            document.getElementById(
+                                "kegels-" +
+                                id
+                            );
+
+
+                        if (
+                            !kegelsElement ||
+                            kegelsElement.value === ""
+                        ) {
+
+                            fouten.push(
+                                team.ploeg +
+                                ": kegels niet ingevuld."
+                            );
+
+                            return;
+
+                        }
+
+
+                        kegelsGetal =
+                            Number(
+                                kegelsElement.value
+                            );
+
+
+                        if (
+                            !Number.isFinite(
+                                kegelsGetal
+                            ) ||
+                            kegelsGetal < 0
+                        ) {
+
+                            fouten.push(
+                                team.ploeg +
+                                ": ongeldig aantal kegels."
+                            );
+
+                            return;
+
+                        }
+
+                    }
+
+
+                    totaal +=
+                        puntenGetal;
+
+
+                    records.push({
+
+                        speeldatum:
+                            datum,
+
+                        ploeg:
+                            team.ploeg,
+
+                        kegels:
+                            kegelsGetal,
+
+                        punten:
+                            puntenGetal
+
+                    });
+
+                }
+            );
+
+        }
+    );
+
+
+    // -------------------------------------------------
+    // Fouten
+    // -------------------------------------------------
 
     if (
-        totaal !==
-        TOTAAL_PUNTEN
+        fouten.length > 0
     ) {
 
-        if (
-            totaal <
-            TOTAAL_PUNTEN
-        ) {
-
-            alert(
-                "⚠️ Het totaal van de punten is " +
-                totaal +
-                ".\n\n" +
-                "Er zijn nog " +
-                (
-                    TOTAAL_PUNTEN -
-                    totaal
-                ) +
-                " punten nodig.\n\n" +
-                "Het totaal moet exact 186 zijn."
-            );
-
-        }
-
-        else {
-
-            alert(
-                "❌ Het totaal van de punten is " +
-                totaal +
-                ".\n\n" +
-                "Er zijn " +
-                (
-                    totaal -
-                    TOTAAL_PUNTEN
-                ) +
-                " punten te veel.\n\n" +
-                "Het totaal moet exact 186 zijn."
-            );
-
-        }
+        alert(
+            "❌ Controleer de invoer:\n\n" +
+            fouten.join(
+                "\n"
+            )
+        );
 
 
         return;
@@ -1272,7 +1607,31 @@ async function opslaan() {
     }
 
 
-    // Opslaan
+    // -------------------------------------------------
+    // EXACT 186 PUNTEN
+    // -------------------------------------------------
+
+    if (
+        totaal !==
+        TOTAAL_PUNTEN
+    ) {
+
+        alert(
+            "⚠️ Het totaal van de punten is " +
+            totaal +
+            ".\n\n" +
+            "Het totaal moet exact 186 zijn."
+        );
+
+
+        return;
+
+    }
+
+
+    // -------------------------------------------------
+    // OPSLAAN
+    // -------------------------------------------------
 
     const button =
         document.getElementById(
@@ -1288,8 +1647,9 @@ async function opslaan() {
         "⏳ Opslaan...";
 
 
-    const { error } =
-        await supabaseClient
+    const {
+        error
+    } = await supabaseClient
 
         .from(
             "interteam_scores"
@@ -1315,7 +1675,6 @@ async function opslaan() {
     if (error) {
 
         console.error(
-            "Opslaan fout:",
             error
         );
 
@@ -1335,12 +1694,24 @@ async function opslaan() {
     statusMelding(
         "✅ Scores opgeslagen voor " +
         datumNaarTekst(datum) +
-        ".",
+        ". RNB-kegels: " +
+        rnb.kegels +
+        ". Totaal punten: 186.",
         "success"
     );
 
 
-    // Opnieuw laden uit Supabase
+    alert(
+        "✅ Scores succesvol opgeslagen!\n\n" +
+        "Speeldatum: " +
+        datumNaarTekst(datum) +
+        "\n" +
+        "RNB kegels: " +
+        rnb.kegels +
+        "\n" +
+        "Totaal punten: 186"
+    );
+
 
     await laadScores();
 
@@ -1348,7 +1719,7 @@ async function opslaan() {
 
 
 // =====================================================
-// DATUM OMZETTEN
+// DATUM
 // =====================================================
 
 function datumNaarTekst(
@@ -1397,12 +1768,10 @@ function escapeHtml(
 // START
 // =====================================================
 
-laadPloegen();
+laadScores();
 
 </script>
 
-
 </body>
-
 </html>
 ```
