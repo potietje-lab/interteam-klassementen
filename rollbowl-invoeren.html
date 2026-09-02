@@ -1,0 +1,1643 @@
+
+<!DOCTYPE html>
+<html lang="nl">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>Rollbowl - Bowling Scores</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+<style>
+
+/* ================================================= */
+/* ALGEMEEN                                          */
+/* ================================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f2f2f2;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 900px;
+    margin: auto;
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 3px 15px rgba(0,0,0,0.15);
+}
+
+h1 {
+    text-align: center;
+    margin-top: 0;
+}
+
+h2 {
+    margin-top: 30px;
+}
+
+
+/* ================================================= */
+/* SELECTS EN INPUTS                                 */
+/* ================================================= */
+
+select,
+input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+
+/* ================================================= */
+/* SPELER                                            */
+/* ================================================= */
+
+.player {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 15px;
+    margin-top: 15px;
+    background: #fafafa;
+}
+
+.player-title {
+    font-weight: bold;
+    font-size: 18px;
+    margin-bottom: 8px;
+}
+
+
+/* ================================================= */
+/* GAMES                                             */
+/* ================================================= */
+
+.games {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.total {
+    margin-top: 8px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+
+/* ================================================= */
+/* KNOPPEN                                           */
+/* ================================================= */
+
+button {
+    width: 100%;
+    padding: 14px;
+    margin-top: 20px;
+    font-size: 17px;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.save {
+    background: #222;
+    color: white;
+}
+
+.save:hover {
+    background: #444;
+}
+
+.delete {
+    background: #c62828;
+    color: white;
+}
+
+.delete:hover {
+    background: #a51f1f;
+}
+
+
+/* ================================================= */
+/* MELDING                                           */
+/* ================================================= */
+
+.message {
+    text-align: center;
+    margin-top: 15px;
+    padding: 10px;
+    font-weight: bold;
+}
+
+
+/* ================================================= */
+/* RESULTATEN                                        */
+/* ================================================= */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th,
+td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+}
+
+th {
+    background: #eee;
+}
+
+
+/* ================================================= */
+/* SCORE KLEUREN                                     */
+/* ================================================= */
+
+.score200 {
+    color: green;
+    font-weight: bold;
+}
+
+.score540 {
+    color: red;
+    font-weight: bold;
+}
+
+
+/* ================================================= */
+/* INFO                                              */
+/* ================================================= */
+
+.info {
+    background: #f5f5f5;
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 20px;
+    line-height: 1.5;
+}
+
+
+/* ================================================= */
+/* GSM                                               */
+/* ================================================= */
+
+@media (max-width: 600px) {
+
+    body {
+        padding: 10px;
+    }
+
+    .container {
+        padding: 15px;
+    }
+
+    .games {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5px;
+    }
+
+    input {
+        padding: 8px;
+    }
+
+    th,
+    td {
+        font-size: 14px;
+        padding: 6px;
+    }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+<h1>🎳 Rollbowl</h1>
+
+
+
+<!-- ================================================= -->
+<!-- SPEELDATUM                                        -->
+<!-- ================================================= -->
+
+<h2>Speeldatum</h2>
+
+
+<select id="speeldatum"
+        onchange="laadScores()">
+
+    <option value="2026-09-04">
+        04/09/2026
+    </option>
+
+    <option value="2026-09-11">
+        11/09/2026
+    </option>
+
+    <option value="2026-09-18">
+        18/09/2026
+    </option>
+
+    <option value="2026-09-25">
+        25/09/2026
+    </option>
+
+    <option value="2026-10-02">
+        02/10/2026
+    </option>
+
+    <option value="2026-10-09">
+        09/10/2026
+    </option>
+
+    <option value="2026-10-16">
+        16/10/2026
+    </option>
+
+    <option value="2026-11-20">
+        20/11/2026
+    </option>
+
+    <option value="2026-11-27">
+        27/11/2026
+    </option>
+
+    <option value="2026-12-04">
+        04/12/2026
+    </option>
+
+    <option value="2026-12-11">
+        11/12/2026
+    </option>
+
+    <option value="2027-01-15">
+        15/01/2027
+    </option>
+
+    <option value="2027-01-22">
+        22/01/2027
+    </option>
+
+    <option value="2027-01-29">
+        29/01/2027
+    </option>
+
+    <option value="2027-02-19">
+        19/02/2027
+    </option>
+
+    <option value="2027-02-26">
+        26/02/2027
+    </option>
+
+    <option value="2027-03-19">
+        19/03/2027
+    </option>
+
+    <option value="2027-03-26">
+        26/03/2027
+    </option>
+
+    <option value="2027-04-16">
+        16/04/2027
+    </option>
+
+    <option value="2027-04-23">
+        23/04/2027
+    </option>
+
+    <option value="2027-05-07">
+        07/05/2027
+    </option>
+
+    <option value="2027-05-14">
+        14/05/2027
+    </option>
+
+</select>
+
+
+
+<!-- ================================================= -->
+<!-- SPELERS                                           -->
+<!-- ================================================= -->
+
+<h2>Spelers</h2>
+
+
+<div id="spelers">
+
+    <p>
+        Spelers worden geladen...
+    </p>
+
+</div>
+
+
+
+<!-- ================================================= -->
+<!-- OPSLAAN                                           -->
+<!-- ================================================= -->
+
+<button class="save"
+        onclick="opslaan()">
+
+    💾 ALLE SCORES OPSLAAN
+
+</button>
+
+
+
+<!-- ================================================= -->
+<!-- WISSEN                                            -->
+<!-- ================================================= -->
+
+<button class="delete"
+        onclick="wisSpeeldag()">
+
+    🗑️ DEZE SPEELDAG WISSEN
+
+</button>
+
+
+
+<!-- ================================================= -->
+<!-- MELDING                                           -->
+<!-- ================================================= -->
+
+<div id="melding"
+     class="message">
+
+</div>
+
+
+
+<!-- ================================================= -->
+<!-- OPGESLAGEN SCORES                                 -->
+<!-- ================================================= -->
+
+<h2>Opgeslagen scores</h2>
+
+
+<div id="resultaat">
+
+    <p>
+        Scores worden geladen...
+    </p>
+
+</div>
+
+
+
+<!-- ================================================= -->
+<!-- INFO                                              -->
+<!-- ================================================= -->
+
+<div class="info">
+
+    <strong>Invoer:</strong>
+
+    <br>
+
+    Er zijn 8 spelers beschikbaar.
+
+    <br>
+
+    Per speeldag kies je 5 spelers.
+
+    <br><br>
+
+    🟢 Een game van 200 of meer wordt groen.
+
+    <br>
+
+    🔴 Een totaal van 540 of meer wordt rood.
+
+    <br><br>
+
+    Een reeds opgeslagen score kan gewoon
+    aangepast en opnieuw opgeslagen worden.
+
+</div>
+
+
+</div>
+
+
+
+<script>
+
+
+// ==================================================
+// SUPABASE
+// ==================================================
+
+const SUPABASE_URL =
+    "https://wnsvbtskynkewxggmjem.supabase.co";
+
+
+const SUPABASE_KEY =
+    "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+
+
+const supabaseClient =
+    supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+
+// ==================================================
+// SPELERS
+// ==================================================
+
+let spelers = [];
+
+
+
+// ==================================================
+// SPELERS LADEN
+// ==================================================
+
+async function laadSpelers() {
+
+
+    const { data, error } =
+
+        await supabaseClient
+
+        .from("players")
+
+        .select("name")
+
+        .eq(
+            "actief",
+            true
+        )
+
+        .order(
+            "name",
+            {
+                ascending: true
+            }
+        );
+
+
+    if (error) {
+
+        console.error(error);
+
+        document.getElementById(
+            "spelers"
+        ).innerHTML =
+
+            "<p>❌ Spelers konden niet worden geladen.</p>";
+
+
+        melding(
+            "Fout bij laden spelers: " +
+            error.message
+        );
+
+        return;
+
+    }
+
+
+    spelers =
+        data.map(
+            player =>
+                player.name
+        );
+
+
+    toonSpelers();
+
+}
+
+
+
+// ==================================================
+// VIJF INVOERVELDEN MAKEN
+// ==================================================
+
+function toonSpelers() {
+
+
+    const container =
+        document.getElementById(
+            "spelers"
+        );
+
+
+    container.innerHTML = "";
+
+
+    for (
+        let i = 1;
+        i <= 5;
+        i++
+    ) {
+
+
+        let html = "";
+
+
+        html += `
+
+            <div class="player">
+
+                <div class="player-title">
+
+                    Speler ${i}
+
+                </div>
+
+
+                <select
+                    id="speler${i}"
+                    onchange="controleerSpelers()">
+
+                    <option value="">
+
+                        -- Kies speler --
+
+                    </option>
+
+        `;
+
+
+        // ------------------------------------------
+        // ALLE 8 SPELERS IN DE LIJST
+        // ------------------------------------------
+
+        spelers.forEach(
+            speler => {
+
+                html += `
+
+                    <option value="${escapeHtml(
+                        speler
+                    )}">
+
+                        ${escapeHtml(
+                            speler
+                        )}
+
+                    </option>
+
+                `;
+
+            }
+        );
+
+
+        html += `
+
+                </select>
+
+
+                <div class="games">
+
+
+                    <div>
+
+                        <label>
+                            Game 1
+                        </label>
+
+                        <input
+                            type="number"
+                            id="game1_${i}"
+                            min="0"
+                            max="300"
+                            oninput="berekenTotaal(${i})">
+
+                    </div>
+
+
+                    <div>
+
+                        <label>
+                            Game 2
+                        </label>
+
+                        <input
+                            type="number"
+                            id="game2_${i}"
+                            min="0"
+                            max="300"
+                            oninput="berekenTotaal(${i})">
+
+                    </div>
+
+
+                    <div>
+
+                        <label>
+                            Game 3
+                        </label>
+
+                        <input
+                            type="number"
+                            id="game3_${i}"
+                            min="0"
+                            max="300"
+                            oninput="berekenTotaal(${i})">
+
+                    </div>
+
+
+                </div>
+
+
+                <div class="total">
+
+                    Totaal:
+
+                    <span id="totaal_${i}">
+                        0
+                    </span>
+
+                </div>
+
+
+            </div>
+
+        `;
+
+
+        container.innerHTML +=
+            html;
+
+    }
+
+}
+
+
+
+// ==================================================
+// DUBBELE SPELERS CONTROLEREN
+// ==================================================
+
+function controleerSpelers() {
+
+
+    const gekozen = [];
+
+
+    for (
+        let i = 1;
+        i <= 5;
+        i++
+    ) {
+
+
+        const element =
+            document.getElementById(
+                `speler${i}`
+            );
+
+
+        const speler =
+            element.value;
+
+
+        if (
+            speler !== ""
+        ) {
+
+
+            if (
+                gekozen.includes(
+                    speler
+                )
+            ) {
+
+
+                alert(
+                    speler +
+                    " is al geselecteerd."
+                );
+
+
+                element.value = "";
+
+
+                return;
+
+            }
+
+
+            gekozen.push(
+                speler
+            );
+
+        }
+
+    }
+
+}
+
+
+
+// ==================================================
+// TOTAAL BEREKENEN
+// ==================================================
+
+function berekenTotaal(
+    nummer
+) {
+
+
+    const game1 =
+        Number(
+            document.getElementById(
+                `game1_${nummer}`
+            ).value
+        ) || 0;
+
+
+    const game2 =
+        Number(
+            document.getElementById(
+                `game2_${nummer}`
+            ).value
+        ) || 0;
+
+
+    const game3 =
+        Number(
+            document.getElementById(
+                `game3_${nummer}`
+            ).value
+        ) || 0;
+
+
+    const totaal =
+        game1 +
+        game2 +
+        game3;
+
+
+    const element =
+        document.getElementById(
+            `totaal_${nummer}`
+        );
+
+
+    element.innerText =
+        totaal;
+
+
+    // ------------------------------------------
+    // TOTAAL 540+ ROOD
+    // ------------------------------------------
+
+    if (
+        totaal >= 540
+    ) {
+
+        element.classList.add(
+            "score540"
+        );
+
+    } else {
+
+        element.classList.remove(
+            "score540"
+        );
+
+    }
+
+}
+
+
+
+// ==================================================
+// SCORES OPSLAAN
+// ==================================================
+
+async function opslaan() {
+
+
+    const speeldatum =
+        document.getElementById(
+            "speeldatum"
+        ).value;
+
+
+    const records = [];
+
+
+    for (
+        let i = 1;
+        i <= 5;
+        i++
+    ) {
+
+
+        const speler =
+            document.getElementById(
+                `speler${i}`
+            ).value;
+
+
+        // ------------------------------------------
+        // LEGE RIJ OVERSLAAN
+        // ------------------------------------------
+
+        if (!speler) {
+
+            continue;
+
+        }
+
+
+        const game1 =
+            Number(
+                document.getElementById(
+                    `game1_${i}`
+                ).value
+            ) || 0;
+
+
+        const game2 =
+            Number(
+                document.getElementById(
+                    `game2_${i}`
+                ).value
+            ) || 0;
+
+
+        const game3 =
+            Number(
+                document.getElementById(
+                    `game3_${i}`
+                ).value
+            ) || 0;
+
+
+        const totaal =
+            game1 +
+            game2 +
+            game3;
+
+
+        records.push({
+
+            speeldatum:
+                speeldatum,
+
+            speler:
+                speler,
+
+            game1:
+                game1,
+
+            game2:
+                game2,
+
+            game3:
+                game3,
+
+            totaal:
+                totaal
+
+        });
+
+    }
+
+
+
+    if (
+        records.length === 0
+    ) {
+
+        melding(
+            "⚠️ Kies minstens één speler."
+        );
+
+        return;
+
+    }
+
+
+
+    // ------------------------------------------
+    // CONTROLEREN OF ER 5 SPELERS ZIJN
+    // ------------------------------------------
+
+    if (
+        records.length !== 5
+    ) {
+
+        const doorgaan =
+            confirm(
+                "Je hebt " +
+                records.length +
+                " spelers gekozen.\n\n" +
+                "Normaal spelen er 5 spelers.\n\n" +
+                "Wil je toch opslaan?"
+            );
+
+
+        if (!doorgaan) {
+
+            return;
+
+        }
+
+    }
+
+
+
+    // ------------------------------------------
+    // OPSLAAN / AANPASSEN
+    // ------------------------------------------
+
+    const { error } =
+
+        await supabaseClient
+
+        .from(
+            "bowling_scores"
+        )
+
+        .upsert(
+
+            records,
+
+            {
+
+                onConflict:
+                    "speeldatum,speler"
+
+            }
+
+        );
+
+
+
+    if (error) {
+
+        console.error(error);
+
+        melding(
+            "❌ Fout bij opslaan: " +
+            error.message
+        );
+
+        return;
+
+    }
+
+
+
+    melding(
+        "✅ Scores opgeslagen!"
+    );
+
+
+    await laadScores();
+
+}
+
+
+
+// ==================================================
+// SCORES LADEN
+// ==================================================
+
+async function laadScores() {
+
+
+    const speeldatum =
+        document.getElementById(
+            "speeldatum"
+        ).value;
+
+
+    const { data, error } =
+
+        await supabaseClient
+
+        .from(
+            "bowling_scores"
+        )
+
+        .select("*")
+
+        .eq(
+            "speeldatum",
+            speeldatum
+        )
+
+        .order(
+            "id",
+            {
+                ascending: true
+            }
+        );
+
+
+
+    if (error) {
+
+        console.error(error);
+
+        melding(
+            "❌ Fout bij laden scores: " +
+            error.message
+        );
+
+        return;
+
+    }
+
+
+
+    // ------------------------------------------
+    // FORMULIER EERST LEEGMAKEN
+    // ------------------------------------------
+
+    maakFormulierLeeg();
+
+
+
+    // ------------------------------------------
+    // OPGESLAGEN SCORES INVULLEN
+    // ------------------------------------------
+
+    data.forEach(
+        (score, index) => {
+
+
+            if (
+                index >= 5
+            ) {
+
+                return;
+
+            }
+
+
+            const nummer =
+                index + 1;
+
+
+            document.getElementById(
+                `speler${nummer}`
+            ).value =
+                score.speler;
+
+
+            document.getElementById(
+                `game1_${nummer}`
+            ).value =
+                score.game1 ?? "";
+
+
+            document.getElementById(
+                `game2_${nummer}`
+            ).value =
+                score.game2 ?? "";
+
+
+            document.getElementById(
+                `game3_${nummer}`
+            ).value =
+                score.game3 ?? "";
+
+
+            berekenTotaal(
+                nummer
+            );
+
+        }
+    );
+
+
+
+    toonResultaat(
+        data
+    );
+
+}
+
+
+
+// ==================================================
+// FORMULIER LEEGMAKEN
+// ==================================================
+
+function maakFormulierLeeg() {
+
+
+    for (
+        let i = 1;
+        i <= 5;
+        i++
+    ) {
+
+
+        const speler =
+            document.getElementById(
+                `speler${i}`
+            );
+
+
+        if (speler) {
+
+            speler.value =
+                "";
+
+        }
+
+
+        document.getElementById(
+            `game1_${i}`
+        ).value =
+            "";
+
+
+        document.getElementById(
+            `game2_${i}`
+        ).value =
+            "";
+
+
+        document.getElementById(
+            `game3_${i}`
+        ).value =
+            "";
+
+
+        const totaal =
+            document.getElementById(
+                `totaal_${i}`
+            );
+
+
+        totaal.innerText =
+            "0";
+
+
+        totaal.classList.remove(
+            "score540"
+        );
+
+    }
+
+}
+
+
+
+// ==================================================
+// SPEELDAG VOLLEDIG WISSEN
+// ==================================================
+
+async function wisSpeeldag() {
+
+
+    const speeldatum =
+        document.getElementById(
+            "speeldatum"
+        ).value;
+
+
+    const bevestiging =
+
+        confirm(
+
+            "⚠️ OPGELET\n\n" +
+
+            "Alle scores van " +
+            formatDatum(
+                speeldatum
+            ) +
+
+            " worden verwijderd.\n\n" +
+
+            "Dit kan niet ongedaan worden.\n\n" +
+
+            "Weet je zeker dat je wilt doorgaan?"
+
+        );
+
+
+
+    if (
+        !bevestiging
+    ) {
+
+        return;
+
+    }
+
+
+
+    const { error } =
+
+        await supabaseClient
+
+        .from(
+            "bowling_scores"
+        )
+
+        .delete()
+
+        .eq(
+            "speeldatum",
+            speeldatum
+        );
+
+
+
+    if (error) {
+
+        console.error(error);
+
+        melding(
+            "❌ Fout bij wissen: " +
+            error.message
+        );
+
+        return;
+
+    }
+
+
+
+    maakFormulierLeeg();
+
+
+    toonResultaat(
+        []
+    );
+
+
+    melding(
+
+        "🗑️ Scores van " +
+
+        formatDatum(
+            speeldatum
+        ) +
+
+        " zijn verwijderd."
+
+    );
+
+}
+
+
+
+// ==================================================
+// RESULTATEN TONEN
+// ==================================================
+
+function toonResultaat(
+    data
+) {
+
+
+    const resultaat =
+        document.getElementById(
+            "resultaat"
+        );
+
+
+    if (
+        !data ||
+        data.length === 0
+    ) {
+
+
+        resultaat.innerHTML =
+
+            "<p>Geen scores opgeslagen voor deze speeldag.</p>";
+
+
+        return;
+
+    }
+
+
+
+    let html = `
+
+        <table>
+
+            <tr>
+
+                <th>
+                    Speler
+                </th>
+
+                <th>
+                    Game 1
+                </th>
+
+                <th>
+                    Game 2
+                </th>
+
+                <th>
+                    Game 3
+                </th>
+
+                <th>
+                    Totaal
+                </th>
+
+            </tr>
+
+    `;
+
+
+
+    data.forEach(
+        score => {
+
+
+            const game1 =
+                Number(
+                    score.game1
+                ) || 0;
+
+
+            const game2 =
+                Number(
+                    score.game2
+                ) || 0;
+
+
+            const game3 =
+                Number(
+                    score.game3
+                ) || 0;
+
+
+            const totaal =
+                Number(
+                    score.totaal
+                ) || 0;
+
+
+
+            const game1Html =
+
+                game1 >= 200
+
+                ? `<span class="score200">
+                    ${game1}
+                   </span>`
+
+                : game1;
+
+
+
+            const game2Html =
+
+                game2 >= 200
+
+                ? `<span class="score200">
+                    ${game2}
+                   </span>`
+
+                : game2;
+
+
+
+            const game3Html =
+
+                game3 >= 200
+
+                ? `<span class="score200">
+                    ${game3}
+                   </span>`
+
+                : game3;
+
+
+
+            const totaalHtml =
+
+                totaal >= 540
+
+                ? `<span class="score540">
+                    ${totaal}
+                   </span>`
+
+                : totaal;
+
+
+
+            html += `
+
+                <tr>
+
+                    <td>
+
+                        ${escapeHtml(
+                            score.speler
+                        )}
+
+                    </td>
+
+
+                    <td>
+
+                        ${game1Html}
+
+                    </td>
+
+
+                    <td>
+
+                        ${game2Html}
+
+                    </td>
+
+
+                    <td>
+
+                        ${game3Html}
+
+                    </td>
+
+
+                    <td>
+
+                        <strong>
+
+                            ${totaalHtml}
+
+                        </strong>
+
+                    </td>
+
+                </tr>
+
+            `;
+
+        }
+    );
+
+
+
+    html +=
+        "</table>";
+
+
+    resultaat.innerHTML =
+        html;
+
+}
+
+
+
+// ==================================================
+// DATUM WEERGEVEN
+// ==================================================
+
+function formatDatum(
+    datum
+) {
+
+
+    const delen =
+        datum.split("-");
+
+
+    if (
+        delen.length !== 3
+    ) {
+
+        return datum;
+
+    }
+
+
+    return (
+
+        delen[2] +
+        "/" +
+        delen[1] +
+        "/" +
+        delen[0]
+
+    );
+
+}
+
+
+
+// ==================================================
+// HTML VEILIG MAKEN
+// ==================================================
+
+function escapeHtml(
+    tekst
+) {
+
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+
+    div.textContent =
+        tekst;
+
+
+    return div.innerHTML;
+
+}
+
+
+
+// ==================================================
+// MELDING
+// ==================================================
+
+function melding(
+    tekst
+) {
+
+
+    document.getElementById(
+        "melding"
+    ).innerText =
+        tekst;
+
+}
+
+
+
+// ==================================================
+// START
+// ==================================================
+
+async function start() {
+
+
+    melding(
+        "Spelers worden geladen..."
+    );
+
+
+    await laadSpelers();
+
+
+    await laadScores();
+
+
+    melding(
+        ""
+    );
+
+}
+
+
+start();
+
+
+</script>
+
+
+</body>
+
+</html>
+```
