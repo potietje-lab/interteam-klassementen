@@ -1,0 +1,1659 @@
+☺
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Topstatistieken Rollbowl</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+
+body {
+    margin: 0;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    color: #222;
+}
+
+.container {
+    max-width: 1000px;
+    margin: auto;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.banner {
+    background: white;
+    border-radius: 16px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.10);
+}
+
+.banner h2 {
+    margin-top: 0;
+    text-align: center;
+    font-size: 24px;
+}
+
+.topserie {
+    border-top: 6px solid #d4af37;
+}
+
+.topmatch {
+    border-top: 6px solid #777;
+}
+
+.stand {
+    border-top: 6px solid #333;
+}
+
+.naam {
+    text-align: center;
+    font-size: 25px;
+    font-weight: bold;
+    margin: 15px 0 20px;
+}
+
+.gegevens {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+}
+
+.gegeven {
+    background: #f5f5f5;
+    border-radius: 10px;
+    padding: 12px 8px;
+    text-align: center;
+}
+
+.gegeven-label {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.gegeven-waarde {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.serie {
+    font-size: 26px;
+}
+
+.match-info {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+}
+
+.match-item {
+    background: #f5f5f5;
+    border-radius: 10px;
+    padding: 14px 8px;
+    text-align: center;
+}
+
+.match-label {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 6px;
+}
+
+.match-value {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.tegen {
+    text-align: center;
+    font-size: 21px;
+    font-weight: bold;
+    margin: 5px 0 20px;
+}
+
+.loading {
+    text-align: center;
+    padding: 30px;
+    color: #666;
+}
+
+.error {
+    text-align: center;
+    padding: 30px;
+    color: red;
+}
+
+
+/* ============================================================
+   PODIUM
+   ============================================================ */
+
+.podium-datum {
+    text-align: center;
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 25px;
+}
+
+.podium {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 14px;
+    max-width: 800px;
+    margin: 0 auto 30px;
+}
+
+.podium-plaats {
+    width: 30%;
+    text-align: center;
+}
+
+.medaille {
+    font-size: 42px;
+    margin-bottom: 8px;
+}
+
+.podium-team {
+    background: #f5f5f5;
+    border-radius: 12px 12px 0 0;
+    padding: 12px 8px 8px;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.podium-punten {
+    background: #f5f5f5;
+    padding: 5px 5px 2px;
+    font-size: 13px;
+    color: #555;
+}
+
+.podium-gemiddelde {
+    background: #f5f5f5;
+    padding: 3px 5px 8px;
+    font-size: 13px;
+    color: #555;
+}
+
+.podium-gemiddelde strong {
+    color: #222;
+    font-size: 15px;
+}
+
+.podium-blok {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    font-weight: bold;
+    border-radius: 0 0 8px 8px;
+    background: #ddd;
+}
+
+.eerste .podium-blok {
+    height: 150px;
+}
+
+.tweede .podium-blok {
+    height: 105px;
+}
+
+.derde .podium-blok {
+    height: 75px;
+}
+
+.rnb-podium {
+    background: #fff3a3 !important;
+    border: 3px solid #e0b800;
+}
+
+
+/* ============================================================
+   RNB HUIDIGE POSITIE
+   ============================================================ */
+
+.rnb-positie {
+    background: #fff3a3;
+    border: 3px solid #e0b800;
+    border-radius: 16px;
+    padding: 22px;
+    text-align: center;
+    margin-top: 25px;
+}
+
+.rnb-titel {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 6px;
+}
+
+.rnb-naam {
+    font-size: 23px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.rnb-plaats {
+    font-size: 34px;
+    font-weight: bold;
+}
+
+.rnb-details {
+    margin-top: 7px;
+    font-size: 16px;
+    color: #444;
+}
+
+.rnb-verschil {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid #d8c45c;
+}
+
+.rnb-verschil-titel {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 8px;
+}
+
+.rnb-verschil-waarden {
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.verschil-negatief {
+    color: red;
+}
+
+.verschil-positief {
+    color: green;
+}
+
+.verschil-nul {
+    color: #555;
+}
+
+
+/* ============================================================
+   MOBIEL
+   ============================================================ */
+
+@media (max-width: 700px) {
+
+    body {
+        padding: 10px;
+    }
+
+    .banner {
+        padding: 18px;
+    }
+
+    .banner h2 {
+        font-size: 21px;
+    }
+
+    .naam {
+        font-size: 21px;
+    }
+
+    .gegevens {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .match-info {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .podium {
+        gap: 5px;
+    }
+
+    .podium-plaats {
+        width: 33%;
+    }
+
+    .medaille {
+        font-size: 32px;
+    }
+
+    .podium-team {
+        font-size: 12px;
+        min-height: 55px;
+    }
+
+    .podium-punten {
+        font-size: 11px;
+    }
+
+    .podium-gemiddelde {
+        font-size: 11px;
+    }
+
+    .podium-gemiddelde strong {
+        font-size: 13px;
+    }
+
+    .eerste .podium-blok {
+        height: 120px;
+    }
+
+    .tweede .podium-blok {
+        height: 85px;
+    }
+
+    .derde .podium-blok {
+        height: 60px;
+    }
+
+    .rnb-naam {
+        font-size: 19px;
+    }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🏆 Mooi gedaan, top ☺</h1>
+
+    <div id="inhoud">
+        <div class="loading">
+            Gegevens laden...
+        </div>
+    </div>
+
+</div>
+
+
+<script>
+
+/* ============================================================
+   SUPABASE
+   ============================================================ */
+
+const SUPABASE_URL =
+    "https://wnsvbtskynkewxggmjem.supabase.co";
+
+const SUPABASE_KEY =
+    "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+
+const supabaseClient =
+    supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+/* ============================================================
+   INSTELLINGEN
+   ============================================================ */
+
+const RNB =
+    "RNB Geenens Construct-Vapor";
+
+
+/* ============================================================
+   WEDSTRIJDEN
+   ============================================================ */
+
+const WEDSTRIJDEN = {
+
+"2026-09-04": [
+["BC Ajuin","DCG Yok Tha"],
+["BC Ledeganck 2 Burtline","LAT Esento"],
+["TSZ Bieshoop","FLP ALLCORE IT"],
+["RNB Geenens Construct-Vapor","FLP Argenta Hamme"],
+["Royal Ghent 3","Stene - Pleisterwerken Delrue JP"],
+["Oilsjt 2 Yok Tha","Wuitens"]
+],
+
+"2026-09-11": [
+["FLP ALLCORE IT","BC Ajuin"],
+["Stene - Pleisterwerken Delrue JP","FLP Argenta Hamme"],
+["LAT Esento","Royal Ghent 3"],
+["Wuitens","DCG Yok Tha"],
+["Oilsjt 2 Yok Tha","TSZ Bieshoop"],
+["RNB Geenens Construct-Vapor","BC Ledeganck 2 Burtline"]
+],
+
+"2026-09-18": [
+["Royal Ghent 3","FLP ALLCORE IT"],
+["FLP Argenta Hamme","Wuitens"],
+["DCG Yok Tha","LAT Esento"],
+["BC Ajuin","Stene - Pleisterwerken Delrue JP"],
+["TSZ Bieshoop","RNB Geenens Construct-Vapor"],
+["BC Ledeganck 2 Burtline","Oilsjt 2 Yok Tha"]
+],
+
+"2026-09-25": [
+["Royal Ghent 3","RNB Geenens Construct-Vapor"],
+["Wuitens","BC Ajuin"],
+["FLP Argenta Hamme","BC Ledeganck 2 Burtline"],
+["Oilsjt 2 Yok Tha","LAT Esento"],
+["Stene - Pleisterwerken Delrue JP","TSZ Bieshoop"],
+["FLP ALLCORE IT","DCG Yok Tha"]
+],
+
+"2026-10-02": [
+["BC Ledeganck 2 Burtline","FLP ALLCORE IT"],
+["LAT Esento","FLP Argenta Hamme"],
+["RNB Geenens Construct-Vapor","Stene - Pleisterwerken Delrue JP"],
+["DCG Yok Tha","Oilsjt 2 Yok Tha"],
+["BC Ajuin","Royal Ghent 3"],
+["TSZ Bieshoop","Wuitens"]
+],
+
+"2026-10-09": [
+["FLP Argenta Hamme","FLP ALLCORE IT"],
+["LAT Esento","Wuitens"],
+["Stene - Pleisterwerken Delrue JP","DCG Yok Tha"],
+["Oilsjt 2 Yok Tha","Royal Ghent 3"],
+["BC Ajuin","RNB Geenens Construct-Vapor"],
+["TSZ Bieshoop","BC Ledeganck 2 Burtline"]
+],
+
+"2026-10-16": [
+["FLP ALLCORE IT","LAT Esento"],
+["FLP Argenta Hamme","Oilsjt 2 Yok Tha"],
+["Wuitens","Stene - Pleisterwerken Delrue JP"],
+["BC Ledeganck 2 Burtline","BC Ajuin"],
+["DCG Yok Tha","RNB Geenens Construct-Vapor"],
+["Royal Ghent 3","TSZ Bieshoop"]
+],
+
+"2026-11-20": [
+["Stene - Pleisterwerken Delrue JP","FLP ALLCORE IT"],
+["Royal Ghent 3","FLP Argenta Hamme"],
+["RNB Geenens Construct-Vapor","LAT Esento"],
+["BC Ajuin","Oilsjt 2 Yok Tha"],
+["Wuitens","BC Ledeganck 2 Burtline"],
+["DCG Yok Tha","TSZ Bieshoop"]
+],
+
+"2026-11-27": [
+["FLP Argenta Hamme","DCG Yok Tha"],
+["LAT Esento","Stene - Pleisterwerken Delrue JP"],
+["BC Ledeganck 2 Burtline","Royal Ghent 3"],
+["Oilsjt 2 Yok Tha","RNB Geenens Construct-Vapor"],
+["TSZ Bieshoop","BC Ajuin"],
+["FLP ALLCORE IT","Wuitens"]
+],
+
+"2026-12-04": [
+["LAT Esento","BC Ajuin"],
+["Wuitens","Royal Ghent 3"],
+["FLP ALLCORE IT","RNB Geenens Construct-Vapor"],
+["FLP Argenta Hamme","TSZ Bieshoop"],
+["Stene - Pleisterwerken Delrue JP","Oilsjt 2 Yok Tha"],
+["DCG Yok Tha","BC Ledeganck 2 Burtline"]
+],
+
+"2026-12-11": [
+["Royal Ghent 3","DCG Yok Tha"],
+["BC Ajuin","FLP Argenta Hamme"],
+["BC Ledeganck 2 Burtline","Stene - Pleisterwerken Delrue JP"],
+["Oilsjt 2 Yok Tha","FLP ALLCORE IT"],
+["RNB Geenens Construct-Vapor","Wuitens"],
+["TSZ Bieshoop","LAT Esento"]
+],
+
+"2027-01-15": [
+["DCG Yok Tha","BC Ajuin"],
+["LAT Esento","BC Ledeganck 2 Burtline"],
+["FLP ALLCORE IT","TSZ Bieshoop"],
+["FLP Argenta Hamme","RNB Geenens Construct-Vapor"],
+["Stene - Pleisterwerken Delrue JP","Royal Ghent 3"],
+["Wuitens","Oilsjt 2 Yok Tha"]
+],
+
+"2027-01-22": [
+["BC Ajuin","FLP ALLCORE IT"],
+["FLP Argenta Hamme","Stene - Pleisterwerken Delrue JP"],
+["Royal Ghent 3","LAT Esento"],
+["DCG Yok Tha","Wuitens"],
+["TSZ Bieshoop","Oilsjt 2 Yok Tha"],
+["BC Ledeganck 2 Burtline","RNB Geenens Construct-Vapor"]
+],
+
+"2027-01-29": [
+["FLP ALLCORE IT","Royal Ghent 3"],
+["Wuitens","FLP Argenta Hamme"],
+["LAT Esento","DCG Yok Tha"],
+["Stene - Pleisterwerken Delrue JP","BC Ajuin"],
+["RNB Geenens Construct-Vapor","TSZ Bieshoop"],
+["Oilsjt 2 Yok Tha","BC Ledeganck 2 Burtline"]
+],
+
+"2027-02-19": [
+["RNB Geenens Construct-Vapor","Royal Ghent 3"],
+["BC Ajuin","Wuitens"],
+["BC Ledeganck 2 Burtline","FLP Argenta Hamme"],
+["LAT Esento","Oilsjt 2 Yok Tha"],
+["TSZ Bieshoop","Stene - Pleisterwerken Delrue JP"],
+["DCG Yok Tha","FLP ALLCORE IT"]
+],
+
+"2027-02-26": [
+["FLP ALLCORE IT","BC Ledeganck 2 Burtline"],
+["FLP Argenta Hamme","LAT Esento"],
+["Stene - Pleisterwerken Delrue JP","RNB Geenens Construct-Vapor"],
+["Oilsjt 2 Yok Tha","DCG Yok Tha"],
+["Royal Ghent 3","BC Ajuin"],
+["Wuitens","TSZ Bieshoop"]
+],
+
+"2027-03-19": [
+["FLP ALLCORE IT","FLP Argenta Hamme"],
+["Wuitens","LAT Esento"],
+["DCG Yok Tha","Stene - Pleisterwerken Delrue JP"],
+["Royal Ghent 3","Oilsjt 2 Yok Tha"],
+["RNB Geenens Construct-Vapor","BC Ajuin"],
+["BC Ledeganck 2 Burtline","TSZ Bieshoop"]
+],
+
+"2027-03-26": [
+["LAT Esento","FLP ALLCORE IT"],
+["Oilsjt 2 Yok Tha","FLP Argenta Hamme"],
+["Stene - Pleisterwerken Delrue JP","Wuitens"],
+["BC Ajuin","BC Ledeganck 2 Burtline"],
+["RNB Geenens Construct-Vapor","DCG Yok Tha"],
+["TSZ Bieshoop","Royal Ghent 3"]
+],
+
+"2027-04-16": [
+["FLP ALLCORE IT","Stene - Pleisterwerken Delrue JP"],
+["FLP Argenta Hamme","Royal Ghent 3"],
+["LAT Esento","RNB Geenens Construct-Vapor"],
+["Oilsjt 2 Yok Tha","BC Ajuin"],
+["BC Ledeganck 2 Burtline","Wuitens"],
+["TSZ Bieshoop","DCG Yok Tha"]
+],
+
+"2027-04-23": [
+["DCG Yok Tha","FLP Argenta Hamme"],
+["Stene - Pleisterwerken Delrue JP","LAT Esento"],
+["Royal Ghent 3","BC Ledeganck 2 Burtline"],
+["RNB Geenens Construct-Vapor","Oilsjt 2 Yok Tha"],
+["BC Ajuin","TSZ Bieshoop"],
+["Wuitens","FLP ALLCORE IT"]
+],
+
+"2027-05-07": [
+["BC Ajuin","LAT Esento"],
+["Royal Ghent 3","Wuitens"],
+["RNB Geenens Construct-Vapor","FLP ALLCORE IT"],
+["TSZ Bieshoop","FLP Argenta Hamme"],
+["Oilsjt 2 Yok Tha","Stene - Pleisterwerken Delrue JP"],
+["BC Ledeganck 2 Burtline","DCG Yok Tha"]
+],
+
+"2027-05-14": [
+["DCG Yok Tha","Royal Ghent 3"],
+["FLP Argenta Hamme","BC Ajuin"],
+["Stene - Pleisterwerken Delrue JP","BC Ledeganck 2 Burtline"],
+["FLP ALLCORE IT","Oilsjt 2 Yok Tha"],
+["Wuitens","RNB Geenens Construct-Vapor"],
+["LAT Esento","TSZ Bieshoop"]
+]
+
+};
+
+
+/* ============================================================
+   DATUM
+   ============================================================ */
+
+function datumNL(datum) {
+
+    return new Date(
+        datum + "T00:00:00"
+    ).toLocaleDateString(
+        "nl-BE",
+        {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric"
+        }
+    );
+
+}
+
+
+/* ============================================================
+   TOPSERIE
+   ============================================================ */
+
+function bepaalTopserie(scores) {
+
+    let beste = null;
+
+    scores.forEach(r => {
+
+        const game1 =
+            Number(r.game1) || 0;
+
+        const game2 =
+            Number(r.game2) || 0;
+
+        const game3 =
+            Number(r.game3) || 0;
+
+        const serie =
+            game1 + game2 + game3;
+
+        if (
+            game1 > 0 &&
+            game2 > 0 &&
+            game3 > 0
+        ) {
+
+            if (
+                !beste ||
+                serie > beste.serie
+            ) {
+
+                beste = {
+                    speler: r.speler,
+                    game1,
+                    game2,
+                    game3,
+                    serie,
+                    gemiddelde: serie / 3,
+                    datum: r.speeldatum
+                };
+
+            }
+
+        }
+
+    });
+
+    return beste;
+}
+
+
+/* ============================================================
+   TOPMATCH
+   ============================================================ */
+
+function bepaalTopmatch(scores) {
+
+    let beste = null;
+
+    Object.entries(WEDSTRIJDEN)
+        .forEach(([datum, wedstrijden]) => {
+
+        wedstrijden.forEach(
+            ([thuis, uit]) => {
+
+            if (
+                thuis !== RNB &&
+                uit !== RNB
+            ) {
+                return;
+            }
+
+            const scoreThuis =
+                scores.find(r =>
+                    r.speeldatum === datum &&
+                    r.ploeg === thuis
+                );
+
+            const scoreUit =
+                scores.find(r =>
+                    r.speeldatum === datum &&
+                    r.ploeg === uit
+                );
+
+            if (
+                !scoreThuis ||
+                !scoreUit
+            ) {
+                return;
+            }
+
+            const puntenThuis =
+                Number(scoreThuis.punten) || 0;
+
+            const puntenUit =
+                Number(scoreUit.punten) || 0;
+
+            const verschil =
+                Math.abs(
+                    puntenThuis -
+                    puntenUit
+                );
+
+            if (
+                !beste ||
+                verschil > beste.verschil
+            ) {
+
+                beste = {
+                    datum,
+                    thuis,
+                    uit,
+                    puntenThuis,
+                    puntenUit,
+                    verschil,
+                    kegelsThuis:
+                        Number(scoreThuis.kegels) || 0,
+                    kegelsUit:
+                        Number(scoreUit.kegels) || 0
+                };
+
+            }
+
+        });
+
+    });
+
+    if (!beste)
+        return null;
+
+
+    beste.gemiddeldeThuis =
+        beste.kegelsThuis / 15;
+
+    beste.gemiddeldeUit =
+        beste.kegelsUit / 15;
+
+
+    return beste;
+}
+
+
+/* ============================================================
+   KLASSEMENT
+   ============================================================ */
+
+function bepaalKlassement(scores) {
+
+    if (!scores.length)
+        return null;
+
+
+    const datums = [
+        ...new Set(
+            scores.map(r => r.speeldatum)
+        )
+    ].sort();
+
+
+    const laatsteDatum =
+        datums[datums.length - 1];
+
+
+    const gespeeldeScores =
+        scores.filter(r =>
+            r.speeldatum <= laatsteDatum
+        );
+
+
+    const teams = {};
+
+
+    gespeeldeScores.forEach(r => {
+
+        const ploeg =
+            r.ploeg;
+
+
+        if (!teams[ploeg]) {
+
+            teams[ploeg] = {
+
+                ploeg,
+                punten: 0,
+                kegels: 0,
+                gespeeld: 0
+
+            };
+
+        }
+
+
+        teams[ploeg].punten +=
+            Number(r.punten) || 0;
+
+
+        teams[ploeg].kegels +=
+            Number(r.kegels) || 0;
+
+
+        teams[ploeg].gespeeld++;
+
+    });
+
+
+    const klassement =
+        Object.values(teams);
+
+
+    klassement.sort((a, b) => {
+
+        if (
+            b.punten !== a.punten
+        ) {
+
+            return b.punten -
+                   a.punten;
+
+        }
+
+
+        return b.kegels -
+               a.kegels;
+
+    });
+
+
+    klassement.forEach(
+        (team, index) => {
+
+        team.plaats =
+            index + 1;
+
+    });
+
+
+    return {
+
+        datum:
+            laatsteDatum,
+
+        teams:
+            klassement
+
+    };
+
+}
+
+
+/* ============================================================
+   TEAM HTML
+   ============================================================ */
+
+function teamHTML(team) {
+
+    if (!team) {
+
+        return `
+
+            <div class="podium-team">
+                -
+            </div>
+
+            <div class="podium-punten">
+                -
+            </div>
+
+            <div class="podium-gemiddelde">
+                -
+            </div>
+
+        `;
+
+    }
+
+
+    const isRNB =
+        team.ploeg === RNB;
+
+
+    const gemiddelde =
+        team.gespeeld > 0
+            ? team.kegels /
+              team.gespeeld /
+              15
+            : 0;
+
+
+    return `
+
+        <div class="podium-team
+            ${isRNB ? "rnb-podium" : ""}">
+
+            ${team.ploeg}
+
+        </div>
+
+
+        <div class="podium-punten">
+
+            ${team.punten} punten
+            ·
+            ${team.kegels} kegels
+
+        </div>
+
+
+        <div class="podium-gemiddelde">
+
+            Gemiddelde:
+            <strong>
+                ${gemiddelde.toFixed(1)}
+            </strong>
+
+        </div>
+
+    `;
+
+}
+
+
+/* ============================================================
+   VERSCHIL KLEUR
+   ============================================================ */
+
+function verschilHTML(waarde, eenheid) {
+
+    let klasse = "verschil-nul";
+
+    if (waarde < 0) {
+        klasse = "verschil-negatief";
+    }
+
+    if (waarde > 0) {
+        klasse = "verschil-positief";
+    }
+
+
+    const teken =
+        waarde > 0
+            ? "+"
+            : "";
+
+
+    return `
+
+        <span class="${klasse}">
+
+            ${teken}${waarde}
+            ${eenheid}
+
+        </span>
+
+    `;
+
+}
+
+
+/* ============================================================
+   PODIUM
+   ============================================================ */
+
+function maakPodium(klassement) {
+
+    if (!klassement)
+        return "";
+
+
+    const teams =
+        klassement.teams;
+
+
+    const eerste =
+        teams[0];
+
+    const tweede =
+        teams[1];
+
+    const derde =
+        teams[2];
+
+
+    const rnb =
+        teams.find(
+            t => t.ploeg === RNB
+        );
+
+
+    if (!rnb)
+        return "";
+
+
+    const verschilPunten =
+        rnb.punten -
+        eerste.punten;
+
+
+    const verschilKegels =
+        rnb.kegels -
+        eerste.kegels;
+
+
+    return `
+
+        <div class="banner stand">
+
+            <h2>
+                🏆 HUIDIGE STAND
+            </h2>
+
+
+            <div class="podium-datum">
+
+                Klassement na
+                ${datumNL(
+                    klassement.datum
+                )}
+
+            </div>
+
+
+            <div class="podium">
+
+
+                <!-- 2e PLAATS -->
+
+                <div class="podium-plaats tweede">
+
+                    <div class="medaille">
+                        🥈
+                    </div>
+
+                    ${teamHTML(
+                        tweede
+                    )}
+
+                    <div class="podium-blok">
+                        2
+                    </div>
+
+                </div>
+
+
+                <!-- 1e PLAATS -->
+
+                <div class="podium-plaats eerste">
+
+                    <div class="medaille">
+                        🥇
+                    </div>
+
+                    ${teamHTML(
+                        eerste
+                    )}
+
+                    <div class="podium-blok">
+                        1
+                    </div>
+
+                </div>
+
+
+                <!-- 3e PLAATS -->
+
+                <div class="podium-plaats derde">
+
+                    <div class="medaille">
+                        🥉
+                    </div>
+
+                    ${teamHTML(
+                        derde
+                    )}
+
+                    <div class="podium-blok">
+                        3
+                    </div>
+
+                </div>
+
+
+            </div>
+
+
+            <!-- =================================================
+                 RNB BANNER
+                 ================================================= -->
+
+            <div class="rnb-positie">
+
+
+                <div class="rnb-titel">
+
+                    HUIDIGE POSITIE VAN ONZE PLOEG
+
+                </div>
+
+
+                <div class="rnb-naam">
+
+                    ${RNB}
+
+                </div>
+
+
+                <div class="rnb-plaats">
+
+                    ${rnb.plaats}e plaats
+
+                </div>
+
+
+                <div class="rnb-details">
+
+                    ${rnb.punten} punten
+                    ·
+                    ${rnb.kegels} kegels
+
+                </div>
+
+
+                <!-- VERSCHIL -->
+
+                <div class="rnb-verschil">
+
+
+                    <div class="rnb-verschil-titel">
+
+                        VERSCHIL MET DE 1e PLAATS
+
+                    </div>
+
+
+                    <div class="rnb-verschil-waarden">
+
+                        ${verschilHTML(
+                            verschilPunten,
+                            " punten"
+                        )}
+
+                        &nbsp; · &nbsp;
+
+                        ${verschilHTML(
+                            verschilKegels,
+                            " kegels"
+                        )}
+
+                    </div>
+
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+    `;
+
+}
+
+
+/* ============================================================
+   TOPSTATISTIEKEN TONEN
+   ============================================================ */
+
+function toonTopstatistieken(
+    topserie,
+    topmatch,
+    klassement
+) {
+
+    const inhoud =
+        document.getElementById(
+            "inhoud"
+        );
+
+
+    let html = "";
+
+
+    /* ========================================================
+       TOPSERIE
+       ======================================================== */
+
+    if (topserie) {
+
+        html += `
+
+        <div class="banner topserie">
+
+            <h2>
+                🏆 TOPSERIE EVER
+            </h2>
+
+
+            <div class="naam">
+
+                ${topserie.speler}
+
+            </div>
+
+
+            <div class="gegevens">
+
+
+                <div class="gegeven">
+
+                    <div class="gegeven-label">
+                        Game 1
+                    </div>
+
+                    <div class="gegeven-waarde">
+                        ${topserie.game1}
+                    </div>
+
+                </div>
+
+
+                <div class="gegeven">
+
+                    <div class="gegeven-label">
+                        Game 2
+                    </div>
+
+                    <div class="gegeven-waarde">
+                        ${topserie.game2}
+                    </div>
+
+                </div>
+
+
+                <div class="gegeven">
+
+                    <div class="gegeven-label">
+                        Game 3
+                    </div>
+
+                    <div class="gegeven-waarde">
+                        ${topserie.game3}
+                    </div>
+
+                </div>
+
+
+                <div class="gegeven">
+
+                    <div class="gegeven-label">
+                        Serie
+                    </div>
+
+                    <div class="gegeven-waarde serie">
+                        ${topserie.serie}
+                    </div>
+
+                </div>
+
+
+                <div class="gegeven">
+
+                    <div class="gegeven-label">
+                        Gemiddelde
+                    </div>
+
+                    <div class="gegeven-waarde">
+                        ${topserie.gemiddelde.toFixed(1)}
+                    </div>
+
+                </div>
+
+
+                <div class="gegeven">
+
+                    <div class="gegeven-label">
+                        Datum
+                    </div>
+
+                    <div
+                        class="gegeven-waarde"
+                        style="font-size:16px;"
+                    >
+
+                        ${datumNL(
+                            topserie.datum
+                        )}
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+        `;
+
+    }
+
+
+    /* ========================================================
+       TOPMATCH
+       ======================================================== */
+
+    if (topmatch) {
+
+        const rnbIsThuis =
+            topmatch.thuis === RNB;
+
+
+        const tegenstander =
+            rnbIsThuis
+                ? topmatch.uit
+                : topmatch.thuis;
+
+
+        const rnbPunten =
+            rnbIsThuis
+                ? topmatch.puntenThuis
+                : topmatch.puntenUit;
+
+
+        const tegenPunten =
+            rnbIsThuis
+                ? topmatch.puntenUit
+                : topmatch.puntenThuis;
+
+
+        const rnbKegels =
+            rnbIsThuis
+                ? topmatch.kegelsThuis
+                : topmatch.kegelsUit;
+
+
+        const tegenKegels =
+            rnbIsThuis
+                ? topmatch.kegelsUit
+                : topmatch.kegelsThuis;
+
+
+        const rnbGem =
+            rnbIsThuis
+                ? topmatch.gemiddeldeThuis
+                : topmatch.gemiddeldeUit;
+
+
+        const tegenGem =
+            rnbIsThuis
+                ? topmatch.gemiddeldeUit
+                : topmatch.gemiddeldeThuis;
+
+
+        html += `
+
+        <div class="banner topmatch">
+
+
+            <h2>
+                ⚔️ TOPMATCH EVER
+            </h2>
+
+
+            <div class="tegen">
+
+                RNB Geenens Construct-Vapor
+                —
+                ${tegenstander}
+
+            </div>
+
+
+            <div class="match-info">
+
+
+                <div class="match-item">
+
+                    <div class="match-label">
+                        Datum
+                    </div>
+
+                    <div class="match-value">
+
+                        ${datumNL(
+                            topmatch.datum
+                        )}
+
+                    </div>
+
+                </div>
+
+
+                <div class="match-item">
+
+                    <div class="match-label">
+                        Punten
+                    </div>
+
+                    <div class="match-value">
+
+                        ${rnbPunten}
+                        -
+                        ${tegenPunten}
+
+                    </div>
+
+                </div>
+
+
+                <div class="match-item">
+
+                    <div class="match-label">
+                        Kegels
+                    </div>
+
+                    <div class="match-value">
+
+                        ${rnbKegels}
+                        -
+                        ${tegenKegels}
+
+                    </div>
+
+                </div>
+
+
+                <div class="match-item">
+
+                    <div class="match-label">
+                        Gemiddelde
+                    </div>
+
+                    <div class="match-value">
+
+                        ${rnbGem.toFixed(1)}
+                        -
+                        ${tegenGem.toFixed(1)}
+
+                    </div>
+
+                </div>
+
+
+                <div class="match-item">
+
+                    <div class="match-label">
+                        Puntenverschil
+                    </div>
+
+                    <div class="match-value">
+
+                        ${topmatch.verschil}
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+        `;
+
+    }
+
+
+    /* ========================================================
+       PODIUM
+       ======================================================== */
+
+    html +=
+        maakPodium(
+            klassement
+        );
+
+
+    if (!html) {
+
+        html = `
+
+            <div class="loading">
+
+                Nog geen gegevens beschikbaar.
+
+            </div>
+
+        `;
+
+    }
+
+
+    inhoud.innerHTML =
+        html;
+
+}
+
+
+/* ============================================================
+   DATA LADEN
+   ============================================================ */
+
+async function laadData() {
+
+    try {
+
+
+        const [
+            bowlingResult,
+            interteamResult
+        ] = await Promise.all([
+
+
+            supabaseClient
+                .from("bowling_scores")
+                .select("*")
+                .order(
+                    "speeldatum",
+                    {
+                        ascending: true
+                    }
+                ),
+
+
+            supabaseClient
+                .from("interteam_scores")
+                .select("*")
+                .order(
+                    "speeldatum",
+                    {
+                        ascending: true
+                    }
+                )
+
+        ]);
+
+
+        if (bowlingResult.error)
+            throw bowlingResult.error;
+
+
+        if (interteamResult.error)
+            throw interteamResult.error;
+
+
+        const bowlingScores =
+            bowlingResult.data || [];
+
+
+        const interteamScores =
+            interteamResult.data || [];
+
+
+        const topserie =
+            bepaalTopserie(
+                bowlingScores
+            );
+
+
+        const topmatch =
+            bepaalTopmatch(
+                interteamScores
+            );
+
+
+        const klassement =
+            bepaalKlassement(
+                interteamScores
+            );
+
+
+        toonTopstatistieken(
+            topserie,
+            topmatch,
+            klassement
+        );
+
+
+    } catch (error) {
+
+        console.error(error);
+
+
+        document.getElementById(
+            "inhoud"
+        ).innerHTML = `
+
+            <div class="error">
+
+                Fout bij het laden van de
+                statistieken.
+
+                <br><br>
+
+                ${error.message}
+
+            </div>
+
+        `;
+
+    }
+
+}
+
+
+/* ============================================================
+   START
+   ============================================================ */
+
+laadData();
+
+</script>
+
+</body>
+</html>
+```
