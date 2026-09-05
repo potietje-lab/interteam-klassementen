@@ -117,6 +117,38 @@ select {
 
 
 /* =========================================
+   PLOEGEN EN LOCATIE
+   ========================================= */
+
+.team-naam {
+    font-weight: bold;
+}
+
+.team-locatie {
+    font-size: 11px;
+    font-weight: normal;
+    color: #666;
+    margin-top: 3px;
+}
+
+.kalender-link {
+    display: block;
+    text-align: center;
+    margin: -10px 0 20px;
+    font-size: 14px;
+}
+
+.kalender-link a {
+    color: #0b65c2;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.kalender-link a:hover {
+    text-decoration: underline;
+}
+
+/* =========================================
    PLOEGEN
    ========================================= */
 
@@ -187,6 +219,21 @@ select {
     color: #777;
 }
 
+
+
+/* =========================================
+   RNB RESULTATEN
+   ========================================= */
+
+.rnb-resultaten { margin-top:30px; padding-top:20px; border-top:2px dotted #999; }
+.rnb-resultaten h2 { margin-bottom:15px; }
+.resultaat-lijst { margin-bottom:18px; }
+.resultaat-lijst h3 { margin:8px 0; font-size:17px; }
+.resultaat-lijst ul { margin:0; padding-left:20px; }
+.resultaat-lijst li { margin:6px 0; font-size:14px; }
+.resultaat-gewonnen { color:#198754; font-weight:bold; }
+.resultaat-verloren { color:#dc3545; font-weight:bold; }
+.resultaat-gelijk { color:#777; font-weight:bold; }
 
 /* =========================================
    MOBIEL
@@ -294,6 +341,12 @@ select {
 
 <h1>🎳 Interteam Wedstrijden</h1>
 
+<div class="kalender-link">
+    <a href="https://www.bowlingvlaanderen.be/system/files/attachments/3a_0.pdf" target="_blank" rel="noopener noreferrer">
+        📅 Kalender Bowling Vlaanderen
+    </a>
+</div>
+
 
 <h2 id="titelDatum">
     Speeldag
@@ -321,6 +374,8 @@ select {
     Gegevens worden geladen...
 
 </div>
+
+<div id="rnbResultaten" class="rnb-resultaten"></div>
 
 
 </div>
@@ -796,6 +851,8 @@ const WEDSTRIJDEN = {
 
 let alleScores = [];
 
+let alleTeams = [];
+
 
 // =====================================================
 // DATUM OPMAAK
@@ -1006,6 +1063,109 @@ function berekenGemiddelde(
 
 
 // =====================================================
+// TEAM OPZOEKEN
+// =====================================================
+
+function zoekTeam(naam) {
+
+    return alleTeams.find(
+        team =>
+            normaliseer(team.naam) ===
+            normaliseer(naam)
+    ) || null;
+
+}
+
+
+// =====================================================
+// STAND EN PUNTEN PER DATUM
+// =====================================================
+
+function berekenStand(datum) {
+
+    const stand = {};
+
+    alleTeams.forEach(team => {
+        stand[team.naam] = {
+            naam: team.naam,
+            punten: 0,
+            kegels: 0
+        };
+    });
+
+    alleScores.forEach(score => {
+
+        if (score.speeldatum > datum) {
+            return;
+        }
+
+        const team = zoekTeam(score.ploeg);
+
+        if (!team) {
+            return;
+        }
+
+        if (!stand[team.naam]) {
+            stand[team.naam] = {
+                naam: team.naam,
+                punten: 0,
+                kegels: 0
+            };
+        }
+
+        stand[team.naam].punten += Number(score.punten) || 0;
+        stand[team.naam].kegels += Number(score.kegels) || 0;
+
+    });
+
+    return Object.values(stand).sort(
+        (a, b) =>
+            b.punten - a.punten ||
+            b.kegels - a.kegels ||
+            a.naam.localeCompare(b.naam)
+    );
+
+}
+
+
+function ploegInfo(naam, stand) {
+
+    const team = zoekTeam(naam);
+
+    const teamStand =
+        stand.find(
+            item =>
+                normaliseer(item.naam) ===
+                normaliseer(naam)
+        );
+
+    const punten =
+        teamStand?.punten || 0;
+
+    const kegels =
+        teamStand?.kegels || 0;
+
+    // Zolang een team nog geen enkele score heeft,
+    // krijgt het geen rangnummer.
+    const positie =
+        (punten === 0 && kegels === 0)
+            ? "—"
+            : stand.findIndex(
+                item =>
+                    normaliseer(item.naam) ===
+                    normaliseer(naam)
+              ) + 1;
+
+    return {
+        locatie: team?.Locatie || "Locatie onbekend",
+        positie: positie,
+        punten: punten
+    };
+
+}
+
+
+// =====================================================
 // WEDSTRIJDEN TONEN
 // =====================================================
 
@@ -1048,6 +1208,9 @@ function toonWedstrijden() {
             datum
         ] || [];
 
+    const stand =
+        berekenStand(datum);
+
 
     if (
         wedstrijden.length === 0
@@ -1076,6 +1239,12 @@ function toonWedstrijden() {
 
             const ploeg2 =
                 wedstrijd[1];
+
+            const info1 =
+                ploegInfo(ploeg1, stand);
+
+            const info2 =
+                ploegInfo(ploeg2, stand);
 
 
             const score1 =
@@ -1204,9 +1373,14 @@ function toonWedstrijden() {
 
                 <div class="team team-links">
 
-                    ${escapeHtml(
-                        ploeg1
-                    )}
+                    <div class="team-naam">
+                        ${escapeHtml(ploeg1)}
+                        (${info1.positie} - ${info1.punten})
+                    </div>
+
+                    <div class="team-locatie">
+                        📍 ${escapeHtml(info1.locatie)}
+                    </div>
 
                 </div>
 
@@ -1269,9 +1443,14 @@ function toonWedstrijden() {
 
                 <div class="team team-rechts">
 
-                    ${escapeHtml(
-                        ploeg2
-                    )}
+                    <div class="team-naam">
+                        ${escapeHtml(ploeg2)}
+                        (${info2.positie} - ${info2.punten})
+                    </div>
+
+                    <div class="team-locatie">
+                        📍 ${escapeHtml(info2.locatie)}
+                    </div>
 
                 </div>
 
@@ -1345,6 +1524,63 @@ function toonWedstrijden() {
 
 
 // =====================================================
+// RNB RESULTATEN TONEN
+// =====================================================
+
+function toonRnbResultaten() {
+
+    const container = document.getElementById("rnbResultaten");
+    if (!container) return;
+
+    const resultaten = [];
+
+    DATUMS.forEach(datum => {
+        const wedstrijden = WEDSTRIJDEN[datum] || [];
+
+        wedstrijden.forEach(wedstrijd => {
+            const ploeg1 = wedstrijd[0];
+            const ploeg2 = wedstrijd[1];
+
+            if (normaliseer(ploeg1) !== normaliseer(RNB) &&
+                normaliseer(ploeg2) !== normaliseer(RNB)) return;
+
+            const tegenstander = normaliseer(ploeg1) === normaliseer(RNB) ? ploeg2 : ploeg1;
+            const scoreRNB = zoekScore(RNB, datum);
+            const scoreTegenstander = zoekScore(tegenstander, datum);
+
+            if (!scoreRNB || !scoreTegenstander) return;
+
+            let resultaat = "gelijk";
+            if (scoreRNB.punten > scoreTegenstander.punten) resultaat = "gewonnen";
+            if (scoreRNB.punten < scoreTegenstander.punten) resultaat = "verloren";
+
+            resultaten.push({ datum, tegenstander, rnbPunten: scoreRNB.punten, tegenstanderPunten: scoreTegenstander.punten, resultaat });
+        });
+    });
+
+    const gewonnen = resultaten.filter(x => x.resultaat === "gewonnen");
+    const verloren = resultaten.filter(x => x.resultaat === "verloren");
+    const gelijk = resultaten.filter(x => x.resultaat === "gelijk");
+
+    function lijst(items, titel, klasse, leegtekst) {
+        let html = `<div class="resultaat-lijst"><h3 class="${klasse}">${titel} (${items.length})</h3><ul>`;
+        if (!items.length) html += `<li>${leegtekst}</li>`;
+        items.forEach(item => {
+            html += `<li>${datumTekst(item.datum)} — <strong>${escapeHtml(item.tegenstander)}</strong> (${item.rnbPunten} - ${item.tegenstanderPunten})</li>`;
+        });
+        return html + `</ul></div>`;
+    }
+
+    let html = `<h2>🏆 Wedstrijden RNB Geenens</h2>`;
+    html += lijst(gewonnen, "✅ Gewonnen", "resultaat-gewonnen", "Nog geen gewonnen wedstrijden.");
+    html += lijst(verloren, "❌ Verloren", "resultaat-verloren", "Nog geen verloren wedstrijden.");
+    if (gelijk.length) html += lijst(gelijk, "➖ Gelijk", "resultaat-gelijk", "");
+
+    container.innerHTML = html;
+}
+
+
+// =====================================================
 // SUPABASE LADEN
 // =====================================================
 
@@ -1358,6 +1594,37 @@ async function laadScores() {
 
     container.innerHTML =
         "Gegevens worden geladen...";
+
+
+    const {
+        data: teamsData,
+        error: teamsError
+    } = await supabaseClient
+
+        .from("teams")
+        .select("id, naam, Locatie")
+        .eq("actief", true)
+        .order("naam", { ascending: true });
+
+
+    if (teamsError) {
+
+        console.error("Fout bij laden teams:", teamsError);
+
+        container.innerHTML = `
+            <div
+                class="no-data"
+                style="color:red;">
+                ❌ Fout bij het ophalen van de teamgegevens uit Supabase.
+            </div>
+        `;
+
+        return;
+
+    }
+
+
+    alleTeams = teamsData || [];
 
 
     const {
@@ -1413,6 +1680,7 @@ async function laadScores() {
     // Laatste gespeelde datum tonen
 
     toonWedstrijden();
+    toonRnbResultaten();
 
 }
 
