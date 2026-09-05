@@ -293,6 +293,8 @@ canvas {
 
 <th>Gemiddelde</th>
 
+<th>Plaats<br>op kegels</th>
+
 </tr>
 
 </thead>
@@ -875,6 +877,8 @@ function toonAlgemeenKlassement() {
         Object.values(teams);
 
 
+    // Normaal klassement:
+    // eerst punten, daarna kegels.
     lijst.sort(
         (a,b) => {
 
@@ -883,6 +887,39 @@ function toonAlgemeenKlassement() {
             }
 
             return b.kegels - a.kegels;
+
+        }
+    );
+
+
+    // Apart klassement op basis van kegels.
+    // Dit verandert de normale rangschikking NIET.
+    const opKegels =
+        [...lijst].sort(
+            (a,b) => {
+
+                if (b.kegels !== a.kegels) {
+                    return b.kegels - a.kegels;
+                }
+
+                return a.ploeg.localeCompare(
+                    b.ploeg
+                );
+
+            }
+        );
+
+
+    // Plaats op kegels per ploeg bewaren.
+    const plaatsOpKegels = {};
+
+
+    opKegels.forEach(
+        (team, index) => {
+
+            plaatsOpKegels[
+                normaliseer(team.ploeg)
+            ] = index + 1;
 
         }
     );
@@ -900,11 +937,13 @@ function toonAlgemeenKlassement() {
     // Hoogste cumulatieve gemiddelde
     let hoogsteGemiddelde = 0;
 
+
     lijst.forEach(
         team => {
 
             const aantalSpeeldagen =
                 team.datums.size;
+
 
             const gem =
                 aantalSpeeldagen > 0
@@ -914,6 +953,7 @@ function toonAlgemeenKlassement() {
                           AANTAL_SPELERS
                       )
                     : 0;
+
 
             if (gem > hoogsteGemiddelde) {
                 hoogsteGemiddelde = gem;
@@ -969,6 +1009,12 @@ function toonAlgemeenKlassement() {
                 ) < 0.000001;
 
 
+            const positieKegels =
+                plaatsOpKegels[
+                    normaliseer(team.ploeg)
+                ];
+
+
             tr.innerHTML = `
 
                 <td class="position">
@@ -989,6 +1035,10 @@ function toonAlgemeenKlassement() {
 
                 <td class="${gemiddeldeHoogste ? "hoogste-stat" : ""}">
                     ${gem.toFixed(2)}
+                </td>
+
+                <td class="position">
+                    ${positieKegels}
                 </td>
 
             `;
