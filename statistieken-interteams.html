@@ -637,6 +637,7 @@ async function laadData() {
             gespeeldeDatums[gespeeldeDatums.length - 1];
 
         toonWedstrijden();
+        await laadRNBWedstrijden();
         berekenStatistieken();
     } else {
         document.getElementById("wedstrijden").innerHTML =
@@ -681,9 +682,17 @@ function vulDropdown() {
 
 function scoreVan(ploeg, datum) {
 
+    const naam = String(ploeg || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+
     return alleScores.find(r =>
         r.speeldatum === datum &&
-        r.ploeg === ploeg
+        String(r.ploeg || "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toLowerCase() === naam
     );
 }
 
@@ -810,17 +819,80 @@ function toonWedstrijden() {
 
 
 /* ============================================================
-   ALLE GESPEELDE RNB-WEDSTRIJDEN
+   RNB-WEDSTRIJDEN UIT SUPABASE
    ============================================================ */
 
-function rnbWedstrijden() {
+let actueleRNBWedstrijden = null;
+
+async function laadRNBWedstrijden() {
+
+    const { data: wedstrijdenDB, error } = await supabaseClient
+        .from("wedstrijden")
+        .select("geplande_datum, werkelijke_datum, thuisploeg, uitploeg, status");
+
+    if (error) {
+        console.warn("Wedstrijden uit Supabase konden niet geladen worden:", error.message);
+        actueleRNBWedstrijden = null;
+        return;
+    }
 
     const resultaat = [];
 
+    (wedstrijdenDB || []).forEach(w => {
+
+        if (w.thuisploeg !== RNB && w.uitploeg !== RNB)
+            return;
+
+        // Bij een uitgestelde wedstrijd gebruiken we de werkelijke speeldatum.
+        const datum = w.werkelijke_datum || w.geplande_datum;
+
+        const scoreThuis = scoreVan(w.thuisploeg, datum);
+        const scoreUit = scoreVan(w.uitploeg, datum);
+
+        if (!scoreThuis || !scoreUit)
+            return;
+
+        resultaat.push({
+            datum,
+            thuis: w.thuisploeg,
+            uit: w.uitploeg,
+            puntenThuis: Number(scoreThuis.punten),
+            puntenUit: Number(scoreUit.punten),
+            kegelsThuis: Number(scoreThuis.kegels),
+            kegelsUit: Number(scoreUit.kegels),
+            rnbThuis: w.thuisploeg === RNB
+        });
+    });
+
+    actueleRNBWedstrijden =
+        resultaat.length > 0 ? resultaat : null;
+}
+
+
+/* ============================================================
+   ALLE GESPEELDE RNB-WEDSTRIJDEN
+   ============================================================ */
+
+
+function rnbWedstrijden() {
+
+    /*
+       We gebruiken ALTIJD de wedstrijden uit de vaste kalender
+       als basis. Daardoor kan een wedstrijd met bijvoorbeeld
+       31 - 16 nooit verdwijnen uit de statistieken.
+
+       Als een wedstrijd uitgesteld is en later gespeeld wordt,
+       wordt de versie uit Supabase toegevoegd met de werkelijke
+       speeldatum.
+    */
+
+    const resultaat = [];
+    const sleutels = new Set();
+
+    // 1. Normale wedstrijden uit de kalender
     SPEELDATUMS.forEach(datum => {
 
-        const wedstrijden =
-            WEDSTRIJDEN[datum] || [];
+        const wedstrijden = WEDSTRIJDEN[datum] || [];
 
         wedstrijden.forEach(([thuis, uit]) => {
 
@@ -833,7 +905,7 @@ function rnbWedstrijden() {
             if (!scoreThuis || !scoreUit)
                 return;
 
-            resultaat.push({
+            const wedstrijd = {
                 datum,
                 thuis,
                 uit,
@@ -842,11 +914,30 @@ function rnbWedstrijden() {
                 kegelsThuis: Number(scoreThuis.kegels),
                 kegelsUit: Number(scoreUit.kegels),
                 rnbThuis: thuis === RNB
-            });
+            };
 
+            const sleutel = `${datum}|${thuis}|${uit}`;
+
+            if (!sleutels.has(sleutel)) {
+                sleutels.add(sleutel);
+                resultaat.push(wedstrijd);
+            }
         });
-
     });
+
+    // 2. Uitgestelde/inhaalwedstrijden uit Supabase toevoegen
+    if (actueleRNBWedstrijden) {
+
+        actueleRNBWedstrijden.forEach(w => {
+
+            const sleutel = `${w.datum}|${w.thuis}|${w.uit}`;
+
+            if (!sleutels.has(sleutel)) {
+                sleutels.add(sleutel);
+                resultaat.push(w);
+            }
+        });
+    }
 
     return resultaat;
 }
@@ -894,51 +985,65 @@ function berekenPuntenStatistieken() {
     const rnbOverwinningen =
         wedstrijden.filter(w => {
 
-            const rnb =
-                w.rnbThuis
-                    ? w.puntenThuis
-                    : w.puntenUit;
+            const rnbPunten = w.rnbThuis
+                ? Number(w.puntenThuis)
+                : Number(w.puntenUit);
 
-            const tegen =
-                w.rnbThuis
-                    ? w.puntenUit
-                    : w.puntenThuis;
+            const tegenPunten = w.rnbThuis
+                ? Number(w.puntenUit)
+                : Number(w.puntenThuis);
 
-            return rnb > tegen;
+            return Number.isFinite(rnbPunten) &&
+                   Number.isFinite(tegenPunten) &&
+                   rnbPunten > tegenPunten;
         });
 
     if (rnbOverwinningen.length) {
 
         const grootste =
-            [...rnbOverwinningen].sort((a,b) => {
+            rnbOverwinningen.reduce((beste, w) => {
 
-                const va =
-                    Math.abs(a.puntenThuis - a.puntenUit);
+                const rnbPunten = w.rnbThuis
+                    ? Number(w.puntenThuis)
+                    : Number(w.puntenUit);
 
-                const vb =
-                    Math.abs(b.puntenThuis - b.puntenUit);
+                const tegenPunten = w.rnbThuis
+                    ? Number(w.puntenUit)
+                    : Number(w.puntenThuis);
 
-                return vb - va;
+                const verschil = rnbPunten - tegenPunten;
 
-            })[0];
+                if (!beste || verschil > beste.verschil) {
+                    return {
+                        wedstrijd: w,
+                        rnbPunten,
+                        tegenPunten,
+                        verschil
+                    };
+                }
 
-        const verschil =
-            Math.abs(
-                grootste.puntenThuis -
-                grootste.puntenUit
-            );
+                return beste;
+
+            }, null);
+
+        const w = grootste.wedstrijd;
+
+        const tegenstander =
+            w.rnbThuis ? w.uit : w.thuis;
 
         document.getElementById("grootsteOverwinning").textContent =
-            `${verschil} punten`;
+            `${grootste.verschil} punten`;
 
         document.getElementById("grootsteOverwinningExtra").textContent =
-            `${grootste.rnbThuis
-                ? grootste.uit
-                : grootste.thuis}
-             — ${grootste.rnbThuis
-                ? grootste.puntenThuis + " - " + grootste.puntenUit
-                : grootste.puntenUit + " - " + grootste.puntenThuis}
-             (${datumNL(grootste.datum)})`;
+            `${tegenstander} — ${grootste.rnbPunten} - ${grootste.tegenPunten}
+             (${datumNL(w.datum)})`;
+
+    } else {
+
+        document.getElementById("grootsteOverwinning").textContent = "-";
+
+        document.getElementById("grootsteOverwinningExtra").textContent =
+            "Nog geen overwinning beschikbaar";
     }
 
 
