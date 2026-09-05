@@ -233,6 +233,12 @@ canvas {
 
 }
 
+/* HOOGSTE KEGELS EN GEMIDDELDE */
+.hoogste-stat {
+    color: red !important;
+    font-weight: bold !important;
+}
+
 </style>
 
 </head>
@@ -517,28 +523,28 @@ const RNB_TEGENPLOEGEN = {
         "BC Ledeganck 2 Burtline",
 
     "2026-09-18":
-        "TSZ Bieshoop",
+        "",
 
     "2026-09-25":
         "Royal Ghent 3",
 
     "2026-10-02":
-        "Stene - Pleisterwerken Delrue JP",
+        "",
 
     "2026-10-09":
-        "BC Ajuin",
+        "",
 
     "2026-10-16":
         "DCG Yok Tha",
 
     "2026-11-20":
-        "LAT Esento",
+        "FLP ALLCORE IT",
 
     "2026-11-27":
-        "Oilsjt 2 Yok Tha",
+        "LAT Esento",
 
     "2026-12-04":
-        "FLP ALLCORE IT",
+        "Oilsjt 2 Yok Tha",
 
     "2026-12-11":
         "Wuitens",
@@ -837,39 +843,24 @@ function toonAlgemeenKlassement() {
                 score.ploeg;
 
 
-            if (
-                !teams[naam]
-            ) {
+            if (!teams[naam]) {
 
                 teams[naam] = {
-
-                    ploeg:
-                        naam,
-
-                    punten:
-                        0,
-
-                    kegels:
-                        0,
-
-                    datums:
-                        new Set()
-
+                    ploeg: naam,
+                    punten: 0,
+                    kegels: 0,
+                    datums: new Set()
                 };
 
             }
 
 
             teams[naam].punten +=
-                Number(
-                    score.punten
-                ) || 0;
+                Number(score.punten) || 0;
 
 
             teams[naam].kegels +=
-                Number(
-                    score.kegels
-                ) || 0;
+                Number(score.kegels) || 0;
 
 
             teams[naam].datums.add(
@@ -881,35 +872,52 @@ function toonAlgemeenKlassement() {
 
 
     const lijst =
-        Object.values(
-            teams
-        );
+        Object.values(teams);
 
-
-    // Sorteren op punten.
-    // Bij gelijk aantal punten:
-    // hoogste kegels eerst.
 
     lijst.sort(
         (a,b) => {
 
-            if (
-                b.punten !==
-                a.punten
-            ) {
-
-                return (
-                    b.punten -
-                    a.punten
-                );
-
+            if (b.punten !== a.punten) {
+                return b.punten - a.punten;
             }
 
+            return b.kegels - a.kegels;
 
-            return (
-                b.kegels -
-                a.kegels
-            );
+        }
+    );
+
+
+    // Hoogste cumulatieve kegels
+    const hoogsteKegels =
+        Math.max(
+            ...lijst.map(
+                team => Number(team.kegels) || 0
+            )
+        );
+
+
+    // Hoogste cumulatieve gemiddelde
+    let hoogsteGemiddelde = 0;
+
+    lijst.forEach(
+        team => {
+
+            const aantalSpeeldagen =
+                team.datums.size;
+
+            const gem =
+                aantalSpeeldagen > 0
+                    ? team.kegels /
+                      (
+                          aantalSpeeldagen *
+                          AANTAL_SPELERS
+                      )
+                    : 0;
+
+            if (gem > hoogsteGemiddelde) {
+                hoogsteGemiddelde = gem;
+            }
 
         }
     );
@@ -925,12 +933,8 @@ function toonAlgemeenKlassement() {
 
 
             if (
-                normaliseer(
-                    team.ploeg
-                ) ===
-                normaliseer(
-                    RNB
-                )
+                normaliseer(team.ploeg) ===
+                normaliseer(RNB)
             ) {
 
                 tr.classList.add(
@@ -939,13 +943,6 @@ function toonAlgemeenKlassement() {
 
             }
 
-
-            /*
-             * CORRECT CUMULATIEF GEMIDDELDE
-             *
-             * Totaal kegels /
-             * (aantal gespeelde speeldagen × 15)
-             */
 
             const aantalSpeeldagen =
                 team.datums.size;
@@ -961,6 +958,17 @@ function toonAlgemeenKlassement() {
                     : 0;
 
 
+            const kegelsHoogste =
+                Number(team.kegels) ===
+                hoogsteKegels;
+
+
+            const gemiddeldeHoogste =
+                Math.abs(
+                    gem - hoogsteGemiddelde
+                ) < 0.000001;
+
+
             tr.innerHTML = `
 
                 <td class="position">
@@ -968,20 +976,18 @@ function toonAlgemeenKlassement() {
                 </td>
 
                 <td class="team-name">
-                    ${escapeHtml(
-                        team.ploeg
-                    )}
+                    ${escapeHtml(team.ploeg)}
                 </td>
 
                 <td>
                     ${team.punten}
                 </td>
 
-                <td>
+                <td class="${kegelsHoogste ? "hoogste-stat" : ""}">
                     ${team.kegels}
                 </td>
 
-                <td>
+                <td class="${gemiddeldeHoogste ? "hoogste-stat" : ""}">
                     ${gem.toFixed(2)}
                 </td>
 
@@ -996,7 +1002,6 @@ function toonAlgemeenKlassement() {
     );
 
 }
-
 
 // =====================================================
 // 2. KLASSEMENT PER SPEELDAG
@@ -1024,17 +1029,14 @@ function toonSpeeldag() {
 
 
     if (!datum) {
-
         return;
-
     }
 
 
     const lijst =
         alleScores.filter(
             score =>
-                score.speeldatum ===
-                datum
+                score.speeldatum === datum
         );
 
 
@@ -1053,7 +1055,6 @@ function toonSpeeldag() {
 
             }
 
-
             return (
                 Number(b.kegels) -
                 Number(a.kegels)
@@ -1061,6 +1062,26 @@ function toonSpeeldag() {
 
         }
     );
+
+
+    if (lijst.length === 0) {
+        return;
+    }
+
+
+    // Hoogste aantal kegels van deze speeldag
+    const hoogsteKegels =
+        Math.max(
+            ...lijst.map(
+                score => Number(score.kegels) || 0
+            )
+        );
+
+
+    // Hoogste gemiddelde van deze speeldag
+    const hoogsteGemiddelde =
+        hoogsteKegels /
+        AANTAL_SPELERS;
 
 
     lijst.forEach(
@@ -1073,12 +1094,8 @@ function toonSpeeldag() {
 
 
             if (
-                normaliseer(
-                    score.ploeg
-                ) ===
-                normaliseer(
-                    RNB
-                )
+                normaliseer(score.ploeg) ===
+                normaliseer(RNB)
             ) {
 
                 tr.classList.add(
@@ -1088,13 +1105,17 @@ function toonSpeeldag() {
             }
 
 
-            // Gemiddelde van deze speeldag
+            const kegels =
+                Number(score.kegels) || 0;
+
 
             const gem =
-                Number(
-                    score.kegels
-                ) /
+                kegels /
                 AANTAL_SPELERS;
+
+
+            const hoogste =
+                kegels === hoogsteKegels;
 
 
             tr.innerHTML = `
@@ -1104,24 +1125,18 @@ function toonSpeeldag() {
                 </td>
 
                 <td class="team-name">
-                    ${escapeHtml(
-                        score.ploeg
-                    )}
+                    ${escapeHtml(score.ploeg)}
                 </td>
 
                 <td>
-                    ${Number(
-                        score.punten
-                    )}
+                    ${Number(score.punten)}
                 </td>
 
-                <td>
-                    ${Number(
-                        score.kegels
-                    )}
+                <td class="${hoogste ? "hoogste-stat" : ""}">
+                    ${kegels}
                 </td>
 
-                <td>
+                <td class="${hoogste ? "hoogste-stat" : ""}">
                     ${gem.toFixed(2)}
                 </td>
 
@@ -1136,7 +1151,6 @@ function toonSpeeldag() {
     );
 
 }
-
 
 // =====================================================
 // 3. RNB STATISTIEK
@@ -1223,6 +1237,35 @@ function toonRNBStatistiek() {
     }
 
 
+    /*
+     * HOOGSTE KEGELS
+     *
+     * We zoeken eerst het hoogste aantal kegels
+     * over alle gespeelde wedstrijden.
+     */
+
+    const hoogsteKegels =
+        Math.max(
+            ...lijst.map(
+                score =>
+                    Number(score.kegels) || 0
+            )
+        );
+
+
+    /*
+     * HOOGSTE GEMIDDELDE
+     *
+     * Het gemiddelde is kegels / 15.
+     * Daardoor hoort het hoogste gemiddelde
+     * bij het hoogste aantal kegels.
+     */
+
+    const hoogsteGemiddelde =
+        hoogsteKegels /
+        AANTAL_SPELERS;
+
+
     lijst.forEach(
         score => {
 
@@ -1238,10 +1281,12 @@ function toonRNBStatistiek() {
              * kegels / 15 spelers
              */
 
+            const kegels =
+                Number(score.kegels) || 0;
+
+
             const gem =
-                Number(
-                    score.kegels
-                ) /
+                kegels /
                 AANTAL_SPELERS;
 
 
@@ -1250,6 +1295,16 @@ function toonRNBStatistiek() {
                     score.speeldatum
                 ] ||
                 "Onbekend";
+
+
+            /*
+             * Als dit de hoogste score is:
+             * kegels én gemiddelde worden
+             * vet en rood weergegeven.
+             */
+
+            const hoogste =
+                kegels === hoogsteKegels;
 
 
             tr.innerHTML = `
@@ -1272,13 +1327,11 @@ function toonRNBStatistiek() {
                     )}
                 </td>
 
-                <td>
-                    ${Number(
-                        score.kegels
-                    )}
+                <td class="${hoogste ? "hoogste-stat" : ""}">
+                    ${kegels}
                 </td>
 
-                <td>
+                <td class="${hoogste ? "hoogste-stat" : ""}">
                     ${gem.toFixed(2)}
                 </td>
 
@@ -1293,7 +1346,6 @@ function toonRNBStatistiek() {
     );
 
 }
-
 
 // =====================================================
 // 4. RNB EVOLUTIEGRAFIEK
