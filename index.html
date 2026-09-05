@@ -1,301 +1,297 @@
 <!DOCTYPE html>
+
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Interteam klassementen heenmatchen</title>
+```
+<title>Interteam klassementen heenmatchen</title>
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+<style>
+    * {
+        box-sizing: border-box;
+    }
 
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, Helvetica, sans-serif;
-            background: #f3f4f6;
-            color: #222;
-        }
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: #f3f4f6;
+        color: #222;
+    }
+
+    .container {
+        max-width: 1000px;
+        margin: 40px auto;
+        padding: 20px;
+    }
+
+    .header {
+        background: #ffffff;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 25px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .header h1 {
+        margin: 0;
+        font-size: 32px;
+        color: #222;
+    }
+
+    .documents {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+
+    .document {
+        background: #ffffff;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        gap: 15px;
+    }
+
+    .document-title {
+        font-size: 19px;
+        font-weight: bold;
+    }
+
+    .pdf-button {
+        display: inline-block;
+        background: #1976d2;
+        color: white;
+        text-decoration: none;
+        padding: 10px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: bold;
+        white-space: nowrap;
+    }
+
+    .pdf-button:hover {
+        background: #125ca3;
+    }
+
+    /* Smartphone */
+    @media (max-width: 700px) {
 
         .container {
-            max-width: 1000px;
-            margin: 40px auto;
-            padding: 20px;
-        }
-
-        .header {
-            background: #ffffff;
-            padding: 30px;
-            border-radius: 12px;
-            margin-bottom: 25px;
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        }
-
-        .header h1 {
-            margin: 0;
-            font-size: 32px;
-            color: #222;
+            margin: 15px auto;
+            padding: 10px;
         }
 
         .documents {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
+            grid-template-columns: 1fr;
         }
 
         .document {
-            background: #ffffff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-
-            gap: 15px;
-        }
-
-        .document-title {
-            font-size: 19px;
-            font-weight: bold;
+            flex-direction: column;
+            align-items: stretch;
         }
 
         .pdf-button {
-            display: inline-block;
-            background: #1976d2;
-            color: white;
-            text-decoration: none;
-            padding: 10px 16px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: bold;
-            white-space: nowrap;
+            width: 100%;
+            text-align: center;
         }
 
-        .pdf-button:hover {
-            background: #125ca3;
+        .header h1 {
+            font-size: 26px;
         }
+    }
+</style>
+```
 
-        /* Smartphone */
-        @media (max-width: 700px) {
-
-            .container {
-                margin: 15px auto;
-                padding: 10px;
-            }
-
-            .documents {
-                grid-template-columns: 1fr;
-            }
-
-            .document {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .pdf-button {
-                width: 100%;
-                text-align: center;
-            }
-
-            .header h1 {
-                font-size: 26px;
-            }
-        }
-    </style>
 </head>
 
 <body>
 
 <div class="container">
 
-    <!-- TITEL -->
-    <div class="header">
-        <h1>Interteam klassementen heenmatchen</h1>
-    </div>
+```
+<!-- TITEL -->
+<div class="header">
+    <h1>Interteam klassementen heenmatchen</h1>
+</div>
 
+<div class="documents">
 
     <!-- SPEELDAG 1 -->
-    <div class="documents">
-
-        <div class="document">
-            <div class="document-title">
-                04/09/2026
-            </div>
-
-            <a
-                class="pdf-button"
-                href="Speeldag-01.pdf"
-                target="_blank">
-                📄 PDF bekijken
-            </a>
+    <div class="document">
+        <div class="document-title">
+            04/09/2026
         </div>
 
-
-        <!-- SPEELDAG 2 -->
-
-        <div class="document">
-            <div class="document-title">
-                11/09/2026
-            </div>
-
-            <a
-                class="pdf-button"
-                href="Speeldag-02.pdf"
-                target="_blank">
-                📄 PDF bekijken
-            </a>
-        </div>
-
-
-        <!-- SPEELDAG 3 -->
-
-        <div class="document">
-            <div class="document-title">
-                18/09/2026
-            </div>
-
-            <a
-                class="pdf-button"
-                href="Speeldag-03.pdf"
-                target="_blank">
-                📄 PDF bekijken
-            </a>
-        </div>
-
-
-        <!-- SPEELDAG 4 -->
-
-        <div class="document">
-            <div class="document-title">
-                25/09/2026
-            </div>
-
-            <a
-                class="pdf-button"
-                href="Speeldag-04.pdf"
-                target="_blank">
-                📄 PDF bekijken
-            </a>
-        </div>
-
-
-        <!-- SPEELDAG 5 -->
-
-        <div class="document">
-            <div class="document-title">
-                02/10/2026
-            </div>
-
-            <a
-                class="pdf-button"
-                href="Speeldag-05.pdf"
-                target="_blank">
-                📄 PDF bekijken
-            </a>
-        </div>
-
-
-        <!-- SPEELDAG 6 -->
-
-        <div class="document">
-            <div class="document-title">
-                09/10/2026
-            </div>
-
-            <a
-                class="pdf-button"
-                href="Speeldag-06.pdf"
-                target="_blank">
-                📄 PDF bekijken
-            </a>
-        </div>
-
-
-        <!-- SPEELDAG 7 -->
-
-        <div class="document">
-            <div class="document-title">
-                16/10/2026
-            </div>
-
-            <a
-                class="pdf-button"
-                href="Speeldag-07.pdf"
-                target="_blank">
-                📄 PDF bekijken
-            </a>
-        </div>
-
-
-        <!-- SPEELDAG 8 -->
-
-        <div class="document">
-            <div class="document-title">
-                20/11/2026
-            </div>
-
-            <a
-                class="pdf-button"
-                href="Speeldag-08.pdf"
-                target="_blank">
-                📄 PDF bekijken
-            </a>
-        </div>
-
-
-        <!-- SPEELDAG 9 -->
-
-        <div class="document">
-            <div class="document-title">
-                27/11/2026
-            </div>
-
-            <a
-                class="pdf-button"
-                href="Speeldag-09.pdf"
-                target="_blank">
-                📄 PDF bekijken
-            </a>
-        </div>
-
-
-        <!-- SPEELDAG 10 -->
-
-        <div class="document">
-            <div class="document-title">
-                04/12/2026
-            </div>
-
-            <a
-                class="pdf-button"
-                href="Speeldag-10.pdf"
-                target="_blank">
-                📄 PDF bekijken
-            </a>
-        </div>
-
-
-        <!-- SPEELDAG 11 -->
-
-        <div class="document">
-            <div class="document-title">
-                11/12/2026
-            </div>
-
-            <a
-                class="pdf-button"
-                href="Speeldag-11.pdf"
-                target="_blank">
-                📄 PDF bekijken
-            </a>
-        </div>
-
+        <a
+            class="pdf-button"
+            href="https://potietje-lab.github.io/interteam-klassementen/Speeldag-01.pdf"
+            target="_blank"
+            rel="noopener">
+            📄 PDF bekijken
+        </a>
     </div>
+
+    <!-- SPEELDAG 2 -->
+    <div class="document">
+        <div class="document-title">
+            11/09/2026
+        </div>
+
+        <a
+            class="pdf-button"
+            href="https://potietje-lab.github.io/interteam-klassementen/Speeldag-02.pdf"
+            target="_blank"
+            rel="noopener">
+            📄 PDF bekijken
+        </a>
+    </div>
+
+    <!-- SPEELDAG 3 -->
+    <div class="document">
+        <div class="document-title">
+            18/09/2026
+        </div>
+
+        <a
+            class="pdf-button"
+            href="https://potietje-lab.github.io/interteam-klassementen/Speeldag-03.pdf"
+            target="_blank"
+            rel="noopener">
+            📄 PDF bekijken
+        </a>
+    </div>
+
+    <!-- SPEELDAG 4 -->
+    <div class="document">
+        <div class="document-title">
+            25/09/2026
+        </div>
+
+        <a
+            class="pdf-button"
+            href="https://potietje-lab.github.io/interteam-klassementen/Speeldag-04.pdf"
+            target="_blank"
+            rel="noopener">
+            📄 PDF bekijken
+        </a>
+    </div>
+
+    <!-- SPEELDAG 5 -->
+    <div class="document">
+        <div class="document-title">
+            02/10/2026
+        </div>
+
+        <a
+            class="pdf-button"
+            href="https://potietje-lab.github.io/interteam-klassementen/Speeldag-05.pdf"
+            target="_blank"
+            rel="noopener">
+            📄 PDF bekijken
+        </a>
+    </div>
+
+    <!-- SPEELDAG 6 -->
+    <div class="document">
+        <div class="document-title">
+            09/10/2026
+        </div>
+
+        <a
+            class="pdf-button"
+            href="https://potietje-lab.github.io/interteam-klassementen/Speeldag-06.pdf"
+            target="_blank"
+            rel="noopener">
+            📄 PDF bekijken
+        </a>
+    </div>
+
+    <!-- SPEELDAG 7 -->
+    <div class="document">
+        <div class="document-title">
+            16/10/2026
+        </div>
+
+        <a
+            class="pdf-button"
+            href="https://potietje-lab.github.io/interteam-klassementen/Speeldag-07.pdf"
+            target="_blank"
+            rel="noopener">
+            📄 PDF bekijken
+        </a>
+    </div>
+
+    <!-- SPEELDAG 8 -->
+    <div class="document">
+        <div class="document-title">
+            20/11/2026
+        </div>
+
+        <a
+            class="pdf-button"
+            href="https://potietje-lab.github.io/interteam-klassementen/Speeldag-08.pdf"
+            target="_blank"
+            rel="noopener">
+            📄 PDF bekijken
+        </a>
+    </div>
+
+    <!-- SPEELDAG 9 -->
+    <div class="document">
+        <div class="document-title">
+            27/11/2026
+        </div>
+
+        <a
+            class="pdf-button"
+            href="https://potietje-lab.github.io/interteam-klassementen/Speeldag-09.pdf"
+            target="_blank"
+            rel="noopener">
+            📄 PDF bekijken
+        </a>
+    </div>
+
+    <!-- SPEELDAG 10 -->
+    <div class="document">
+        <div class="document-title">
+            04/12/2026
+        </div>
+
+        <a
+            class="pdf-button"
+            href="https://potietje-lab.github.io/interteam-klassementen/Speeldag-10.pdf"
+            target="_blank"
+            rel="noopener">
+            📄 PDF bekijken
+        </a>
+    </div>
+
+    <!-- SPEELDAG 11 -->
+    <div class="document">
+        <div class="document-title">
+            11/12/2026
+        </div>
+
+        <a
+            class="pdf-button"
+            href="https://potietje-lab.github.io/interteam-klassementen/Speeldag-11.pdf"
+            target="_blank"
+            rel="noopener">
+            📄 PDF bekijken
+        </a>
+    </div>
+
+</div>
+```
 
 </div>
 
