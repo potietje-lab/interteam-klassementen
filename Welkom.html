@@ -1,4 +1,4 @@
-```html
+
 <!DOCTYPE html>
 <html lang="nl">
 <head>
@@ -158,18 +158,39 @@ body {
 }
 
 
-#standTable th:first-child,
-#standTable td:first-child {
+/* =====================================================
+   KLEUR RANG
+   ===================================================== */
 
-    border-radius: 6px 0 0 6px;
+#standTable td.rangGroen {
+
+    background: #28a745 !important;
+
+    color: white !important;
+
+    font-weight: bold;
 
 }
 
 
-#standTable th:last-child,
-#standTable td:last-child {
+#standTable td.rangGeel {
 
-    border-radius: 0 6px 6px 0;
+    background: #ffc107 !important;
+
+    color: #222 !important;
+
+    font-weight: bold;
+
+}
+
+
+#standTable td.rangRood {
+
+    background: #dc3545 !important;
+
+    color: white !important;
+
+    font-weight: bold;
 
 }
 
@@ -341,6 +362,75 @@ body {
 }
 
 
+
+/* =====================================================
+   BELANGRIJKE MEDEDELING POPUP
+   ===================================================== */
+
+#importantPopup {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.72);
+    z-index: 2000;
+    padding: 20px;
+}
+
+#importantPopup.show {
+    display: flex;
+}
+
+#importantPopupBox {
+    width: min(95%, 520px);
+    background: white;
+    border-radius: 18px;
+    padding: 28px 24px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.45);
+    animation: importantPopupOpen 0.35s ease;
+}
+
+#importantPopupTitle {
+    margin: 0 0 16px 0;
+    font-size: 26px;
+    color: #d32f2f;
+}
+
+#importantPopupText {
+    margin: 0 0 24px 0;
+    font-size: 18px;
+    line-height: 1.55;
+    color: #222;
+}
+
+#importantPopupButton {
+    border: none;
+    border-radius: 8px;
+    padding: 12px 28px;
+    background: #1976d2;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#importantPopupButton:hover {
+    background: #125ca3;
+}
+
+@keyframes importantPopupOpen {
+    from {
+        opacity: 0;
+        transform: scale(0.82);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
 /* =====================================================
    GSM
    ===================================================== */
@@ -461,6 +551,22 @@ body {
 
     }
 
+    #importantPopupBox {
+        padding: 24px 18px;
+    }
+
+    #importantPopupTitle {
+        font-size: 22px;
+    }
+
+    #importantPopupText {
+        font-size: 17px;
+    }
+
+    #importantPopupButton {
+        width: 100%;
+    }
+
 }
 
 </style>
@@ -468,6 +574,31 @@ body {
 
 
 <body>
+
+<!-- =====================================================
+     BELANGRIJKE MEDEDELING
+     ===================================================== -->
+
+<div id="importantPopup">
+
+    <div id="importantPopupBox">
+
+        <h2 id="importantPopupTitle">
+            📢 BELANGRIJKE MEDEDELING
+        </h2>
+
+        <p id="importantPopupText">
+            Hier komt je belangrijke mededeling.
+        </p>
+
+        <button id="importantPopupButton" onclick="sluitBelangrijkeMelding()">
+            OK, begrepen
+        </button>
+
+    </div>
+
+</div>
+
 
 
 <!-- =====================================================
@@ -477,20 +608,14 @@ body {
 <div id="welcomeScreen">
 
 
-    <div id="welcomeText">
-
-        Beste bowlingvrienden,<br>
-        geniet van deze site !
-
-    </div>
+    <div id="welcomeText"></div>
 
 
     <!-- =================================================
-         HUIDIGE STAND VAN DE PLOEG
+         HUIDIGE STAND
          ================================================= -->
 
     <div id="standBox">
-
 
         <div id="standTitle">
 
@@ -535,13 +660,17 @@ body {
 
             </thead>
 
+
             <tbody>
 
                 <tr>
 
                     <td id="rang">-</td>
+
                     <td id="punten">-</td>
+
                     <td id="kegels">-</td>
+
                     <td id="gemiddelde">-</td>
 
                 </tr>
@@ -549,7 +678,6 @@ body {
             </tbody>
 
         </table>
-
 
     </div>
 
@@ -562,7 +690,9 @@ body {
          onclick="closeWelcome()">
 
         <div class="hole hole1"></div>
+
         <div class="hole hole2"></div>
+
         <div class="hole hole3"></div>
 
     </div>
@@ -580,8 +710,113 @@ body {
 
 <script>
 
+
+
 /* =====================================================
-   SUPABASE
+   INSTELLINGEN BELANGRIJKE MEDEDELING
+   ===================================================== */
+
+/*
+   true  = popup tonen
+   false = popup niet tonen
+*/
+const POPUP_ACTIEF = false;
+
+/*
+   TITEL VAN DE MEDEDELING
+*/
+const POPUP_TITEL = "📢 BELANGRIJKE MEDEDELING";
+
+/*
+   TEKST VAN DE MEDEDELING
+*/
+const POPUP_TEKST =
+    " Hier komt je belangrijke mededeling.";
+
+
+/* =====================================================
+   POPUP TONEN
+   ===================================================== */
+
+function toonBelangrijkeMelding() {
+
+    if (!POPUP_ACTIEF) {
+        return;
+    }
+
+    document.getElementById("importantPopupTitle").textContent =
+        POPUP_TITEL;
+
+    document.getElementById("importantPopupText").textContent =
+        POPUP_TEKST;
+
+    document.getElementById("importantPopup").classList.add("show");
+}
+
+
+/* =====================================================
+   POPUP SLUITEN
+   ===================================================== */
+
+function sluitBelangrijkeMelding() {
+
+    document.getElementById("importantPopup").classList.remove("show");
+}
+
+
+/* Popup automatisch tonen */
+window.addEventListener("load", function() {
+
+    toonBelangrijkeMelding();
+
+});
+
+
+
+/* =====================================================
+   DAG- EN TIJDGEBONDEN WELKOMSTTEKST
+   ===================================================== */
+
+function bepaalBegroeting() {
+
+    const nu = new Date();
+    const uur = nu.getHours();
+    const dag = nu.getDay();
+
+    let begroeting;
+
+    if (uur >= 5 && uur < 12) {
+        begroeting = "Goede morgen";
+    }
+    else if (uur >= 12 && uur < 18) {
+        begroeting = "Goede middag";
+    }
+    else {
+        begroeting = "Goede avond";
+    }
+
+    const teksten = {
+
+        1: "Maandag, we starten de week met volle moed! 💪",
+        2: "Dinsdag, trainingsdag! 🎳",
+        3: "Woensdag, we zijn halfweg…! ⭐",
+        4: "Donderdag, nog even doorzetten… de finish komt eraan! 🚀",
+        5: "Vrijdag, tijd om te stralen! ✨",
+        6: "Zaterdag, weekendmodus: genieten maar! 😎",
+        0: "Zondag, een mooie dag om de batterijen op te laden! ☀️"
+
+    };
+
+    document.getElementById("welcomeText").innerHTML =
+        begroeting + "<br>" + teksten[dag];
+}
+
+
+/* Welkomsttekst tonen */
+bepaalBegroeting();
+
+/* =====================================================
+   SUPABASE VERBINDING
    ===================================================== */
 
 const SUPABASE_URL =
@@ -616,7 +851,7 @@ const AANTAL_SPELERS =
 
 
 /* =====================================================
-   NAAR WEBSITE GAAN
+   NAAR ROLL & BOWL HOMEPAGE
    ===================================================== */
 
 function closeWelcome() {
@@ -628,10 +863,11 @@ function closeWelcome() {
 
 
 /* =====================================================
-   STAND OPHALEN
+   HUIDIGE STAND OPHALEN
    ===================================================== */
 
 async function laadHuidigeStand() {
+
 
     const loading =
         document.getElementById(
@@ -653,8 +889,9 @@ async function laadHuidigeStand() {
 
     try {
 
+
         /* ---------------------------------------------
-           GEGEVENS UIT SUPABASE OPHALEN
+           GEGEVENS UIT SUPABASE
            --------------------------------------------- */
 
         const { data, error } =
@@ -684,13 +921,14 @@ async function laadHuidigeStand() {
 
 
         /* ---------------------------------------------
-           ALLE PLOEGEN SAMENVOEGEN
+           PLOEGEN SAMENVOEGEN
            --------------------------------------------- */
 
         const teams = {};
 
 
         scores.forEach(score => {
+
 
             const ploeg =
                 score.ploeg;
@@ -725,11 +963,12 @@ async function laadHuidigeStand() {
                 score.speeldatum
             );
 
+
         });
 
 
         /* ---------------------------------------------
-           PLOEGEN OMZETTEN NAAR LIJST
+           LIJST VAN PLOEGEN
            --------------------------------------------- */
 
         const lijst =
@@ -738,8 +977,8 @@ async function laadHuidigeStand() {
 
         /* ---------------------------------------------
            SORTEREN
-           1. MEESTE PUNTEN
-           2. MEESTE KEGELS
+           1. PUNTEN
+           2. KEGELS
            --------------------------------------------- */
 
         lijst.sort(
@@ -815,7 +1054,7 @@ async function laadHuidigeStand() {
 
 
         /* ---------------------------------------------
-           GEMIDDELDE BEREKENEN
+           GEMIDDELDE
            --------------------------------------------- */
 
         const gemiddelde =
@@ -831,20 +1070,72 @@ async function laadHuidigeStand() {
 
 
         /* ---------------------------------------------
-           GEGEVENS OP SCHERM ZETTEN
+           RANG
            --------------------------------------------- */
 
-        document.getElementById(
-            "rang"
-        ).textContent =
+        const rang =
             rnbIndex + 1;
 
+
+        const rangElement =
+            document.getElementById(
+                "rang"
+            );
+
+
+        rangElement.textContent =
+            rang;
+
+
+        /* ---------------------------------------------
+           RANG KLEUR GEVEN
+           --------------------------------------------- */
+
+        rangElement.classList.remove(
+            "rangGroen",
+            "rangGeel",
+            "rangRood"
+        );
+
+
+        if (rang === 1) {
+
+            rangElement.classList.add(
+                "rangGroen"
+            );
+
+        }
+
+        else if (rang === 2) {
+
+            rangElement.classList.add(
+                "rangGeel"
+            );
+
+        }
+
+        else {
+
+            rangElement.classList.add(
+                "rangRood"
+            );
+
+        }
+
+
+        /* ---------------------------------------------
+           PUNTEN
+           --------------------------------------------- */
 
         document.getElementById(
             "punten"
         ).textContent =
             team.punten;
 
+
+        /* ---------------------------------------------
+           KEGELS
+           --------------------------------------------- */
 
         document.getElementById(
             "kegels"
@@ -853,6 +1144,10 @@ async function laadHuidigeStand() {
                 "nl-BE"
             );
 
+
+        /* ---------------------------------------------
+           GEMIDDELDE
+           --------------------------------------------- */
 
         document.getElementById(
             "gemiddelde"
@@ -871,12 +1166,17 @@ async function laadHuidigeStand() {
         table.style.display =
             "table";
 
+
     }
 
 
     catch (err) {
 
-        console.error(err);
+
+        console.error(
+            "Fout bij laden stand:",
+            err
+        );
 
 
         loading.style.display =
@@ -923,14 +1223,9 @@ function normaliseer(naam) {
 
 laadHuidigeStand();
 
+
 </script>
 
 </body>
 </html>
 ```
-
-**Let op:** ik heb de knopfunctie nu veranderd. De bowlingbal doet niet langer alleen het welkomstscherm verdwijnen, maar stuurt de bezoeker naar:
-
-**https://sites.google.com/view/rollbowl/homepage**
-
-Als je deze code in GitHub zet en daarna in je Google Site laadt, zou de bowlingbal dus naar je homepage moeten gaan.
