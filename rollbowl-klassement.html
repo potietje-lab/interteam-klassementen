@@ -179,6 +179,23 @@ button:hover {
     background: #fafafa;
 }
 
+
+/* ========================================= */
+/* PLOEGGEMIDDELDE                           */
+/* ========================================= */
+
+.ploeggemiddelde {
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    margin: 10px 0 5px 0;
+}
+
+
+/* ========================================= */
+/* GRAFIEK SELECTIE                           */
+/* ========================================= */
+
 .grafiek-selectie {
     margin-top: 15px;
 }
@@ -289,6 +306,14 @@ Gegevens worden geladen...
 <!-- ================================================= -->
 
 <h2>📊 Gemiddelde per speler</h2>
+
+
+<div id="ploegGemiddelde"
+     class="ploeggemiddelde">
+
+Ploeggemiddelde wordt berekend...
+
+</div>
 
 
 <div class="grafiek-box">
@@ -829,6 +854,29 @@ function maakPinsGrafiek(
           totaalGames
 
         : 0;
+
+
+
+    // -----------------------------------------------
+    // PLOEGGEMIDDELDE BOVEN DE GRAFIEK
+    // -----------------------------------------------
+
+    const ploegGemiddeldeTekst =
+
+        document.getElementById(
+            "ploegGemiddelde"
+        );
+
+
+    if (ploegGemiddeldeTekst) {
+
+        ploegGemiddeldeTekst.innerHTML =
+
+            "🔴 Ploeggemiddelde: " +
+
+            ploegGemiddelde.toFixed(2);
+
+    }
 
 
 
