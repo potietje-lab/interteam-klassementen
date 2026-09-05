@@ -367,6 +367,75 @@ h1 {
 }
 
 </style>
+<style>
+    .vergelijking {
+        margin-top: 35px;
+        padding: 22px;
+        border-radius: 16px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.18);
+    }
+
+    .vergelijking h2 {
+        margin-top: 0;
+        margin-bottom: 18px;
+    }
+
+    .vergelijk-selecties {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    .vergelijk-selecties select {
+        min-width: 260px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid #aaa;
+        font-size: 15px;
+    }
+
+    .vergelijk-tabel {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+
+    .vergelijk-tabel th,
+    .vergelijk-tabel td {
+        padding: 10px;
+        text-align: center;
+        border-bottom: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .vergelijk-tabel th:first-child,
+    .vergelijk-tabel td:first-child {
+        text-align: left;
+        font-weight: bold;
+    }
+
+    .vergelijk-verschil {
+        margin-top: 18px;
+        font-size: 18px;
+        font-weight: bold;
+        line-height: 1.8;
+    }
+
+    .verschil-positief {
+        color: #39d353;
+    }
+
+    .verschil-negatief {
+        color: #ff5252;
+    }
+
+    .verschil-nul {
+        color: #ccc;
+    }
+</style>
+
 
 </head>
 
@@ -1033,14 +1102,26 @@ function maakPodium(klassement) {
         return "";
 
 
+    // Zowel punten als kegels vergelijken met dezelfde ploeg:
+    // de ploeg die cumulatief de meeste kegels heeft.
+    const ploegMeesteKegels =
+        teams.reduce(
+            (beste, team) =>
+                Number(team.kegels) > Number(beste.kegels)
+                    ? team
+                    : beste,
+            teams[0]
+        );
+
+
     const verschilPunten =
-        rnb.punten -
-        eerste.punten;
+        Number(rnb.punten) -
+        Number(ploegMeesteKegels.punten);
 
 
     const verschilKegels =
-        rnb.kegels -
-        eerste.kegels;
+        Number(rnb.kegels) -
+        Number(ploegMeesteKegels.kegels);
 
 
     return `
@@ -1169,7 +1250,7 @@ function maakPodium(klassement) {
 
                     <div class="rnb-verschil-titel">
 
-                        VERSCHIL MET DE 1e PLAATS
+                        VERSCHIL MET PLOEG MET MEESTE KEGELS
 
                     </div>
 
@@ -1618,6 +1699,49 @@ async function laadData() {
             klassement
         );
 
+        // =====================================================
+        // PLOEGEN VOOR DE VERGELIJKING
+        // =====================================================
+
+        if (
+            klassement &&
+            Array.isArray(klassement.teams)
+        ) {
+
+            window.teamsVoorVergelijking =
+                klassement.teams.map(
+                    team => ({
+
+                        naam:
+                            team.ploeg,
+
+                        plaats:
+                            team.plaats,
+
+                        punten:
+                            Number(team.punten) || 0,
+
+                        kegels:
+                            Number(team.kegels) || 0,
+
+                        gemiddelde:
+                            team.gespeeld > 0
+                                ? (
+                                    Number(team.kegels) /
+                                    Number(team.gespeeld) /
+                                    15
+                                  )
+                                : 0
+
+                    })
+                );
+
+            vulVergelijkPloegen(
+                window.teamsVoorVergelijking
+            );
+
+        }
+
 
     } catch (error) {
 
@@ -1653,6 +1777,146 @@ async function laadData() {
 laadData();
 
 </script>
+
+
+<!-- Ploegen vergelijken -->
+<section class="vergelijking">
+    <h2>🔎 Ploegen vergelijken</h2>
+
+    <div class="vergelijk-selecties">
+        <select id="vergelijkPloeg1" onchange="toonVergelijking()">
+            <option value="">-- Kies ploeg 1 --</option>
+        </select>
+
+        <select id="vergelijkPloeg2" onchange="toonVergelijking()">
+            <option value="">-- Kies ploeg 2 --</option>
+        </select>
+    </div>
+
+    <div id="vergelijkResultaat">
+        Kies hierboven twee ploegen om ze met elkaar te vergelijken.
+    </div>
+</section>
+
+
+<script>
+function vulVergelijkPloegen(teams) {
+    const ploeg1 = document.getElementById("vergelijkPloeg1");
+    const ploeg2 = document.getElementById("vergelijkPloeg2");
+
+    if (!ploeg1 || !ploeg2) return;
+
+    ploeg1.innerHTML = '<option value="">-- Kies ploeg 1 --</option>';
+    ploeg2.innerHTML = '<option value="">-- Kies ploeg 2 --</option>';
+
+    teams.forEach(team => {
+        const naam = team.naam || team.ploeg;
+
+        if (!naam) return;
+
+        const option1 = document.createElement("option");
+        option1.value = naam;
+        option1.textContent = naam;
+        ploeg1.appendChild(option1);
+
+        const option2 = document.createElement("option");
+        option2.value = naam;
+        option2.textContent = naam;
+        ploeg2.appendChild(option2);
+    });
+}
+
+function toonVergelijking() {
+    const naam1 = document.getElementById("vergelijkPloeg1")?.value;
+    const naam2 = document.getElementById("vergelijkPloeg2")?.value;
+    const resultaat = document.getElementById("vergelijkResultaat");
+
+    if (!naam1 || !naam2) {
+        resultaat.innerHTML = "Kies hierboven twee ploegen om ze met elkaar te vergelijken.";
+        return;
+    }
+
+    const zoek = naam =>
+        (window.teamsVoorVergelijking || []).find(
+            t => String(t.naam || t.ploeg).trim().toLowerCase() === naam.trim().toLowerCase()
+        );
+
+    const team1 = zoek(naam1);
+    const team2 = zoek(naam2);
+
+    if (!team1 || !team2) {
+        resultaat.innerHTML = "De gegevens van één van de ploegen konden niet worden gevonden.";
+        return;
+    }
+
+    const punten1 = Number(team1.punten) || 0;
+    const punten2 = Number(team2.punten) || 0;
+    const kegels1 = Number(team1.kegels) || 0;
+    const kegels2 = Number(team2.kegels) || 0;
+    const gem1 = Number(team1.gemiddelde ?? (kegels1 / 15)) || 0;
+    const gem2 = Number(team2.gemiddelde ?? (kegels2 / 15)) || 0;
+    const plaats1 = team1.plaats ?? "-";
+    const plaats2 = team2.plaats ?? "-";
+
+    const verschilPunten = punten1 - punten2;
+    const verschilKegels = kegels1 - kegels2;
+
+    const verschilKlasse = waarde =>
+        waarde > 0 ? "verschil-positief" :
+        waarde < 0 ? "verschil-negatief" : "verschil-nul";
+
+    const teken = waarde => waarde > 0 ? "+" : "";
+
+    resultaat.innerHTML = `
+        <table class="vergelijk-tabel">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>${team1.naam || team1.ploeg}</th>
+                    <th>${team2.naam || team2.ploeg}</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Plaats</td>
+                    <td>${plaats1}</td>
+                    <td>${plaats2}</td>
+                </tr>
+                <tr>
+                    <td>Punten</td>
+                    <td>${punten1}</td>
+                    <td>${punten2}</td>
+                </tr>
+                <tr>
+                    <td>Kegels</td>
+                    <td>${kegels1.toLocaleString("nl-BE")}</td>
+                    <td>${kegels2.toLocaleString("nl-BE")}</td>
+                </tr>
+                <tr>
+                    <td>Gemiddelde</td>
+                    <td>${gem1.toFixed(1).replace(".", ",")}</td>
+                    <td>${gem2.toFixed(1).replace(".", ",")}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="vergelijk-verschil">
+            Verschil punten:
+            <span class="${verschilKlasse(verschilPunten)}">
+                ${teken(verschilPunten)}${verschilPunten}
+            </span>
+            <br>
+            Verschil kegels:
+            <span class="${verschilKlasse(verschilKegels)}">
+                ${teken(verschilKegels)}${verschilKegels.toLocaleString("nl-BE")}
+            </span>
+        </div>
+    `;
+}
+</script>
+
+
+
 
 </body>
 </html>
