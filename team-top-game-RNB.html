@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team top game</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f5f5f5;margin:0;padding:20px;color:#222}
+.container{max-width:700px;margin:auto}
+h1{text-align:center;margin-bottom:8px}
+.team{text-align:center;font-size:20px;font-weight:bold;margin-bottom:25px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
+.card{background:#fff;border-radius:12px;padding:22px 10px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.game{font-size:18px;font-weight:bold;margin-bottom:10px}
+.score{font-size:42px;font-weight:bold}
+.date{margin-top:10px;color:#666;font-size:14px}
+.status{text-align:center;margin:20px 0;color:#666}
+.error{color:#b00020;font-weight:bold}
+@media(max-width:600px){.cards{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🏆 Team top game</h1>
+<div class="team">RNB Geenens Construct-Vapor</div>
+<div id="status" class="status">Scores worden geladen...</div>
+
+<div class="cards">
+<div class="card"><div class="game">Game 1</div><div id="game1" class="score">-</div><div id="date1" class="date"></div></div>
+<div class="card"><div class="game">Game 2</div><div id="game2" class="score">-</div><div id="date2" class="date"></div></div>
+<div class="card"><div class="game">Game 3</div><div id="game3" class="score">-</div><div id="date3" class="date"></div></div>
+</div>
+</div>
+
+<script>
+const SUPABASE_URL="https://wnsvbtskynkewxggmjem.supabase.co";
+const SUPABASE_KEY="sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+
+/*
+  In players.team staat de ploeg als:
+  RNB Geenens
+
+  Op de website tonen we de volledige naam:
+  RNB Geenens Construct-Vapor
+*/
+const DATABASE_TEAM="RNB Geenens";
+const DISPLAY_TEAM="RNB Geenens Construct-Vapor";
+
+const headers={
+  "apikey":SUPABASE_KEY,
+  "Authorization":"Bearer "+SUPABASE_KEY
+};
+
+function formatDate(s){
+  const d=new Date(s+"T00:00:00");
+  return d.toLocaleDateString("nl-BE",{
+    day:"2-digit",
+    month:"2-digit",
+    year:"numeric"
+  });
+}
+
+async function getJson(url){
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),10000);
+
+  try{
+    const response=await fetch(url,{
+      headers:headers,
+      signal:controller.signal
+    });
+
+    const text=await response.text();
+
+    if(!response.ok){
+      throw new Error("Supabase fout "+response.status+": "+text);
+    }
+
+    return JSON.parse(text);
+  }finally{
+    clearTimeout(timeout);
+  }
+}
+
+async function laadTopGames(){
+
+  try{
+
+    // 1. Spelers van RNB Geenens ophalen
+    const playersUrl=
+      SUPABASE_URL+
+      "/rest/v1/players?select=id,name,team"+
+      "&team=eq."+encodeURIComponent(DATABASE_TEAM);
+
+    const players=await getJson(playersUrl);
+
+    if(!players.length){
+      throw new Error(
+        "Geen spelers gevonden voor "+DATABASE_TEAM+"."
+      );
+    }
+
+    // 2. ID's van de spelers verzamelen
+    const playerIds=players.map(p=>p.id);
+
+    // 3. Scores van deze spelers ophalen
+    const scoresUrl=
+      SUPABASE_URL+
+      "/rest/v1/bowling_scores"+
+      "?select=speeldatum,speler,game1,game2,game3,player_id"+
+      "&player_id=in.("+playerIds.join(",")+")"+
+      "&order=speeldatum.asc";
+
+    const scores=await getJson(scoresUrl);
+
+    if(!scores.length){
+      throw new Error(
+        "Er zijn geen bowling scores gevonden voor "+DATABASE_TEAM+"."
+      );
+    }
+
+    /*
+      Per speeldatum:
+      Game 1 = som van Game 1 van de spelers
+      Game 2 = som van Game 2 van de spelers
+      Game 3 = som van Game 3 van de spelers
+    */
+    const perDatum={};
+
+    scores.forEach(row=>{
+
+      if(!perDatum[row.speeldatum]){
+        perDatum[row.speeldatum]={
+          game1:0,
+          game2:0,
+          game3:0
+        };
+      }
+
+      if(row.game1!==null)
+        perDatum[row.speeldatum].game1+=Number(row.game1);
+
+      if(row.game2!==null)
+        perDatum[row.speeldatum].game2+=Number(row.game2);
+
+      if(row.game3!==null)
+        perDatum[row.speeldatum].game3+=Number(row.game3);
+    });
+
+    // Hoogste totaal per game bepalen
+    const beste=[
+      {score:-1,datum:null},
+      {score:-1,datum:null},
+      {score:-1,datum:null}
+    ];
+
+    Object.entries(perDatum).forEach(([datum,total])=>{
+
+      if(total.game1>beste[0].score){
+        beste[0]={score:total.game1,datum:datum};
+      }
+
+      if(total.game2>beste[1].score){
+        beste[1]={score:total.game2,datum:datum};
+      }
+
+      if(total.game3>beste[2].score){
+        beste[2]={score:total.game3,datum:datum};
+      }
+    });
+
+    // Resultaat tonen
+    document.getElementById("game1").textContent=beste[0].score;
+    document.getElementById("game2").textContent=beste[1].score;
+    document.getElementById("game3").textContent=beste[2].score;
+
+    document.getElementById("date1").textContent=
+      formatDate(beste[0].datum);
+
+    document.getElementById("date2").textContent=
+      formatDate(beste[1].datum);
+
+    document.getElementById("date3").textContent=
+      formatDate(beste[2].datum);
+
+    document.getElementById("status").textContent=
+      "Hoogste ploegtotalen tot nu toe";
+
+  }catch(error){
+
+    console.error(error);
+
+    const status=document.getElementById("status");
+
+    status.textContent=error.message;
+    status.className="status error";
+  }
+}
+
+laadTopGames();
+</script>
+</body>
+</html>
