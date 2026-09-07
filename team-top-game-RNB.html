@@ -19,6 +19,18 @@ h1{text-align:center;margin-bottom:8px}
 .status{text-align:center;margin:20px 0;color:#666}
 .error{color:#b00020;font-weight:bold}
 @media(max-width:600px){.cards{grid-template-columns:1fr}}
+
+.player-section{margin-top:30px;background:#fff;border-radius:12px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.player-section h2{text-align:center;margin:0 0 15px;font-size:21px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{padding:10px 8px;border-bottom:1px solid #ddd;text-align:center}
+th{background:#eee}
+td:first-child,th:first-child{text-align:left}
+.best{font-weight:bold;background:#dff3df}\n.best-score{font-size:22px;font-weight:bold}
+.best-label{text-align:center;color:#666;font-size:13px;margin-top:12px}
+@media(max-width:600px){.player-section{padding:10px}table{font-size:14px}th,td{padding:9px 5px}}
+
 </style>
 </head>
 <body>
@@ -55,7 +67,22 @@ h1{text-align:center;margin-bottom:8px}
   <div class="avg-label">Gemiddelde tot nog toe</div>
   <div id="avgToDate3" class="average">-</div>
 </div>
+
+<div class="player-section">
+<h2>👤 Gemiddelde per speler tot nog toe</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Speler</th><th>Game 1</th><th>Game 2</th><th>Game 3</th><th>Beste game</th><th>Totaal gemiddelde</th>
+</tr>
+</thead>
+<tbody id="playerTable"></tbody>
+</table>
 </div>
+<div class="best-label">Groen = de game waarin de speler gemiddeld het beste scoort.</div>
+</div>
+
 </div>
 
 <script>
@@ -70,6 +97,9 @@ const SUPABASE_KEY="sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
   RNB Geenens Construct-Vapor
 */
 const DATABASE_TEAM="RNB Geenens";
+
+// Deze spelers zijn reserve en worden niet opgenomen in de gemiddelden per speler.
+const RESERVE_SPELERS=["Nancy","Silke","Yannick"];
 const DISPLAY_TEAM="RNB Geenens Construct-Vapor";
 
 const headers={
@@ -234,8 +264,97 @@ async function laadTopGames(){
           : "-";
     });
 
+    // Gemiddelde per speler en beste game bepalen
+    const perSpeler={};
+
+    players.forEach(p=>{
+      perSpeler[p.id]={
+        name:p.name,
+        games:{
+          1:{total:0,count:0},
+          2:{total:0,count:0},
+          3:{total:0,count:0}
+        }
+      };
+    });
+
+    scores.forEach(row=>{
+      if(!perSpeler[row.player_id]) return;
+
+      [1,2,3].forEach(n=>{
+        const value=row["game"+n];
+        if(value!==null && value!==undefined && value!==""){
+          const number=Number(value);
+          if(Number.isFinite(number)){
+            perSpeler[row.player_id].games[n].total += number;
+            perSpeler[row.player_id].games[n].count++;
+          }
+        }
+      });
+    });
+
+    const tbody=document.getElementById("playerTable");
+    tbody.innerHTML="";
+
+    Object.values(perSpeler)
+      .filter(player => !RESERVE_SPELERS.some(reserve =>
+        player.name.trim().toLowerCase() === reserve.trim().toLowerCase()
+      ))
+      .sort((a,b)=>a.name.localeCompare(b.name,"nl"))
+      .forEach(player=>{
+
+        const averages={};
+
+        [1,2,3].forEach(n=>{
+          const g=player.games[n];
+          averages[n]=g.count ? g.total/g.count : null;
+        });
+
+        const available=[1,2,3].filter(n=>averages[n]!==null);
+        const bestGame=available.length
+          ? available.reduce((best,n)=>averages[n]>averages[best]?n:best,available[0])
+          : null;
+
+        const tr=document.createElement("tr");
+
+        const nameTd=document.createElement("td");
+        nameTd.textContent=player.name;
+        tr.appendChild(nameTd);
+
+        [1,2,3].forEach(n=>{
+          const td=document.createElement("td");
+          td.textContent=averages[n]!==null ? averages[n].toFixed(1) : "-";
+          if(n===bestGame) td.className="best";
+          tr.appendChild(td);
+        });
+
+        const bestTd=document.createElement("td");
+        bestTd.textContent=bestGame ? bestGame : "-";
+        bestTd.className="best-score";
+        bestTd.style.fontSize="28px";
+        bestTd.style.fontWeight="bold";
+        tr.appendChild(bestTd);
+
+        // Totaal gemiddelde over alle games van de speler tot nu toe
+        let totaal=0;
+        let aantal=0;
+
+        [1,2,3].forEach(n=>{
+          const g=player.games[n];
+          totaal += g.total;
+          aantal += g.count;
+        });
+
+        const totaalTd=document.createElement("td");
+        totaalTd.textContent=aantal ? (totaal/aantal).toFixed(1) : "-";
+        totaalTd.className="best";
+        tr.appendChild(totaalTd);
+
+        tbody.appendChild(tr);
+      });
+
     document.getElementById("status").textContent=
-      "Hoogste ploegtotalen en gemiddelden tot nu toe";
+      "Hoogste ploegtotalen en gemiddelde per speler tot nu toe";
 
   }catch(error){
 
