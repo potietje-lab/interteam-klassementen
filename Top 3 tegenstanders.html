@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rollbowl - Top 3 tegenstanders</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;padding:20px;background:transparent;color:#222}
+.container{max-width:900px;margin:auto;background:rgba(255,255,255,.96);padding:25px;border-radius:18px;box-shadow:0 4px 18px rgba(0,0,0,.12)}
+h1{text-align:center;margin-top:0;font-size:28px}.subtitel{text-align:center;margin-bottom:25px;color:#555}
+.status{text-align:center;padding:15px;color:#666}table{width:100%;border-collapse:collapse}
+th,td{padding:13px 10px;border-bottom:1px solid #ddd;text-align:center}th{background:#f1f1f1}
+td:nth-child(2){text-align:left;font-weight:bold}.plaats{font-size:22px;width:60px}.kegels{font-weight:bold;font-size:18px}
+.fout{color:#b00020;text-align:center;padding:20px;font-weight:bold}
+@media(max-width:600px){body{padding:8px}.container{padding:15px 8px}h1{font-size:22px}th,td{padding:10px 5px;font-size:14px}.plaats{font-size:18px}.kegels{font-size:16px}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div class="container">
+<h1>🎳 Tegenstanders</h1>
+<div class="subtitel">Hoogste aantal kegels in gespeelde wedstrijden</div>
+<div id="status" class="status">Gegevens worden geladen...</div>
+<div id="lijst"></div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://wnsvbtskynkewxggmjem.supabase.co";
+const SUPABASE_KEY = "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+const RNB = "RNB Geenens Construct-Vapor";
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function norm(v){
+  return String(v ?? "")
+    .trim()
+    .replace(/\s+/g," ")
+    .toLowerCase();
+}
+
+function formatDatum(d){
+  if(!d) return "";
+  const p = d.split("-");
+  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d;
+}
+
+async function laadData(){
+
+  const status = document.getElementById("status");
+  const lijst = document.getElementById("lijst");
+
+  try{
+
+    // Scores + team_id ophalen
+    const { data: scores, error: scoreError } = await db
+      .from("interteam_scores")
+      .select("speeldatum, ploeg, kegels, punten, team_id");
+
+    if(scoreError) throw scoreError;
+
+    // Teams ophalen zodat team_id altijd naar de actuele ploegnaam kan worden vertaald
+    const { data: teams, error: teamError } = await db
+      .from("teams")
+      .select("id, naam, actief");
+
+    if(teamError) throw teamError;
+
+    const teamById = new Map(
+      (teams || []).map(t => [String(t.id), t.naam])
+    );
+
+    function scoreTeamName(s){
+      if(s.team_id != null && teamById.has(String(s.team_id))){
+        return teamById.get(String(s.team_id));
+      }
+      return s.ploeg;
+    }
+
+    // Alle scores voorzien van één gestandaardiseerde teamnaam
+    const scoreRows = (scores || []).map(s => ({
+      ...s,
+      teamNaam: scoreTeamName(s),
+      kegelsNum: Number(s.kegels),
+      puntenNum: Number(s.punten) || 0
+    }));
+
+    // RNB-ID bepalen
+    const rnbTeam = (teams || []).find(t => norm(t.naam) === norm(RNB));
+    const rnbId = rnbTeam ? String(rnbTeam.id) : null;
+
+    // RNB scores bepalen via team_id als die beschikbaar is,
+    // anders via de ploegnaam.
+    const rnbScores = scoreRows.filter(s =>
+      (rnbId && s.team_id != null && String(s.team_id) === rnbId) ||
+      norm(s.teamNaam) === norm(RNB)
+    );
+
+    // Wedstrijden ophalen
+    const { data: wedstrijden, error: wedstrijdError } = await db
+      .from("wedstrijden")
+      .select("id, geplande_datum, werkelijke_datum, thuisploeg, uitploeg, status")
+      .order("geplande_datum", { ascending:true });
+
+    if(wedstrijdError) throw wedstrijdError;
+
+    const resultaten = [];
+    const unieke = new Set();
+
+    for(const rnbScore of rnbScores){
+
+      const scoreDatum = rnbScore.speeldatum;
+
+      // Zoek wedstrijden waarvan de werkelijke datum gelijk is aan
+      // de datum waarop RNB daadwerkelijk een score heeft.
+      const kandidaten = (wedstrijden || []).filter(w => {
+
+        const wedstrijdDatum = w.werkelijke_datum || w.geplande_datum;
+
+        if(wedstrijdDatum !== scoreDatum) return false;
+
+        return norm(w.thuisploeg) === norm(RNB) ||
+               norm(w.uitploeg) === norm(RNB);
+      });
+
+      for(const w of kandidaten){
+
+        const tegenstander =
+          norm(w.thuisploeg) === norm(RNB)
+            ? w.uitploeg
+            : w.thuisploeg;
+
+        // Zoek eerst via de teamnaam die in wedstrijden staat.
+        // Hierdoor zijn spaties/hoofdletters geen probleem.
+        const tegenScore = scoreRows.find(s =>
+          s.speeldatum === scoreDatum &&
+          norm(s.teamNaam) === norm(tegenstander)
+        );
+
+        if(!tegenScore) continue;
+        if(!Number.isFinite(tegenScore.kegelsNum)) continue;
+
+        const sleutel =
+          `${scoreDatum}|${norm(tegenstander)}|${tegenScore.kegelsNum}`;
+
+        if(unieke.has(sleutel)) continue;
+        unieke.add(sleutel);
+
+        resultaten.push({
+          tegenstander: tegenScore.teamNaam,
+          kegels: tegenScore.kegelsNum,
+          rnbKegels: rnbScore.kegelsNum,
+          punten: tegenScore.puntenNum,
+          datum: scoreDatum
+        });
+      }
+    }
+
+    // Rangschikking 1: hoogste score van tegenstanders waarmee RNB
+    // daadwerkelijk gespeeld heeft.
+    resultaten.sort((a,b) => b.kegels - a.kegels);
+    const top3TegenstandersRNB = resultaten.slice(0,3);
+
+    // Rangschikking 2: hoogste individuele score van ALLE ploegen.
+    // Deze ploegen hoefden dus niet tegen RNB gespeeld te hebben.
+    const alleScores = scoreRows
+      .filter(s => Number.isFinite(s.kegelsNum))
+      .map(s => ({
+        ploeg: s.teamNaam,
+        kegels: s.kegelsNum,
+        punten: s.puntenNum,
+        datum: s.speeldatum
+      }))
+      .sort((a,b) => b.kegels - a.kegels);
+
+    const top3AllePloegen = alleScores.slice(0,3);
+
+    status.textContent =
+      `RNB-tegenstanders: ${resultaten.length} wedstrijden gevonden.`;
+
+    const maakKaarten = (items) => {
+      if(!items.length){
+        return `<div class="kaart"><strong>Geen resultaten gevonden.</strong></div>`;
+      }
+
+      return items.map((r,i) => `
+        <div class="kaart">
+          <div class="rang">${i+1}</div>
+          <div class="gegevens">
+            <div class="tegenstander">${r.tegenstander || r.ploeg}</div>
+            <div class="details">
+              <strong>${r.kegels} kegels</strong>
+              &nbsp; • &nbsp;
+              ${r.rnbKegels != null ? `RNB: ${r.rnbKegels} kegels &nbsp; • &nbsp; Verschil: ${r.kegels - r.rnbKegels} kegels &nbsp; • &nbsp;` : ""}
+              ${r.punten} punten
+              &nbsp; • &nbsp;
+              ${formatDatum(r.datum)}
+            </div>
+          </div>
+        </div>
+      `).join("");
+    };
+
+    const rnbTitel = document.createElement("h2");
+    rnbTitel.textContent = '🎳 Top 3 tegen ons gespeeld';
+    lijst.innerHTML = maakKaarten(top3TegenstandersRNB);
+
+    const alleTitel = document.createElement("h2");
+    alleTitel.textContent = "🏆 Top 3 van alle ploegen";
+
+    const alleBlok = document.createElement("div");
+    alleBlok.innerHTML = maakKaarten(top3AllePloegen);
+
+    lijst.prepend(rnbTitel);
+    lijst.appendChild(alleTitel);
+    lijst.appendChild(alleBlok);
+
+    status.textContent =
+      `Gevonden wedstrijden: ${resultaten.length} — gesorteerd op kegels van de tegenstander.`;
+
+  }catch(error){
+
+    console.error(error);
+
+    status.textContent = "Fout bij het laden.";
+
+    lijst.innerHTML = `
+      <div class="kaart fout">
+        <strong>Fout bij het laden van de gegevens.</strong>
+        <p>${error.message || error}</p>
+      </div>`;
+  }
+}
+
+laadData();
+</script>
+</body>
+</html>
