@@ -14,6 +14,8 @@ h1{text-align:center;margin-bottom:8px}
 .game{font-size:18px;font-weight:bold;margin-bottom:10px}
 .score{font-size:42px;font-weight:bold}
 .date{margin-top:10px;color:#666;font-size:14px}
+.avg-label{margin-top:18px;font-size:13px;color:#666}
+.average{font-size:22px;font-weight:bold;margin-top:4px}
 .status{text-align:center;margin:20px 0;color:#666}
 .error{color:#b00020;font-weight:bold}
 @media(max-width:600px){.cards{grid-template-columns:1fr}}
@@ -26,9 +28,33 @@ h1{text-align:center;margin-bottom:8px}
 <div id="status" class="status">Scores worden geladen...</div>
 
 <div class="cards">
-<div class="card"><div class="game">Game 1</div><div id="game1" class="score">-</div><div id="date1" class="date"></div></div>
-<div class="card"><div class="game">Game 2</div><div id="game2" class="score">-</div><div id="date2" class="date"></div></div>
-<div class="card"><div class="game">Game 3</div><div id="game3" class="score">-</div><div id="date3" class="date"></div></div>
+<div class="card">
+  <div class="game">Game 1</div>
+  <div id="game1" class="score">-</div>
+  <div id="date1" class="date"></div>
+  <div class="avg-label">Ploeggemiddelde</div>
+  <div id="avgBest1" class="average">-</div>
+  <div class="avg-label">Gemiddelde tot nog toe</div>
+  <div id="avgToDate1" class="average">-</div>
+</div>
+<div class="card">
+  <div class="game">Game 2</div>
+  <div id="game2" class="score">-</div>
+  <div id="date2" class="date"></div>
+  <div class="avg-label">Ploeggemiddelde</div>
+  <div id="avgBest2" class="average">-</div>
+  <div class="avg-label">Gemiddelde tot nog toe</div>
+  <div id="avgToDate2" class="average">-</div>
+</div>
+<div class="card">
+  <div class="game">Game 3</div>
+  <div id="game3" class="score">-</div>
+  <div id="date3" class="date"></div>
+  <div class="avg-label">Ploeggemiddelde</div>
+  <div id="avgBest3" class="average">-</div>
+  <div class="avg-label">Gemiddelde tot nog toe</div>
+  <div id="avgToDate3" class="average">-</div>
+</div>
 </div>
 </div>
 
@@ -95,15 +121,12 @@ async function laadTopGames(){
     const players=await getJson(playersUrl);
 
     if(!players.length){
-      throw new Error(
-        "Geen spelers gevonden voor "+DATABASE_TEAM+"."
-      );
+      throw new Error("Geen spelers gevonden voor "+DATABASE_TEAM+".");
     }
 
-    // 2. ID's van de spelers verzamelen
+    // 2. Scores van deze spelers ophalen
     const playerIds=players.map(p=>p.id);
 
-    // 3. Scores van deze spelers ophalen
     const scoresUrl=
       SUPABASE_URL+
       "/rest/v1/bowling_scores"+
@@ -120,10 +143,12 @@ async function laadTopGames(){
     }
 
     /*
-      Per speeldatum:
-      Game 1 = som van Game 1 van de spelers
-      Game 2 = som van Game 2 van de spelers
-      Game 3 = som van Game 3 van de spelers
+      Per speeldatum bewaren we:
+      - het totaal van de ploeg per game
+      - het aantal spelers met een score per game
+
+      Daardoor kunnen we het echte ploeggemiddelde berekenen:
+      ploegtotaal / aantal spelers met een score.
     */
     const perDatum={};
 
@@ -131,60 +156,86 @@ async function laadTopGames(){
 
       if(!perDatum[row.speeldatum]){
         perDatum[row.speeldatum]={
-          game1:0,
-          game2:0,
-          game3:0
+          game1:{total:0,count:0},
+          game2:{total:0,count:0},
+          game3:{total:0,count:0}
         };
       }
 
-      if(row.game1!==null)
-        perDatum[row.speeldatum].game1+=Number(row.game1);
+      [1,2,3].forEach(n=>{
+        const value=row["game"+n];
 
-      if(row.game2!==null)
-        perDatum[row.speeldatum].game2+=Number(row.game2);
-
-      if(row.game3!==null)
-        perDatum[row.speeldatum].game3+=Number(row.game3);
+        if(value!==null && value!==undefined && value!==""){
+          perDatum[row.speeldatum]["game"+n].total += Number(value);
+          perDatum[row.speeldatum]["game"+n].count++;
+        }
+      });
     });
 
-    // Hoogste totaal per game bepalen
-    const beste=[
-      {score:-1,datum:null},
-      {score:-1,datum:null},
-      {score:-1,datum:null}
-    ];
+    const games=[1,2,3];
 
-    Object.entries(perDatum).forEach(([datum,total])=>{
+    // Hoogste ploegscore per game bepalen
+    const beste=games.map(n=>({
+      score:-1,
+      datum:null,
+      gemiddelde:0
+    }));
 
-      if(total.game1>beste[0].score){
-        beste[0]={score:total.game1,datum:datum};
-      }
+    // Gemiddelde tot nog toe per game:
+    // alle scores van alle gespeelde speeldagen samen / aantal scores.
+    const totaalTotNogToe=games.map(n=>({
+      total:0,
+      count:0
+    }));
 
-      if(total.game2>beste[1].score){
-        beste[1]={score:total.game2,datum:datum};
-      }
+    Object.entries(perDatum).forEach(([datum,data])=>{
 
-      if(total.game3>beste[2].score){
-        beste[2]={score:total.game3,datum:datum};
-      }
+      games.forEach(n=>{
+
+        const g=data["game"+n];
+
+        if(g.count>0){
+
+          totaalTotNogToe[n-1].total += g.total;
+          totaalTotNogToe[n-1].count += g.count;
+
+          if(g.total>beste[n-1].score){
+            beste[n-1]={
+              score:g.total,
+              datum:datum,
+              gemiddelde:g.total/g.count
+            };
+          }
+        }
+      });
     });
 
-    // Resultaat tonen
-    document.getElementById("game1").textContent=beste[0].score;
-    document.getElementById("game2").textContent=beste[1].score;
-    document.getElementById("game3").textContent=beste[2].score;
+    // Resultaten tonen
+    games.forEach(n=>{
 
-    document.getElementById("date1").textContent=
-      formatDate(beste[0].datum);
+      const b=beste[n-1];
+      const gemiddeldTotNogToe=
+        totaalTotNogToe[n-1].count>0
+          ? totaalTotNogToe[n-1].total / totaalTotNogToe[n-1].count
+          : 0;
 
-    document.getElementById("date2").textContent=
-      formatDate(beste[1].datum);
+      document.getElementById("game"+n).textContent=
+        b.score>=0 ? b.score : "-";
 
-    document.getElementById("date3").textContent=
-      formatDate(beste[2].datum);
+      document.getElementById("date"+n).textContent=
+        b.datum ? formatDate(b.datum) : "";
+
+      document.getElementById("avgBest"+n).textContent=
+        b.gemiddelde>0 ? b.gemiddelde.toFixed(1) : "-";
+
+      document.getElementById("avgToDate"+n).textContent=
+        gemiddeldTotNogToe>0
+          ? gemiddeldTotNogToe.toFixed(1)
+          : "-";
+    });
 
     document.getElementById("status").textContent=
-      "Hoogste ploegtotalen tot nu toe";
+      "Hoogste ploegtotalen en gemiddelden tot nu toe";
 
   }catch(error){
 
@@ -196,7 +247,6 @@ async function laadTopGames(){
     status.className="status error";
   }
 }
-
 laadTopGames();
 </script>
 </body>
