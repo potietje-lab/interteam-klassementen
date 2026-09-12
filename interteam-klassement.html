@@ -294,6 +294,7 @@ canvas {
 <th>Gemiddelde</th>
 
 <th>Plaats<br>op kegels</th>
+<th>Verschil</th>
 
 </tr>
 
@@ -821,6 +822,53 @@ function laadDatumDropdown() {
 
 
 // =====================================================
+// HULPFUNCTIE: CUMULATIEF KLASSEMENT TOT EEN DATUM
+// =====================================================
+
+function maakCumulatiefKlassement(totDatum) {
+
+    const teams = {};
+
+    alleScores
+        .filter(score => score.speeldatum <= totDatum)
+        .forEach(score => {
+
+            const naam = score.ploeg;
+
+            if (!teams[naam]) {
+                teams[naam] = {
+                    ploeg: naam,
+                    punten: 0,
+                    kegels: 0,
+                    datums: new Set()
+                };
+            }
+
+            teams[naam].punten += Number(score.punten) || 0;
+            teams[naam].kegels += Number(score.kegels) || 0;
+            teams[naam].datums.add(score.speeldatum);
+        });
+
+    const lijst = Object.values(teams);
+
+    lijst.sort((a,b) => {
+
+        if (b.punten !== a.punten) {
+            return b.punten - a.punten;
+        }
+
+        if (b.kegels !== a.kegels) {
+            return b.kegels - a.kegels;
+        }
+
+        return a.ploeg.localeCompare(b.ploeg);
+    });
+
+    return lijst;
+}
+
+
+// =====================================================
 // 1. ALGEMEEN CUMULATIEF KLASSEMENT
 // =====================================================
 
@@ -831,69 +879,50 @@ function toonAlgemeenKlassement() {
             "algemeenKlassement"
         );
 
-
     tbody.innerHTML = "";
 
-
-    const teams = {};
-
-
-    alleScores.forEach(
-        score => {
-
-            const naam =
-                score.ploeg;
-
-
-            if (!teams[naam]) {
-
-                teams[naam] = {
-                    ploeg: naam,
-                    punten: 0,
-                    kegels: 0,
-                    datums: new Set()
-                };
-
-            }
-
-
-            teams[naam].punten +=
-                Number(score.punten) || 0;
-
-
-            teams[naam].kegels +=
-                Number(score.kegels) || 0;
-
-
-            teams[naam].datums.add(
-                score.speeldatum
-            );
-
-        }
+    // Bepaal de laatst gespeelde datum.
+    const gespeeldeDatums = DATUMS.filter(
+        datum =>
+            alleScores.some(
+                score => score.speeldatum === datum
+            )
     );
 
+    if (gespeeldeDatums.length === 0) {
+        return;
+    }
 
+    const huidigeDatum =
+        gespeeldeDatums[gespeeldeDatums.length - 1];
+
+    // Huidig cumulatief klassement.
     const lijst =
-        Object.values(teams);
+        maakCumulatiefKlassement(huidigeDatum);
 
+    // Vorig cumulatief klassement.
+    const vorigeDatum =
+        gespeeldeDatums.length >= 2
+            ? gespeeldeDatums[gespeeldeDatums.length - 2]
+            : null;
 
-    // Normaal klassement:
-    // eerst punten, daarna kegels.
-    lijst.sort(
-        (a,b) => {
+    const vorigeLijst =
+        vorigeDatum
+            ? maakCumulatiefKlassement(vorigeDatum)
+            : [];
 
-            if (b.punten !== a.punten) {
-                return b.punten - a.punten;
-            }
+    // Plaats van iedere ploeg in het vorige klassement bewaren.
+    const vorigePlaatsen = {};
 
-            return b.kegels - a.kegels;
-
+    vorigeLijst.forEach(
+        (team, index) => {
+            vorigePlaatsen[
+                normaliseer(team.ploeg)
+            ] = index + 1;
         }
     );
-
 
     // Apart klassement op basis van kegels.
-    // Dit verandert de normale rangschikking NIET.
     const opKegels =
         [...lijst].sort(
             (a,b) => {
@@ -909,10 +938,7 @@ function toonAlgemeenKlassement() {
             }
         );
 
-
-    // Plaats op kegels per ploeg bewaren.
     const plaatsOpKegels = {};
-
 
     opKegels.forEach(
         (team, index) => {
@@ -924,8 +950,7 @@ function toonAlgemeenKlassement() {
         }
     );
 
-
-    // Hoogste cumulatieve kegels
+    // Hoogste cumulatieve kegels.
     const hoogsteKegels =
         Math.max(
             ...lijst.map(
@@ -933,17 +958,14 @@ function toonAlgemeenKlassement() {
             )
         );
 
-
-    // Hoogste cumulatieve gemiddelde
+    // Hoogste cumulatieve gemiddelde.
     let hoogsteGemiddelde = 0;
-
 
     lijst.forEach(
         team => {
 
             const aantalSpeeldagen =
                 team.datums.size;
-
 
             const gem =
                 aantalSpeeldagen > 0
@@ -954,14 +976,12 @@ function toonAlgemeenKlassement() {
                       )
                     : 0;
 
-
             if (gem > hoogsteGemiddelde) {
                 hoogsteGemiddelde = gem;
             }
 
         }
     );
-
 
     lijst.forEach(
         (team, index) => {
@@ -970,7 +990,6 @@ function toonAlgemeenKlassement() {
                 document.createElement(
                     "tr"
                 );
-
 
             if (
                 normaliseer(team.ploeg) ===
@@ -983,10 +1002,8 @@ function toonAlgemeenKlassement() {
 
             }
 
-
             const aantalSpeeldagen =
                 team.datums.size;
-
 
             const gem =
                 aantalSpeeldagen > 0
@@ -997,28 +1014,68 @@ function toonAlgemeenKlassement() {
                       )
                     : 0;
 
-
             const kegelsHoogste =
                 Number(team.kegels) ===
                 hoogsteKegels;
-
 
             const gemiddeldeHoogste =
                 Math.abs(
                     gem - hoogsteGemiddelde
                 ) < 0.000001;
 
-
             const positieKegels =
                 plaatsOpKegels[
                     normaliseer(team.ploeg)
                 ];
 
+            // =============================================
+            // VERSCHIL T.O.V. VORIG ALGEMEEN KLASSEMENT
+            // =============================================
+
+            const huidigePlaats =
+                index + 1;
+
+            const vorigePlaats =
+                vorigePlaatsen[
+                    normaliseer(team.ploeg)
+                ];
+
+            let verschilHtml = "—";
+
+            if (vorigePlaats !== undefined) {
+
+                const verschil =
+                    vorigePlaats - huidigePlaats;
+
+                if (verschil > 0) {
+
+                    verschilHtml =
+                        `<span style="color:#188038;font-weight:bold;font-size:17px;">
+                            ↑ ${verschil}
+                        </span>`;
+
+                } else if (verschil < 0) {
+
+                    verschilHtml =
+                        `<span style="color:#d93025;font-weight:bold;font-size:17px;">
+                            ↓ ${Math.abs(verschil)}
+                        </span>`;
+
+                } else {
+
+                    verschilHtml =
+                        `<span style="color:#777;font-weight:bold;">
+                            —
+                        </span>`;
+
+                }
+
+            }
 
             tr.innerHTML = `
 
                 <td class="position">
-                    ${index + 1}
+                    ${huidigePlaats}
                 </td>
 
                 <td class="team-name">
@@ -1041,8 +1098,11 @@ function toonAlgemeenKlassement() {
                     ${positieKegels}
                 </td>
 
-            `;
+                <td>
+                    ${verschilHtml}
+                </td>
 
+            `;
 
             tbody.appendChild(
                 tr
