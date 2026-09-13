@@ -254,7 +254,7 @@ canvas {
     }
 
     .chart-wrapper {
-        height: 300px;
+        height: 330px;
     }
 
 }
@@ -265,6 +265,45 @@ canvas {
     font-weight: bold !important;
 }
 
+</style>
+
+
+<style>
+body.rb-dark { background:#111827 !important; color:#e5e7eb !important; }
+body.rb-dark .section { background:#1f2937 !important; color:#e5e7eb !important; }
+body.rb-dark table, body.rb-dark tbody, body.rb-dark tr { color:#e5e7eb !important; }
+body.rb-dark tr:nth-child(even) { background:#243041 !important; }
+body.rb-dark tr:hover, body.rb-dark tr:hover td {
+    background:#374151 !important;
+    color:#ffffff !important;
+}
+body.rb-dark tr.rnb-row,
+body.rb-dark tr.rnb-row td,
+body.rb-dark tr.rnb-row:hover,
+body.rb-dark tr.rnb-row:hover td {
+    background:#4a3b12 !important;
+    color:#ffffff !important;
+}
+body.rb-dark td, body.rb-dark th {
+    color:#e5e7eb !important;
+    border-color:#4b5563 !important;
+}
+body.rb-dark .team-name { color:#ffffff !important; }
+body.rb-dark select {
+    background:#111827 !important;
+    color:#ffffff !important;
+    border-color:#6b7280 !important;
+}
+body.rb-dark .chart-wrapper,
+body.rb-dark canvas {
+    background:#1f2937 !important;
+}
+body.rb-dark .hoogste-stat { color:#ff6b6b !important; }
+body.rb-dark .theme-toggle-rb {
+    background:#374151 !important;
+    color:#ffffff !important;
+    border-color:#6b7280 !important;
+}
 </style>
 
 </head>
@@ -1577,101 +1616,81 @@ function toonRNBStatistiek() {
 function tekenRNBGrafiek() {
 
     const canvas =
-        document.getElementById(
-            "rnbChart"
-        );
-
+        document.getElementById("rnbChart");
 
     if (!canvas) {
         return;
     }
 
-
     const gegevens =
         alleScores
+            .filter(
+                score =>
+                    normaliseer(score.ploeg) ===
+                    normaliseer(RNB)
+            )
+            .sort(
+                (a,b) =>
+                    a.speeldatum.localeCompare(b.speeldatum)
+            );
 
-        .filter(
-            score =>
-                normaliseer(
-                    score.ploeg
-                ) ===
-                normaliseer(
-                    RNB
-                )
-        )
-
-        .sort(
-            (a,b) =>
-                a.speeldatum.localeCompare(
-                    b.speeldatum
-                )
-        );
-
-
+    /*
+     * Gebruik ALLE geplande speeldagen op de X-as.
+     * Heeft RNB nog geen score op een datum, dan krijgt
+     * die datum de waarde null.
+     */
     const labels =
-        gegevens.map(
-            score =>
-                datumTekst(
-                    score.speeldatum
-                )
+        DATUMS.map(
+            datum => datumTekst(datum)
         );
-
 
     const punten =
-        gegevens.map(
-            score =>
-                Number(
-                    score.punten
-                )
+        DATUMS.map(
+            datum => {
+                const score =
+                    gegevens.find(
+                        item => item.speeldatum === datum
+                    );
+
+                return score
+                    ? Number(score.punten)
+                    : null;
+            }
         );
 
-
-    if (
-        rnbChart
-    ) {
-
+    if (rnbChart) {
         rnbChart.destroy();
-
     }
-
 
     rnbChart =
         new Chart(
             canvas,
             {
-
-                type:
-                    "line",
+                type: "line",
 
                 data: {
 
-                    labels:
-                        labels,
+                    labels: labels,
 
                     datasets: [
 
                         {
 
-                            label:
-                                "Punten",
+                            label: "Punten",
 
-                            data:
-                                punten,
+                            data: punten,
 
-                            borderWidth:
-                                3,
+                            borderWidth: 3,
 
-                            pointRadius:
-                                6,
+                            pointRadius: 6,
 
-                            pointHoverRadius:
-                                8,
+                            pointHoverRadius: 8,
 
-                            tension:
-                                0.2,
+                            tension: 0.2,
 
-                            fill:
-                                false
+                            fill: false,
+
+                            spanGaps: false
 
                         }
 
@@ -1679,48 +1698,51 @@ function tekenRNBGrafiek() {
 
                 },
 
-
                 options: {
 
-                    responsive:
-                        true,
+                    responsive: true,
 
-                    maintainAspectRatio:
-                        false,
-
+                    maintainAspectRatio: false,
 
                     scales: {
 
                         y: {
 
-                            beginAtZero:
-                                true,
+                            beginAtZero: true,
 
-                            suggestedMax:
-                                31,
+                            suggestedMax: 31,
 
                             title: {
 
-                                display:
-                                    true,
+                                display: true,
 
-                                text:
-                                    "Punten"
+                                text: "Punten"
 
                             }
 
                         },
 
-
                         x: {
+
+                            offset: false,
+
+                            ticks: {
+
+                                autoSkip: false,
+
+                                padding: 0,
+
+                                maxRotation: 45,
+
+                                minRotation: 45
+
+                            },
 
                             title: {
 
-                                display:
-                                    true,
+                                display: true,
 
-                                text:
-                                    "Speeldatum"
+                                text: "Speeldatum"
 
                             }
 
@@ -1728,25 +1750,24 @@ function tekenRNBGrafiek() {
 
                     },
 
-
                     plugins: {
 
                         legend: {
 
-                            display:
-                                true
+                            display: true
 
                         },
-
 
                         tooltip: {
 
                             callbacks: {
 
                                 label:
-                                    function(
-                                        context
-                                    ) {
+                                    function(context) {
+
+                                        if (context.raw === null) {
+                                            return "Nog niet gespeeld";
+                                        }
 
                                         return (
                                             "Punten: " +
@@ -1763,59 +1784,49 @@ function tekenRNBGrafiek() {
 
                 },
 
-
                 plugins: [
 
                     {
 
-                        id:
-                            "puntenOpGrafiek",
-
+                        id: "puntenOpGrafiek",
 
                         afterDatasetsDraw:
-                            function(
-                                chart
-                            ) {
+                            function(chart) {
 
                                 const ctx =
                                     chart.ctx;
 
-
                                 const dataset =
-                                    chart.getDatasetMeta(
-                                        0
-                                    );
-
+                                    chart.getDatasetMeta(0);
 
                                 dataset.data.forEach(
-                                    (
-                                        point,
-                                        index
-                                    ) => {
+                                    (point, index) => {
 
                                         const value =
-                                            punten[
-                                                index
-                                            ];
+                                            punten[index];
 
+                                        if (value === null) {
+                                            return;
+                                        }
 
                                         ctx.save();
-
 
                                         ctx.font =
                                             "bold 13px Arial";
 
-
                                         ctx.textAlign =
                                             "center";
 
+                                        ctx.fillStyle =
+                                            document.body.classList.contains("rb-dark")
+                                                ? "#ffffff"
+                                                : "#222222";
 
                                         ctx.fillText(
                                             value,
                                             point.x,
                                             point.y - 12
                                         );
-
 
                                         ctx.restore();
 
@@ -1830,6 +1841,10 @@ function tekenRNBGrafiek() {
 
             }
         );
+
+    if (typeof pasGrafiekThemaAan === "function") {
+        pasGrafiekThemaAan();
+    }
 
 }
 
@@ -1865,6 +1880,82 @@ laadData();
 
 </script>
 
+
+
+<script>
+function pasGrafiekThemaAan() {
+    if (typeof rnbChart === "undefined" || !rnbChart) return;
+
+    const donker = document.body.classList.contains("rb-dark");
+    const tekst = donker ? "#e5e7eb" : "#222222";
+    const grid = donker ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.10)";
+
+    if (rnbChart.options.scales) {
+        ["x", "y"].forEach(as => {
+            const schaal = rnbChart.options.scales[as];
+            if (!schaal) return;
+            schaal.ticks = {...(schaal.ticks || {}), color: tekst};
+            schaal.grid = {...(schaal.grid || {}), color: grid};
+            if (schaal.title) schaal.title.color = tekst;
+        });
+    }
+
+    if (rnbChart.options.plugins && rnbChart.options.plugins.legend) {
+        rnbChart.options.plugins.legend.labels = {
+            ...(rnbChart.options.plugins.legend.labels || {}),
+            color: tekst
+        };
+    }
+
+    rnbChart.update();
+}
+</script>
+
+
+<script>
+(function () {
+    const RB_THEME_KEY = "rollbowl-thema";
+
+    function maakThemaKnop() {
+        let knop = document.getElementById("themeToggleRB");
+
+        if (!knop) {
+            knop = document.createElement("button");
+            knop.id = "themeToggleRB";
+            knop.className = "theme-toggle-rb";
+            knop.type = "button";
+            knop.addEventListener("click", function () {
+                const donker = !document.body.classList.contains("rb-dark");
+                document.body.classList.toggle("rb-dark", donker);
+                localStorage.setItem(RB_THEME_KEY, donker ? "donker" : "licht");
+                updateKnop();
+                if (typeof pasGrafiekThemaAan === "function") {
+                    pasGrafiekThemaAan();
+                }
+            });
+            document.body.appendChild(knop);
+        }
+
+        const donker = localStorage.getItem(RB_THEME_KEY) === "donker";
+        document.body.classList.toggle("rb-dark", donker);
+        updateKnop();
+    }
+
+    function updateKnop() {
+        const knop = document.getElementById("themeToggleRB");
+        if (!knop) return;
+        const donker = document.body.classList.contains("rb-dark");
+        knop.textContent = donker ? "☀️ Licht" : "🌙 Donker";
+        knop.title = donker ? "Schakel naar lichte modus" : "Schakel naar donkere modus";
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", maakThemaKnop);
+    } else {
+        maakThemaKnop();
+    }
+})();
+</script>
 
 </body>
 
