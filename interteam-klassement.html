@@ -160,6 +160,32 @@ select {
     background: white;
 }
 
+.datum-keuze {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.datum-keuze select {
+    flex: 0 1 400px;
+}
+
+.datum-keuze a {
+    display: inline-block;
+    padding: 11px 16px;
+    background: #222;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 15px;
+}
+
+.datum-keuze a:hover {
+    background: #444;
+}
+
 
 /* =========================
    GRAFIEK
@@ -324,11 +350,24 @@ canvas {
 </h2>
 
 
+<div class="datum-keuze">
+
 <select
     id="datumSelect"
     onchange="toonSpeeldag()">
 
 </select>
+
+<a
+    id="klasmLink"
+    href="#"
+    target="_blank"
+    rel="noopener noreferrer"
+    style="display:none;">
+    📄 Klassement
+</a>
+
+</div>
 
 
 <div
@@ -594,6 +633,8 @@ const RNB_TEGENPLOEGEN = {
 
 let alleScores = [];
 
+let speeldagenData = [];
+
 let rnbChart = null;
 
 
@@ -677,32 +718,51 @@ async function laadData() {
         "info"
     );
 
+    const [
+        scoresResult,
+        speeldagenResult
+    ] = await Promise.all([
 
-    const { data, error } =
-        await supabaseClient
+        supabaseClient
+            .from(SCORE_TABEL)
+            .select("speeldatum, ploeg, kegels, punten"),
 
-        .from(
-            SCORE_TABEL
-        )
+        supabaseClient
+            .from("speeldagen")
+            .select('speeldatum, nummer, "Klasm-url"')
+            .order("speeldatum", { ascending: true })
 
-        .select(
-            "speeldatum, ploeg, kegels, punten"
-        );
+    ]);
 
 
-    if (error) {
+    if (scoresResult.error) {
 
         console.error(
-            "Supabase fout:",
-            error
+            "Supabase fout scores:",
+            scoresResult.error
         );
-
 
         statusMelding(
             "❌ Fout bij laden van de gegevens.",
             "error"
         );
 
+        return;
+
+    }
+
+
+    if (speeldagenResult.error) {
+
+        console.error(
+            "Supabase fout speeldagen:",
+            speeldagenResult.error
+        );
+
+        statusMelding(
+            "❌ Fout bij laden van de speeldagen.",
+            "error"
+        );
 
         return;
 
@@ -710,7 +770,11 @@ async function laadData() {
 
 
     alleScores =
-        data || [];
+        scoresResult.data || [];
+
+
+    speeldagenData =
+        speeldagenResult.data || [];
 
 
     laadDatumDropdown();
@@ -1117,6 +1181,52 @@ function toonAlgemeenKlassement() {
 // 2. KLASSEMENT PER SPEELDAG
 // =====================================================
 
+function updateKlasmLink(datum) {
+
+    const link =
+        document.getElementById(
+            "klasmLink"
+        );
+
+
+    if (!link) {
+        return;
+    }
+
+
+    const speeldag =
+        speeldagenData.find(
+            dag =>
+                dag.speeldatum === datum
+        );
+
+
+    if (
+        speeldag &&
+        speeldag["Klasm-url"]
+    ) {
+
+        link.href =
+            speeldag["Klasm-url"];
+
+        link.style.display =
+            "inline-block";
+
+        link.textContent =
+            `📄 Klassement speeldag ${speeldag.nummer}`;
+
+    } else {
+
+        link.href = "#";
+
+        link.style.display =
+            "none";
+
+    }
+
+}
+
+
 function toonSpeeldag() {
 
     const select =
@@ -1127,6 +1237,9 @@ function toonSpeeldag() {
 
     const datum =
         select.value;
+
+
+    updateKlasmLink(datum);
 
 
     const tbody =
