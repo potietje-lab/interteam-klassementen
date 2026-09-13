@@ -15,6 +15,156 @@ td:nth-child(2){text-align:left;font-weight:bold}.plaats{font-size:22px;width:60
 @media(max-width:600px){body{padding:8px}.container{padding:15px 8px}h1{font-size:22px}th,td{padding:10px 5px;font-size:14px}.plaats{font-size:18px}.kegels{font-size:16px}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+
+/* =========================================================
+   Roll & Bowl - Donkere / Lichte modus
+   ========================================================= */
+.theme-toggle-rb {
+    position: fixed !important;
+    top: 12px !important;
+    right: 12px !important;
+    z-index: 99999 !important;
+    border: 1px solid #777 !important;
+    border-radius: 10px !important;
+    padding: 9px 13px !important;
+    background: #ffffff !important;
+    color: #222222 !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,.18) !important;
+}
+.theme-toggle-rb:hover {
+    opacity: .9;
+}
+
+body.rb-dark {
+    background: #111827 !important;
+    color: #e5e7eb !important;
+}
+
+/* Algemene lichte vlakken */
+body.rb-dark .container,
+body.rb-dark .card,
+body.rb-dark .box,
+body.rb-dark .panel,
+body.rb-dark .section,
+body.rb-dark .match,
+body.rb-dark .match-box,
+body.rb-dark .datum-box,
+body.rb-dark .total-box,
+body.rb-dark .score-box,
+body.rb-dark .stat-box,
+body.rb-dark .stats-box,
+body.rb-dark .table-container,
+body.rb-dark .content-box,
+body.rb-dark .result-box {
+    background: #1f2937 !important;
+    color: #e5e7eb !important;
+}
+
+/* Veel gebruikte neutrale koppen/onderdelen */
+body.rb-dark .match-header,
+body.rb-dark .header-row,
+body.rb-dark .table-header,
+body.rb-dark thead,
+body.rb-dark th {
+    background: #374151 !important;
+    color: #f3f4f6 !important;
+}
+
+/* Tabellen */
+body.rb-dark table {
+    background: #1f2937 !important;
+    color: #e5e7eb !important;
+}
+body.rb-dark td,
+body.rb-dark th {
+    border-color: #4b5563 !important;
+}
+body.rb-dark tr:nth-child(even) td {
+    background: #243041 !important;
+}
+
+/* Formulieren */
+body.rb-dark input,
+body.rb-dark select,
+body.rb-dark textarea {
+    background: #111827 !important;
+    color: #f3f4f6 !important;
+    border-color: #4b5563 !important;
+    color-scheme: dark;
+}
+body.rb-dark input::placeholder,
+body.rb-dark textarea::placeholder {
+    color: #9ca3af !important;
+}
+
+/* Neutrale tekstkleuren */
+body.rb-dark .subtitle,
+body.rb-dark .subtitel,
+body.rb-dark .status,
+body.rb-dark .muted,
+body.rb-dark .small,
+body.rb-dark .help,
+body.rb-dark .description {
+    color: #cbd5e1 !important;
+}
+
+/* Informatie- en meldingsvakken */
+body.rb-dark .info-box {
+    background: #1e3a5f !important;
+    color: #dbeafe !important;
+    border-color: #3b82f6 !important;
+}
+body.rb-dark .warning,
+body.rb-dark .warning-box {
+    background: #4a3510 !important;
+    color: #fde68a !important;
+    border-color: #a16207 !important;
+}
+body.rb-dark .success,
+body.rb-dark .success-box {
+    background: #123b2a !important;
+    color: #bbf7d0 !important;
+}
+body.rb-dark .error,
+body.rb-dark .error-box {
+    background: #4a1d1d !important;
+    color: #fecaca !important;
+}
+
+/* RNB / automatisch berekende rijen blijven herkenbaar */
+body.rb-dark .rnb-row {
+    background: #4a3b12 !important;
+}
+
+/* Knoppen behouden zoveel mogelijk hun bestaande accentkleur.
+   Alleen neutrale knoppen krijgen een donkere achtergrond. */
+body.rb-dark button:not(.theme-toggle-rb) {
+    border-color: #4b5563;
+}
+body.rb-dark button.secondary,
+body.rb-dark .secondary-button,
+body.rb-dark .btn-secondary {
+    background: #374151 !important;
+    color: #f3f4f6 !important;
+}
+
+/* Links */
+body.rb-dark a {
+    color: #93c5fd;
+}
+
+/* Thema-knop in donkere modus */
+body.rb-dark .theme-toggle-rb {
+    background: #374151 !important;
+    color: #f9fafb !important;
+    border-color: #6b7280 !important;
+}
+
+</style>
 </head>
 <body>
 <div class="container">
@@ -234,5 +384,54 @@ async function laadData(){
 
 laadData();
 </script>
+
+<script>
+(function () {
+    const THEME_KEY = "rollbowl-thema";
+
+    function updateThemeButton() {
+        const button = document.getElementById("themeToggleRB");
+        if (!button) return;
+
+        const dark = document.body.classList.contains("rb-dark");
+        button.textContent = dark ? "☀️ Licht" : "🌙 Donker";
+        button.setAttribute("aria-label",
+            dark ? "Schakel naar lichte modus" : "Schakel naar donkere modus");
+        button.title = dark ? "Lichte modus" : "Donkere modus";
+    }
+
+    function applyTheme() {
+        const dark = localStorage.getItem(THEME_KEY) === "donker";
+        document.body.classList.toggle("rb-dark", dark);
+        updateThemeButton();
+    }
+
+    window.wisselRollbowlThema = function () {
+        const dark = !document.body.classList.contains("rb-dark");
+        document.body.classList.toggle("rb-dark", dark);
+        localStorage.setItem(THEME_KEY, dark ? "donker" : "licht");
+        updateThemeButton();
+    };
+
+    function initTheme() {
+        if (!document.getElementById("themeToggleRB")) {
+            const button = document.createElement("button");
+            button.id = "themeToggleRB";
+            button.className = "theme-toggle-rb";
+            button.type = "button";
+            button.addEventListener("click", window.wisselRollbowlThema);
+            document.body.appendChild(button);
+        }
+        applyTheme();
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initTheme);
+    } else {
+        initTheme();
+    }
+})();
+</script>
+
 </body>
 </html>
