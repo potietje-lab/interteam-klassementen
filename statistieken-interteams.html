@@ -174,10 +174,59 @@
             font-size: 14px;
         }
     }
+
+    /* LICHT / DONKER */
+    #themeToggle {
+        position: fixed;
+        top: 15px;
+        right: 15px;
+        z-index: 1000;
+        padding: 9px 13px;
+        border: 1px solid #bbb;
+        border-radius: 20px;
+        background: white;
+        color: #222;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    body.dark {
+        background: #121212;
+        color: #eee;
+    }
+
+    body.dark .subtitle { color: #aaa; }
+    body.dark select {
+        background: #242424;
+        color: #eee;
+        border-color: #555;
+    }
+    body.dark .wedstrijd {
+        background: #1f1f1f;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+    }
+    body.dark .wedstrijd.rnb {
+        background: #4a4215;
+        border-color: #b7a400;
+    }
+    body.dark .details { color: #bbb; }
+    body.dark .stat {
+        background: #1f1f1f;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+    }
+    body.dark .stat-extra { color: #aaa; }
+    body.dark #themeToggle {
+        background: #242424;
+        color: #fff;
+        border-color: #666;
+    }
+
 </style>
 </head>
 
 <body>
+
+<button id="themeToggle" type="button">🌙 Donker</button>
 
 <div class="container">
 
@@ -210,12 +259,6 @@
                 <div class="stat-title">Grootste overwinning (grootste puntenverschil)</div>
                 <div class="stat-value" id="grootsteOverwinning">-</div>
                 <div class="stat-extra" id="grootsteOverwinningExtra"></div>
-            </div>
-
-            <div class="stat">
-                <div class="stat-title">Meeste punten in een wedstrijd (1ste plaats)</div>
-                <div class="stat-value" id="meestePunten">-</div>
-                <div class="stat-extra" id="meestePuntenExtra"></div>
             </div>
 
             <div class="stat">
@@ -281,17 +324,17 @@
         <div class="stats-grid">
 
             <div class="stat">
-                <div class="stat-title">Thuiswedstrijden</div>
+                <div class="stat-title">Thuiswedstrijden gewonnen</div>
                 <div class="stat-value" id="thuis">-</div>
             </div>
 
             <div class="stat">
-                <div class="stat-title">Uitwedstrijden</div>
+                <div class="stat-title">Uitwedstrijden gewonnen</div>
                 <div class="stat-value" id="uit">-</div>
             </div>
 
             <div class="stat">
-                <div class="stat-title">Totaal wedstrijden</div>
+                <div class="stat-title">Totaal wedstrijden gewonnen</div>
                 <div class="stat-value" id="totaal">-</div>
             </div>
 
@@ -803,7 +846,7 @@ function toonWedstrijden() {
                         (${gemThuis})
                     </div>
 
-                    <div>gem.</div>
+                    <div></div>
 
                     <div>
                         ${kegelsUit} kegels
@@ -1076,12 +1119,18 @@ function berekenPuntenStatistieken() {
             ? meeste.uit
             : meeste.thuis;
 
-    document.getElementById("meestePunten").textContent =
-        `${meesteRNB} punten`;
+    const meestePuntenElement = document.getElementById("meestePunten");
+    const meestePuntenExtraElement = document.getElementById("meestePuntenExtra");
 
-    document.getElementById("meestePuntenExtra").textContent =
-        `tegen ${meesteTegen}
-         — ${datumNL(meeste.datum)}`;
+    if (meestePuntenElement) {
+        meestePuntenElement.textContent = `${meesteRNB} punten`;
+    }
+
+    if (meestePuntenExtraElement) {
+        meestePuntenExtraElement.textContent =
+            `tegen ${meesteTegen}
+             — ${datumNL(meeste.datum)}`;
+    }
 
 
     /* Punten per tegenstander */
@@ -1509,6 +1558,25 @@ function berekenStatistieken() {
 /* ============================================================
    START
    ============================================================ */
+
+const themeToggle = document.getElementById("themeToggle");
+
+function updateThemeButton() {
+    const dark = document.body.classList.contains("dark");
+    themeToggle.textContent = dark ? "☀️ Licht" : "🌙 Donker";
+}
+
+const opgeslagenThema = localStorage.getItem("rollbowl-thema");
+if (opgeslagenThema === "donker") {
+    document.body.classList.add("dark");
+}
+updateThemeButton();
+
+themeToggle.addEventListener("click", () => {
+    const dark = document.body.classList.toggle("dark");
+    localStorage.setItem("rollbowl-thema", dark ? "donker" : "licht");
+    updateThemeButton();
+});
 
 laadData();
 
