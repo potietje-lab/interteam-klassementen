@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Belangrijke mededeling - Roll & Bowl</title>
+
+<style>
+    :root {
+        --bg: #f4f6f8;
+        --card: #ffffff;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --border: #d1d5db;
+        --accent: #d62828;
+        --accent-dark: #b71c1c;
+    }
+
+    body.dark {
+        --bg: #111827;
+        --card: #1f2937;
+        --text: #f3f4f6;
+        --muted: #9ca3af;
+        --border: #4b5563;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        padding: 20px;
+        font-family: Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        transition: 0.2s;
+    }
+
+    .container {
+        max-width: 1000px;
+        margin: auto;
+    }
+
+    .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        gap: 10px;
+    }
+
+    h1 {
+        margin: 0;
+        font-size: 28px;
+    }
+
+    .theme-button {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 15px;
+        cursor: pointer;
+        background: var(--card);
+        color: var(--text);
+        font-size: 14px;
+    }
+
+    .card {
+        background: var(--card);
+        border-radius: 15px;
+        padding: 22px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    }
+
+    label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 8px;
+    }
+
+    input,
+    textarea {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px;
+        font-family: Arial, sans-serif;
+        font-size: 16px;
+        background: var(--card);
+        color: var(--text);
+        margin-bottom: 20px;
+    }
+
+    input:focus,
+    textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+    }
+
+    textarea {
+        min-height: 220px;
+        resize: vertical;
+        line-height: 1.5;
+    }
+
+    .preview-title {
+        margin-top: 0;
+        margin-bottom: 15px;
+    }
+
+    .email-preview {
+        background: #ffffff;
+        color: #222222;
+        border-radius: 12px;
+        padding: 30px;
+        border: 1px solid #dddddd;
+        max-width: 700px;
+        margin: auto;
+    }
+
+    .email-header {
+        text-align: center;
+        border-bottom: 3px solid #d62828;
+        padding-bottom: 18px;
+        margin-bottom: 25px;
+    }
+
+    .email-header .logo {
+        font-size: 30px;
+        margin-bottom: 8px;
+    }
+
+    .email-header h2 {
+        margin: 0;
+        font-size: 24px;
+    }
+
+    .email-date {
+        color: #777777;
+        font-size: 14px;
+        margin-top: 8px;
+    }
+
+    .email-content {
+        font-size: 16px;
+        line-height: 1.7;
+        white-space: pre-wrap;
+        min-height: 150px;
+    }
+
+    .email-footer {
+        margin-top: 30px;
+        padding-top: 15px;
+        border-top: 1px solid #dddddd;
+        text-align: center;
+        color: #777777;
+        font-size: 13px;
+    }
+
+    .placeholder {
+        color: #999999;
+        font-style: italic;
+    }
+
+    .button-area {
+        text-align: center;
+        margin-top: 25px;
+    }
+
+    .gmail-button {
+        background: #d93025;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 14px 24px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .gmail-button:hover {
+        background: #b7251c;
+        transform: translateY(-1px);
+    }
+
+    .info {
+        text-align: center;
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 12px;
+    }
+
+    @media (max-width: 600px) {
+        body {
+            padding: 10px;
+        }
+
+        .card {
+            padding: 15px;
+        }
+
+        .email-preview {
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 23px;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="topbar">
+
+        <h1>📢 Belangrijke mededeling</h1>
+
+        <button class="theme-button" onclick="toggleDarkMode()">
+            🌙 Donkere modus
+        </button>
+
+    </div>
+
+
+    <!-- INVOER -->
+    <div class="card">
+
+        <label for="titel">
+            Titel van de mededeling
+        </label>
+
+        <input
+            type="text"
+            id="titel"
+            placeholder="Bijvoorbeeld: Belangrijke mededeling voor vrijdag"
+            oninput="updatePreview()"
+        >
+
+
+        <label for="mededeling">
+            Mededeling
+        </label>
+
+        <textarea
+            id="mededeling"
+            placeholder="Typ hier de volledige mededeling..."
+            oninput="updatePreview()"
+        ></textarea>
+
+    </div>
+
+
+    <!-- VOORBEELD -->
+    <div class="card">
+
+        <h2 class="preview-title">
+            👀 Voorbeeld van de e-mail
+        </h2>
+
+        <div class="email-preview">
+
+            <div class="email-header">
+
+                <div class="logo">
+                    🎳
+                </div>
+
+                <h2 id="previewTitel">
+                    Belangrijke mededeling
+                </h2>
+
+                <div class="email-date" id="previewDatum">
+                </div>
+
+            </div>
+
+
+            <div
+                class="email-content"
+                id="previewTekst"
+            >
+                <span class="placeholder">
+                    De tekst van de mededeling verschijnt hier...
+                </span>
+            </div>
+
+
+            <div class="email-footer">
+                Roll & Bowl<br>
+                Interteams 2026-2027
+            </div>
+
+        </div>
+
+
+        <!-- GMAIL KNOP -->
+        <div class="button-area">
+
+            <button
+                class="gmail-button"
+                onclick="openGmail()"
+            >
+                ✉️ Openen in Gmail
+            </button>
+
+            <div class="info">
+                Gmail wordt geopend met de ontvanger, titel en mededeling al ingevuld.
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+/* =========================================
+   VOORBEELD BIJWERKEN
+========================================= */
+
+function updatePreview() {
+
+    const titel =
+        document.getElementById("titel").value.trim();
+
+    const tekst =
+        document.getElementById("mededeling").value.trim();
+
+    const previewTitel =
+        document.getElementById("previewTitel");
+
+    const previewTekst =
+        document.getElementById("previewTekst");
+
+
+    if (titel) {
+
+        previewTitel.textContent = titel;
+
+    } else {
+
+        previewTitel.textContent =
+            "Belangrijke mededeling";
+    }
+
+
+    if (tekst) {
+
+        previewTekst.textContent = tekst;
+
+    } else {
+
+        previewTekst.innerHTML =
+            '<span class="placeholder">' +
+            'De tekst van de mededeling verschijnt hier...' +
+            '</span>';
+    }
+}
+
+
+/* =========================================
+   GMAIL OPENEN
+========================================= */
+
+function openGmail() {
+
+    const titel =
+        document.getElementById("titel").value.trim();
+
+    const tekst =
+        document.getElementById("mededeling").value.trim();
+
+
+    if (!titel) {
+
+        alert("Vul eerst een titel van de mededeling in.");
+        return;
+    }
+
+
+    if (!tekst) {
+
+        alert("Vul eerst de mededeling in.");
+        return;
+    }
+
+
+    /*
+     * Datum toevoegen aan de mail
+     */
+
+    const vandaag = new Date();
+
+    const datum =
+        vandaag.toLocaleDateString("nl-BE", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric"
+        });
+
+
+    /*
+     * Tekst voor Gmail
+     */
+
+    const mailTekst =
+        "🎳 ROLL & BOWL\n\n" +
+        titel +
+        "\n" +
+        "Datum: " + datum +
+        "\n\n" +
+        tekst +
+        "\n\n" +
+        "Roll & Bowl\n" +
+        "Interteams 2026-2027";
+
+
+    /*
+     * Gmail compose URL
+     */
+
+    const gmailUrl =
+        "https://mail.google.com/mail/?view=cm" +
+        "&fs=1" +
+        "&to=potietje%40gmail.com" +
+        "&su=" + encodeURIComponent(titel) +
+        "&body=" + encodeURIComponent(mailTekst);
+
+
+    window.open(
+        gmailUrl,
+        "_blank"
+    );
+}
+
+
+/* =========================================
+   DONKERE MODUS
+========================================= */
+
+function toggleDarkMode() {
+
+    document.body.classList.toggle("dark");
+
+    if (
+        document.body.classList.contains("dark")
+    ) {
+
+        localStorage.setItem(
+            "rollbowl-darkmode",
+            "true"
+        );
+
+    } else {
+
+        localStorage.setItem(
+            "rollbowl-darkmode",
+            "false"
+        );
+    }
+}
+
+
+/* =========================================
+   INSTELLINGEN LADEN
+========================================= */
+
+function laadInstellingen() {
+
+    if (
+        localStorage.getItem("rollbowl-darkmode") === "true"
+    ) {
+
+        document.body.classList.add("dark");
+    }
+
+
+    const vandaag = new Date();
+
+    document.getElementById("previewDatum").textContent =
+        "Datum: " +
+        vandaag.toLocaleDateString("nl-BE", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric"
+        });
+
+
+    updatePreview();
+}
+
+
+laadInstellingen();
+
+</script>
+
+</body>
+</html>

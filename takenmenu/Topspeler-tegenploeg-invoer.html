@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roll & Bowl - Topspeler tegenploeg</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#f4f4f4;--card:#fff;--text:#222;--muted:#666;--border:#ccc;--accent:#222;--input:#fff}
+body.dark{--bg:#171717;--card:#252525;--text:#fff;--muted:#ccc;--border:#555;--accent:#fff;--input:#333}
+*{box-sizing:border-box}
+body{margin:0;padding:20px;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
+.container{max-width:850px;margin:auto}
+h1{text-align:center;margin:5px 0 22px;font-size:27px}
+.card{background:var(--card);border-radius:14px;padding:22px;box-shadow:0 3px 12px rgba(0,0,0,.12);margin-bottom:20px}
+label{display:block;font-weight:bold;margin:13px 0 7px}
+select,input{width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--input);color:var(--text);font-size:16px}
+button{border:0;border-radius:9px;padding:12px 18px;font-size:16px;cursor:pointer;background:var(--accent);color:var(--bg);margin-top:18px}
+button.secondary{background:transparent;color:var(--text);border:1px solid var(--border);margin-left:8px}
+.info{margin-top:12px;padding:11px 13px;border-radius:8px;background:rgba(127,127,127,.12);color:var(--muted)}
+.message{margin-top:15px;padding:12px;border-radius:8px;display:none}
+.message.success{display:block;background:#dff5df;color:#176b17}
+.message.error{display:block;background:#ffe1e1;color:#a00000}
+body.dark .message.success{background:#173817;color:#8ee08e}
+body.dark .message.error{background:#451d1d;color:#ff9b9b}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{padding:10px 8px;border-bottom:1px solid var(--border);text-align:left}
+th{background:rgba(127,127,127,.14)}
+td:last-child,th:last-child{text-align:right}
+.topserie{font-weight:bold}
+@media(max-width:600px){body{padding:10px}.card{padding:15px}h1{font-size:23px}table{font-size:14px}th,td{padding:8px 5px}}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🎳 Topspeler tegenploeg</h1>
+<div class="card">
+<label for="speeldatum">Speeldatum</label>
+<select id="speeldatum"></select>
+<label for="tegenploeg">Tegenploeg</label>
+<input id="tegenploeg" type="text" readonly placeholder="Wordt automatisch ingevuld">
+<div class="info" id="wedstrijdInfo">Kies een speeldatum. De tegenploeg wordt automatisch opgezocht.</div>
+<label for="speler">Naam topspeler</label>
+<input id="speler" type="text" placeholder="Naam van de topspeler">
+<label for="topserie">Topserie (3 games)</label>
+<input id="topserie" type="number" min="0" max="999" step="1" placeholder="Bijvoorbeeld 612">
+<button id="opslaan">💾 Opslaan</button>
+<button class="secondary" id="donker">🌙 Licht / donker</button>
+<div id="melding" class="message"></div>
+</div>
+<div class="card">
+<h2>Overzicht</h2>
+<table>
+<thead><tr><th>Datum</th><th>Tegenploeg</th><th>Topspeler</th><th>Topserie</th></tr></thead>
+<tbody id="overzicht"><tr><td colspan="4">Gegevens worden geladen...</td></tr></tbody>
+</table>
+</div>
+</div>
+<script>
+const SUPABASE_URL="https://wnsvbtskynkewxggmjem.supabase.co";
+const SUPABASE_KEY="sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const RNB="RNB Geenens Construct-Vapor";
+const SPEELDATUMS=[
+"2026-09-04","2026-09-11","2026-09-18","2026-09-25","2026-10-02","2026-10-09",
+"2026-10-16","2026-11-20","2026-11-27","2026-12-04","2026-12-11","2027-01-15",
+"2027-01-22","2027-01-29","2027-02-19","2027-02-26","2027-03-19","2027-03-26",
+"2027-04-16","2027-04-23","2027-05-07","2027-05-14"];
+let wedstrijden=[],bestaande=[];
+const datumSelect=document.getElementById("speeldatum");
+const tegenploegInput=document.getElementById("tegenploeg");
+const wedstrijdInfo=document.getElementById("wedstrijdInfo");
+const spelerInput=document.getElementById("speler");
+const topserieInput=document.getElementById("topserie");
+const melding=document.getElementById("melding");
+const overzicht=document.getElementById("overzicht");
+
+function toonDatum(d){const [y,m,dag]=d.split("-");return `${dag}/${m}/${y}`}
+function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+function zoekTegenploeg(datum){
+ const match=wedstrijden.find(w=>(w.werkelijke_datum||w.geplande_datum)===datum&&(w.thuisploeg===RNB||w.uitploeg===RNB));
+ if(!match)return "";
+ return match.thuisploeg===RNB?match.uitploeg:match.thuisploeg;
+}
+function vulDatums(){
+ datumSelect.innerHTML="";
+ SPEELDATUMS.forEach(d=>{const o=document.createElement("option");o.value=d;o.textContent=toonDatum(d);datumSelect.appendChild(o)});
+ const today=new Date().toISOString().slice(0,10);
+ let i=SPEELDATUMS.findIndex(d=>d>=today);if(i<0)i=SPEELDATUMS.length-1;
+ datumSelect.value=SPEELDATUMS[i];
+}
+function updateWedstrijd(){
+ const d=datumSelect.value,t=zoekTegenploeg(d);
+ tegenploegInput.value=t;
+ wedstrijdInfo.textContent=t?`Tegenploeg gevonden: ${t}`:"Geen RNB-wedstrijd gevonden voor deze datum in de tabel wedstrijden.";
+ const row=bestaande.find(x=>x.speeldatum===d&&x.tegenploeg===t);
+ spelerInput.value=row?row.speler:"";
+ topserieInput.value=row?row.topserie:"";
+}
+async function laadWedstrijden(){
+ const {data,error}=await db.from("wedstrijden").select("geplande_datum,werkelijke_datum,thuisploeg,uitploeg");
+ if(error){wedstrijdInfo.textContent="Wedstrijden konden niet worden geladen: "+error.message;return}
+ wedstrijden=data||[];updateWedstrijd();
+}
+async function laadBestaande(){
+ const {data,error}=await db.from("tegenploeg_topspelers").select("id,speeldatum,tegenploeg,speler,topserie").order("speeldatum",{ascending:true});
+ if(error){melding.className="message error";melding.textContent="De tabel tegenploeg_topspelers bestaat nog niet. Voer eerst de SQL uit.";return}
+ bestaande=data||[];updateOverzicht();updateWedstrijd();
+}
+function updateOverzicht(){
+ if(!bestaande.length){overzicht.innerHTML='<tr><td colspan="4">Nog geen topspelers ingegeven.</td></tr>';return}
+ overzicht.innerHTML=bestaande.map(r=>`<tr><td>${toonDatum(r.speeldatum)}</td><td>${esc(r.tegenploeg)}</td><td>${esc(r.speler)}</td><td class="topserie">${Number(r.topserie)}</td></tr>`).join("");
+}
+async function opslaan(){
+ melding.className="message";melding.textContent="";
+ const speeldatum=datumSelect.value,tegenploeg=tegenploegInput.value.trim(),speler=spelerInput.value.trim(),topserie=Number(topserieInput.value);
+ if(!tegenploeg){melding.className="message error";melding.textContent="Geen tegenploeg gevonden.";return}
+ if(!speler){melding.className="message error";melding.textContent="Vul de naam van de topspeler in.";return}
+ if(!Number.isInteger(topserie)||topserie<0){melding.className="message error";melding.textContent="Vul een geldige topserie in.";return}
+ const {data:row,error:e}=await db.from("tegenploeg_topspelers").select("id").eq("speeldatum",speeldatum).eq("tegenploeg",tegenploeg).maybeSingle();
+ if(e){melding.className="message error";melding.textContent="Fout bij controleren: "+e.message;return}
+ let result=row
+ ?await db.from("tegenploeg_topspelers").update({speler,topserie}).eq("id",row.id)
+ :await db.from("tegenploeg_topspelers").insert([{speeldatum,tegenploeg,speler,topserie}]);
+ if(result.error){melding.className="message error";melding.textContent="Opslaan mislukt: "+result.error.message;return}
+ melding.className="message success";melding.textContent="✅ Topspeler en topserie opgeslagen.";
+ await laadBestaande();
+}
+datumSelect.addEventListener("change",updateWedstrijd);
+document.getElementById("opslaan").addEventListener("click",opslaan);
+document.getElementById("donker").addEventListener("click",()=>{
+ document.body.classList.toggle("dark");
+ localStorage.setItem("rollbowl-topspeler-thema",document.body.classList.contains("dark")?"donker":"licht");
+});
+if(localStorage.getItem("rollbowl-topspeler-thema")==="donker")document.body.classList.add("dark");
+vulDatums();
+(async()=>{await laadWedstrijden();await laadBestaande()})();
+</script>
+</body>
+</html>
