@@ -5,92 +5,110 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Roll &amp; Bowl – HTML Archief</title>
 <style>
-  :root {
-    color-scheme: light dark;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    padding: 24px;
-    font-family: Arial, sans-serif;
-    background: #f2f2f2;
-    color: #222;
-  }
-  .container {
-    max-width: 900px;
-    margin: auto;
-    background: white;
-    padding: 28px;
-    border-radius: 18px;
-    box-shadow: 0 5px 20px rgba(0,0,0,.12);
-  }
-  h1 {
-    text-align: center;
-    margin: 0 0 8px;
-  }
-  .intro {
-    text-align: center;
-    margin-bottom: 24px;
-    opacity: .75;
-  }
-  section {
-    margin: 22px 0;
-  }
-  h2 {
-    margin-bottom: 10px;
-    font-size: 20px;
-  }
-  .file {
-    display: block;
-    padding: 12px 15px;
-    margin: 7px 0;
-    border-radius: 9px;
-    background: #eeeeee;
-    color: inherit;
-    text-decoration: none;
-    transition: transform .1s, opacity .1s;
-  }
-  .file:hover {
-    transform: translateX(3px);
-    opacity: .8;
-  }
-  .count {
-    text-align: center;
-    margin-top: 25px;
-    font-size: 13px;
-    opacity: .65;
-  }
-  @media (prefers-color-scheme: dark) {
-    body { background: #111; color: #eee; }
-    .container { background: #1b1b1b; }
-    .file { background: #2a2a2a; }
-  }
+body {
+  margin: 0;
+  padding: 25px;
+  font-family: Arial, sans-serif;
+  background: #f2f2f2;
+  color: #222;
+}
+.container {
+  max-width: 850px;
+  margin: auto;
+  background: white;
+  padding: 25px;
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(0,0,0,.12);
+}
+h1 { text-align: center; }
+.info { text-align: center; opacity: .7; margin-bottom: 25px; }
+a {
+  display: block;
+  padding: 12px 15px;
+  margin: 7px 0;
+  background: #eee;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 8px;
+}
+a:hover { opacity: .75; }
+.count { text-align:center; margin-top:25px; opacity:.6; font-size:13px; }
+@media (prefers-color-scheme: dark) {
+  body { background:#111; color:#eee; }
+  .container { background:#1c1c1c; }
+  a { background:#2b2b2b; }
+}
 </style>
 </head>
 <body>
 <div class="container">
-  <h1>🎳 Roll &amp; Bowl – HTML Archief</h1>
-  <div class="intro">Overzicht van de HTML-bestanden in deze archiefmap</div>
-
-    <section>
-      <h2>🎳 Interteam</h2>
-          <a class="file" href="Aantal-gewonnen-matchen-per-ploeg-definitief%20%281%29.html">Aantal-gewonnen-matchen-per-ploeg-definitief (1)</a>
-    <a class="file" href="Input%20scores%20interteam.html">Input scores interteam</a>
-    <a class="file" href="interteam-wedstrijden.html">interteam-wedstrijden</a>
-    <a class="file" href="Tabel%20interteam.html">Tabel interteam</a>
-    </section>
-
-    <section>
-      <h2>🏆 Klassementen</h2>
-          <a class="file" href="Evolutie-klassement%20donker.html">Evolutie-klassement donker</a>
-    <a class="file" href="interteam-klassement%20donker.html">interteam-klassement donker</a>
-    <a class="file" href="interteam-klassement-met-speeldag-links.html">interteam-klassement-met-speeldag-links</a>
-    <a class="file" href="interteam-klassement.html">interteam-klassement</a>
-    <a class="file" href="rollbowl-evolutie-klassement.html">rollbowl-evolutie-klassement</a>
-    <a class="file" href="rollbowl-klassement.html">rollbowl-klassement</a>
-    <a class="file" href="Top%203%20tegenstanders%20donker.html">Top 3 tegenstanders donker</a>
-    </section>
-
-    <section>
-      <h2>📊 Statistieken & grafieken</h2>
-          <a class="file" href="4%20grafieken%20donker.html">4 grafieken donker</a>
+<h1>🎳 Roll &amp; Bowl – HTML Archief</h1>
+<div class="info">Klik op een bestand om het te openen.</div>
+  <a href="4%20grafieken%20donker.html">4 grafieken donker</a>
+  <a href="Aantal-gewonnen-matchen-per-ploeg-definitief%20%281%29.html">Aantal-gewonnen-matchen-per-ploeg-definitief (1)</a>
+  <a href="Beheer-pronostiek.html">Beheer-pronostiek</a>
+  <a href="bowling-scores-player-id.html">bowling-scores-player-id</a>
+  <a href="Contact.html">Contact</a>
+  <a href="Controle%20schiftingsvraag.html">Controle schiftingsvraag</a>
+  <a href="controle-kegels.html">controle-kegels</a>
+  <a href="Countdown%20Bowling.html">Countdown Bowling</a>
+  <a href="Evolutie%20kegels%20donker.html">Evolutie kegels donker</a>
+  <a href="Evolutie-klassement%20donker.html">Evolutie-klassement donker</a>
+  <a href="Gootste%20kegelverschil%20licht.html">Gootste kegelverschil licht</a>
+  <a href="Grafieken%204%20licht.html">Grafieken 4 licht</a>
+  <a href="Grootste%20kegelverschil%20donker.html">Grootste kegelverschil donker</a>
+  <a href="Individuele%20stats.html">Individuele stats</a>
+  <a href="Info-ploegen-pronostiek.html">Info-ploegen-pronostiek</a>
+  <a href="Input%20scores%20interteam.html">Input scores interteam</a>
+  <a href="Input%20scores%20spelers.html">Input scores spelers</a>
+  <a href="Input%20spelers%20met%20volgorde.html">Input spelers met volgorde</a>
+  <a href="interteam-invoer-definitief-uitgestelde-match.html">interteam-invoer-definitief-uitgestelde-match</a>
+  <a href="Interteam-invoer.html">Interteam-invoer</a>
+  <a href="interteam-klassement%20donker.html">interteam-klassement donker</a>
+  <a href="interteam-klassement-met-speeldag-links.html">interteam-klassement-met-speeldag-links</a>
+  <a href="interteam-klassement.html">interteam-klassement</a>
+  <a href="interteam-wedstrijden.html">interteam-wedstrijden</a>
+  <a href="Invoer%20pronostiek.html">Invoer pronostiek</a>
+  <a href="Kegelverschil%20prono.html">Kegelverschil prono</a>
+  <a href="Kegelverschil-prono-met-gemiddelde-en-kegelsgewonnen%20donker.html">Kegelverschil-prono-met-gemiddelde-en-kegelsgewonnen donker</a>
+  <a href="Klassement%20pronostiek.html">Klassement pronostiek</a>
+  <a href="Kleinste%20kegelverschil%20licht.html">Kleinste kegelverschil licht</a>
+  <a href="Kleinste%20kegelverschil.html">Kleinste kegelverschil</a>
+  <a href="Mededeling.html">Mededeling</a>
+  <a href="Menu.html">Menu</a>
+  <a href="Mijn%20pronostiek.html">Mijn pronostiek</a>
+  <a href="onzichtbare%20teller.html">onzichtbare teller</a>
+  <a href="Punten%20calculator.html">Punten calculator</a>
+  <a href="Puntencalculator.html">Puntencalculator</a>
+  <a href="rollbowl-arne.html">rollbowl-arne</a>
+  <a href="rollbowl-evolutie-klassement.html">rollbowl-evolutie-klassement</a>
+  <a href="rollbowl-gary.html">rollbowl-gary</a>
+  <a href="rollbowl-glenn.html">rollbowl-glenn</a>
+  <a href="rollbowl-klassement.html">rollbowl-klassement</a>
+  <a href="rollbowl-mathias.html">rollbowl-mathias</a>
+  <a href="rollbowl-multicolor-bowlingbal.html">rollbowl-multicolor-bowlingbal</a>
+  <a href="rollbowl-nancy.html">rollbowl-nancy</a>
+  <a href="rollbowl-ploeggemiddelde.html">rollbowl-ploeggemiddelde</a>
+  <a href="rollbowl-silke.html">rollbowl-silke</a>
+  <a href="rollbowl-stephan.html">rollbowl-stephan</a>
+  <a href="rollbowl-yannick.html">rollbowl-yannick</a>
+  <a href="Spelers-per-ploeg-categorie-RNB-geel%20donker.html">Spelers-per-ploeg-categorie-RNB-geel donker</a>
+  <a href="Statistieken%20onze%20ploeg%20donker.html">Statistieken onze ploeg donker</a>
+  <a href="statistieken-interteams.html">statistieken-interteams</a>
+  <a href="statistieken-ploeg.html">statistieken-ploeg</a>
+  <a href="statistieken-spelers.html">statistieken-spelers</a>
+  <a href="Tabel%20interteam.html">Tabel interteam</a>
+  <a href="team-top-game-RNB.html">team-top-game-RNB</a>
+  <a href="teller.html">teller</a>
+  <a href="Tellerbeheer.html">Tellerbeheer</a>
+  <a href="Top%203%20tegenstanders%20donker.html">Top 3 tegenstanders donker</a>
+  <a href="Topspeler-tegenploeg-invoer.html">Topspeler-tegenploeg-invoer</a>
+  <a href="topstatistieken-ploegenvergelijking-kegels-grafiek.html">topstatistieken-ploegenvergelijking-kegels-grafiek</a>
+  <a href="Update%20menu.html">Update menu</a>
+  <a href="Verschil%20in%20kegels%20donker.html">Verschil in kegels donker</a>
+  <a href="Weekoverzicht%20versturen.html">Weekoverzicht versturen</a>
+  <a href="Weekoverzicht.html">Weekoverzicht</a>
+<div class="count">64 HTML-bestanden</div>
+</div>
+</body>
+</html>
