@@ -3,58 +3,94 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>HTML Archief</title>
-
+<title>Roll &amp; Bowl – HTML Archief</title>
 <style>
-body {
+  :root {
+    color-scheme: light dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px;
     font-family: Arial, sans-serif;
     background: #f2f2f2;
-    margin: 0;
-    padding: 30px;
-}
-
-.container {
-    max-width: 700px;
+    color: #222;
+  }
+  .container {
+    max-width: 900px;
     margin: auto;
     background: white;
-    padding: 25px;
-    border-radius: 15px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-}
-
-h1 {
+    padding: 28px;
+    border-radius: 18px;
+    box-shadow: 0 5px 20px rgba(0,0,0,.12);
+  }
+  h1 {
     text-align: center;
-}
-
-a {
+    margin: 0 0 8px;
+  }
+  .intro {
+    text-align: center;
+    margin-bottom: 24px;
+    opacity: .75;
+  }
+  section {
+    margin: 22px 0;
+  }
+  h2 {
+    margin-bottom: 10px;
+    font-size: 20px;
+  }
+  .file {
     display: block;
-    padding: 14px;
-    margin: 10px 0;
+    padding: 12px 15px;
+    margin: 7px 0;
+    border-radius: 9px;
     background: #eeeeee;
-    color: #222;
+    color: inherit;
     text-decoration: none;
-    border-radius: 8px;
-}
-
-a:hover {
-    background: #dddddd;
-}
+    transition: transform .1s, opacity .1s;
+  }
+  .file:hover {
+    transform: translateX(3px);
+    opacity: .8;
+  }
+  .count {
+    text-align: center;
+    margin-top: 25px;
+    font-size: 13px;
+    opacity: .65;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { background: #111; color: #eee; }
+    .container { background: #1b1b1b; }
+    .file { background: #2a2a2a; }
+  }
 </style>
 </head>
-
 <body>
-
 <div class="container">
+  <h1>🎳 Roll &amp; Bowl – HTML Archief</h1>
+  <div class="intro">Overzicht van de HTML-bestanden in deze archiefmap</div>
 
-<h1>📁 HTML Archief</h1>
+    <section>
+      <h2>🎳 Interteam</h2>
+          <a class="file" href="Aantal-gewonnen-matchen-per-ploeg-definitief%20%281%29.html">Aantal-gewonnen-matchen-per-ploeg-definitief (1)</a>
+    <a class="file" href="Input%20scores%20interteam.html">Input scores interteam</a>
+    <a class="file" href="interteam-wedstrijden.html">interteam-wedstrijden</a>
+    <a class="file" href="Tabel%20interteam.html">Tabel interteam</a>
+    </section>
 
-<a href="Klassement.html">Klassement</a>
-<a href="Statistieken.html">Statistieken</a>
-<a href="Contact.html">Contact</a>
-<a href="Pronostiek.html">Pronostiek</a>
+    <section>
+      <h2>🏆 Klassementen</h2>
+          <a class="file" href="Evolutie-klassement%20donker.html">Evolutie-klassement donker</a>
+    <a class="file" href="interteam-klassement%20donker.html">interteam-klassement donker</a>
+    <a class="file" href="interteam-klassement-met-speeldag-links.html">interteam-klassement-met-speeldag-links</a>
+    <a class="file" href="interteam-klassement.html">interteam-klassement</a>
+    <a class="file" href="rollbowl-evolutie-klassement.html">rollbowl-evolutie-klassement</a>
+    <a class="file" href="rollbowl-klassement.html">rollbowl-klassement</a>
+    <a class="file" href="Top%203%20tegenstanders%20donker.html">Top 3 tegenstanders donker</a>
+    </section>
 
-</div>
-
-</body>
-</html>
+    <section>
+      <h2>📊 Statistieken & grafieken</h2>
+          <a class="file" href="4%20grafieken%20donker.html">4 grafieken donker</a>
