@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roll & Bowl - Mijn Pronostiek</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#f4f7fb,#e9eef5);color:#1f2937}
+.container{width:100%;max-width:1050px;margin:25px auto;padding:15px}
+.card{background:#fff;border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.10);padding:25px}
+h1{text-align:center;margin:0 0 8px;font-size:30px}
+.subtitle{text-align:center;color:#667085;margin-bottom:24px}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:15px}
+.field label{display:block;font-weight:bold;margin-bottom:7px}
+.field input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:9px;font-size:16px}
+button{width:100%;border:0;border-radius:12px;padding:14px;font-size:17px;font-weight:bold;cursor:pointer;background:#1f2937;color:#fff}
+button:hover{opacity:.9}
+#status{margin:15px 0;text-align:center;font-weight:bold}
+.error{color:#b91c1c}.ok{color:#166534}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}
+.box{background:#f8fafc;border-radius:12px;padding:14px;text-align:center}
+.box strong{display:block;font-size:24px;margin-top:4px}
+.section{margin-top:25px}
+.section h2{font-size:21px;margin-bottom:12px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:650px}
+th,td{padding:10px 8px;border-bottom:1px solid #e5e7eb;text-align:center}
+th{background:#f3f4f6;font-size:14px}
+td:nth-child(2),th:nth-child(2){text-align:left}
+.good{background:#dcfce7}
+.close{background:#fef3c7}
+.bad{background:#fee2e2}
+.highlight{font-weight:bold}
+.question{background:#f5f7fa;border-radius:12px;padding:15px;margin-top:10px}
+.note{color:#667085;font-size:13px;margin-top:15px}
+.hidden{display:none}
+@media(max-width:700px){
+ .form{grid-template-columns:1fr}
+ .summary{grid-template-columns:1fr 1fr}
+ h1{font-size:25px}
+}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="card">
+<h1>🎳 Mijn Pronostiek</h1>
+<div class="subtitle">Roll & Bowl 2026-2027</div>
+
+<div class="form">
+<div class="field">
+<label for="naam">👤 Voornaam (hoofdlettergevoelig)</label>
+<input id="naam" type="text" maxlength="100" placeholder="Vul je voornaam in">
+</div>
+<div class="field">
+<label for="nickname">🎳 3-cijferige code </label>
+<input id="nickname" type="text" maxlength="50" placeholder="Vul je code in">
+</div>
+</div>
+
+<button id="zoekBtn" onclick="zoekPronostiek()">🔎 Mijn pronostiek bekijken</button>
+<div id="status"></div>
+
+<div id="resultaat" class="hidden">
+<div class="summary">
+<div class="box">Pronostiekpunten<strong id="gewonePunten">0</strong></div>
+<div class="box">Bonus<strong id="bonus">0</strong></div>
+<div class="box">Totaal<strong id="totaal">0</strong></div>
+<div class="box">Gem. afwijking<strong id="gemAfwijking">0.0</strong></div>
+</div>
+
+<div class="section">
+<h2>🏆 Mijn voorspelling</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Voorspeld</th>
+<th>Ploeg</th>
+<th>Huidige plaats</th>
+<th>Verschil</th>
+<th>Punten</th>
+</tr>
+</thead>
+<tbody id="voorspellingTabel"></tbody>
+</table>
+</div>
+</div>
+
+<div class="section">
+<h2>🎯 Schiftingsvragen</h2>
+<div class="question">
+🥇 Grootste kegelverschil voorspeld:
+<strong id="grootste">-</strong>
+<br>
+Actueel:
+<strong id="actueelGrootste">-</strong>
+<br>
+Bonus:
+<strong id="bonusGrootste">0</strong>
+</div>
+
+<div class="question">
+🥉 Kleinste kegelverschil voorspeld:
+<strong id="kleinste">-</strong>
+<br>
+Actueel:
+<strong id="actueelKleinste">-</strong>
+<br>
+Bonus:
+<strong id="bonusKleinste">0</strong>
+</div>
+</div>
+
+<div class="note">
+ <b style="color:red;">De huidige plaatsen worden berekend op basis van de actuele Interteam-stand.
+De pronostiekpunten en bonuspunten kunnen dus tijdens het seizoen veranderen</b>.
+</div>
+</div>
+</div>
+</div>
+
+<script>
+const SUPABASE_URL="https://wnsvbtskynkewxggmjem.supabase.co";
+const SUPABASE_KEY="sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+function escapeHtml(value){
+ return String(value??"")
+ .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+ .replace(/>/g,"&gt;").replace(/"/g,"&quot;")
+ .replace(/'/g,"&#039;");
+}
+
+function puntenVoorVerschil(v){
+ v=Math.abs(Number(v));
+ if(v===0)return 10;
+ if(v===1)return 7;
+ if(v===2)return 5;
+ if(v===3)return 3;
+ return 0;
+}
+
+async function zoekPronostiek(){
+ const naam=document.getElementById("naam").value.trim();
+ const nickname=document.getElementById("nickname").value.trim();
+ const btn=document.getElementById("zoekBtn");
+ const status=document.getElementById("status");
+ const resultaat=document.getElementById("resultaat");
+
+ resultaat.classList.add("hidden");
+ status.className="";
+ status.textContent="";
+
+ if(!naam||!nickname){
+  status.className="error";
+  status.textContent="❌ Vul zowel je voornaam als code in.";
+  return;
+ }
+
+ btn.disabled=true;
+ btn.textContent="⏳ Zoeken...";
+
+ try{
+  const {data:deelnemers,error:dError}=await supabaseClient
+   .from("pronostiek_deelnemers")
+   .select("id,naam,nickname,grootste_kegelverschil,kleinste_kegelverschil")
+   .eq("naam",naam)
+   .eq("nickname",nickname)
+   .limit(1);
+
+  if(dError)throw dError;
+  if(!deelnemers||!deelnemers.length){
+   status.className="error";
+   status.textContent="❌ Geen pronostiek gevonden voor deze voornaam en code.";
+   return;
+  }
+
+  const d=deelnemers[0];
+
+  const [pRes,sRes]=await Promise.all([
+   supabaseClient.from("pronostiek_voorspellingen")
+    .select("ploeg,voorspelde_plaats")
+    .eq("deelnemer_id",d.id)
+    .order("voorspelde_plaats"),
+   supabaseClient.from("interteam_scores")
+    .select("ploeg,kegels,punten")
+  ]);
+
+  if(pRes.error)throw pRes.error;
+  if(sRes.error)throw sRes.error;
+
+  const voorspellingen=pRes.data||[];
+  const scores=sRes.data||[];
+
+  const teams={};
+  scores.forEach(r=>{
+   if(!teams[r.ploeg])teams[r.ploeg]={ploeg:r.ploeg,punten:0,kegels:0};
+   teams[r.ploeg].punten+=Number(r.punten)||0;
+   teams[r.ploeg].kegels+=Number(r.kegels)||0;
+  });
+
+  const stand=Object.values(teams).sort((a,b)=>
+   b.punten-a.punten||b.kegels-a.kegels||a.ploeg.localeCompare(b.ploeg)
+  );
+
+  const positie={};
+  stand.forEach((t,i)=>positie[t.ploeg]=i+1);
+
+  let gewonePunten=0;
+  let somAfwijking=0;
+  let geteld=0;
+
+  const tbody=document.getElementById("voorspellingTabel");
+  tbody.innerHTML="";
+
+  voorspellingen.forEach(v=>{
+   const voorspeld=Number(v.voorspelde_plaats);
+   const werkelijk=positie[v.ploeg];
+   const verschil=werkelijk==null?null:Math.abs(voorspeld-werkelijk);
+   const punten=werkelijk==null?0:puntenVoorVerschil(verschil);
+
+   if(werkelijk!=null){
+    gewonePunten+=punten;
+    somAfwijking+=verschil;
+    geteld++;
+   }
+
+   const tr=document.createElement("tr");
+   let cls="";
+   if(verschil===0)cls="good";
+   else if(verschil!==null&&verschil<=2)cls="close";
+   else if(verschil!==null)cls="bad";
+
+   tr.className=cls;
+   tr.innerHTML=`
+    <td><b>${voorspeld}</b></td>
+    <td>${escapeHtml(v.ploeg)}</td>
+    <td>${werkelijk??"-"}</td>
+    <td>${verschil??"-"}</td>
+    <td><b>${punten}</b></td>`;
+   tbody.appendChild(tr);
+  });
+
+  // Actuele grootste en kleinste cumulatieve kegelverschil.
+  const teamArray=stand;
+  const verschillen=[];
+  for(let i=0;i<teamArray.length;i++){
+   for(let j=i+1;j<teamArray.length;j++){
+    verschillen.push(Math.abs(teamArray[i].kegels-teamArray[j].kegels));
+   }
+  }
+
+  let actueelGrootste=verschillen.length?Math.max(...verschillen):null;
+  let actueelKleinste=verschillen.length?Math.min(...verschillen):null;
+
+  let bonusGrootste=0;
+  let bonusKleinste=0;
+
+  const voorspeldG=Number(d.grootste_kegelverschil);
+  const voorspeldK=Number(d.kleinste_kegelverschil);
+
+  if(Number.isFinite(voorspeldG)&&actueelGrootste!==null){
+   // Alleen ter info op deze persoonlijke pagina:
+   // bonus als de deelnemer momenteel het dichtst bij zit.
+   const alleG=await haalAlleSchiftingen("grootste_kegelverschil");
+   const minG=Math.min(...alleG.filter(x=>Number.isFinite(x)).map(x=>Math.abs(x-actueelGrootste)));
+   if(Math.abs(voorspeldG-actueelGrootste)===minG)bonusGrootste=15;
+  }
+
+  if(Number.isFinite(voorspeldK)&&actueelKleinste!==null){
+   const alleK=await haalAlleSchiftingen("kleinste_kegelverschil");
+   const minK=Math.min(...alleK.filter(x=>Number.isFinite(x)).map(x=>Math.abs(x-actueelKleinste)));
+   if(Math.abs(voorspeldK-actueelKleinste)===minK)bonusKleinste=15;
+  }
+
+  const bonus=bonusGrootste+bonusKleinste;
+  const totaal=gewonePunten+bonus;
+  const gem=geteld?(somAfwijking/geteld).toFixed(1):"0.0";
+
+  document.getElementById("gewonePunten").textContent=gewonePunten;
+  document.getElementById("bonus").textContent=bonus;
+  document.getElementById("totaal").textContent=totaal;
+  document.getElementById("gemAfwijking").textContent=gem;
+
+  document.getElementById("grootste").textContent=Number.isFinite(voorspeldG)?voorspeldG:"-";
+  document.getElementById("kleinste").textContent=Number.isFinite(voorspeldK)?voorspeldK:"-";
+  document.getElementById("actueelGrootste").textContent=actueelGrootste??"-";
+  document.getElementById("actueelKleinste").textContent=actueelKleinste??"-";
+  document.getElementById("bonusGrootste").textContent=bonusGrootste;
+  document.getElementById("bonusKleinste").textContent=bonusKleinste;
+
+  resultaat.classList.remove("hidden");
+  status.className="ok";
+  status.textContent="✅ Pronostiek gevonden voor "+d.naam+" ("+d.nickname+").";
+
+ }catch(error){
+  console.error(error);
+  status.className="error";
+  status.textContent="❌ Fout bij laden: "+(error.message||error);
+ }finally{
+  btn.disabled=false;
+  btn.textContent="🔎 Mijn pronostiek bekijken";
+ }
+}
+
+async function haalAlleSchiftingen(kolom){
+ const {data,error}=await supabaseClient
+  .from("pronostiek_deelnemers")
+  .select(kolom);
+ if(error)throw error;
+ return (data||[]).map(x=>Number(x[kolom])).filter(x=>Number.isFinite(x));
+}
+</script>
+</body>
+</html>

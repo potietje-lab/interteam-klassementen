@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Roll & Bowl - Weekoverzicht</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+    :root {
+        --bg: #f4f6f8;
+        --card: #ffffff;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --border: #d9dee5;
+        --accent: #2563eb;
+        --green: #16a34a;
+        --green-bg: #dcfce7;
+        --red: #dc2626;
+        --red-bg: #fee2e2;
+        --orange: #ea580c;
+        --orange-bg: #ffedd5;
+        --shadow: 0 4px 14px rgba(0,0,0,0.08);
+    }
+
+    body.dark {
+        --bg: #111827;
+        --card: #1f2937;
+        --text: #f3f4f6;
+        --muted: #9ca3af;
+        --border: #374151;
+        --accent: #60a5fa;
+        --green: #4ade80;
+        --green-bg: #14532d;
+        --red: #f87171;
+        --red-bg: #7f1d1d;
+        --orange: #fb923c;
+        --orange-bg: #7c2d12;
+        --shadow: 0 4px 14px rgba(0,0,0,0.3);
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        transition: background 0.25s, color 0.25s;
+    }
+
+    .container {
+        max-width: 900px;
+        margin: auto;
+        padding: 20px;
+    }
+
+    .header {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .header h1 {
+        margin: 0 0 6px;
+        font-size: 30px;
+    }
+
+    .header p {
+        margin: 0;
+        color: var(--muted);
+    }
+
+    .controls {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+
+    select,
+    button {
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--card);
+        color: var(--text);
+        font-size: 15px;
+    }
+
+    button {
+        cursor: pointer;
+        background: var(--accent);
+        color: white;
+        border: none;
+    }
+
+    button:hover {
+        opacity: 0.9;
+    }
+
+    .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 18px;
+        margin-bottom: 18px;
+        box-shadow: var(--shadow);
+    }
+
+    .card h2 {
+        margin: 0 0 15px;
+        font-size: 21px;
+    }
+
+    .subtitel {
+        color: var(--muted);
+        font-size: 14px;
+        margin-bottom: 14px;
+    }
+
+    .winner {
+        border-left: 5px solid var(--green);
+        padding: 12px 14px;
+        margin-bottom: 10px;
+        background: var(--green-bg);
+        border-radius: 8px;
+    }
+
+    .winner:last-child {
+        margin-bottom: 0;
+    }
+
+    .winner-name {
+        font-weight: bold;
+        font-size: 17px;
+        margin-bottom: 7px;
+    }
+
+    .stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        font-size: 14px;
+    }
+
+    .stats span {
+        white-space: nowrap;
+    }
+
+    .number {
+        font-weight: bold;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th,
+    td {
+        padding: 10px 8px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+    }
+
+    th {
+        font-size: 13px;
+        color: var(--muted);
+    }
+
+    td {
+        font-size: 15px;
+    }
+
+    .rank {
+        width: 45px;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .our-team {
+        background: var(--green-bg);
+        font-weight: bold;
+    }
+
+    .our-team td {
+        border-bottom: none;
+    }
+
+    .next-match {
+        text-align: center;
+    }
+
+    .match-date {
+        color: var(--muted);
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+
+    .teams {
+        font-size: 21px;
+        font-weight: bold;
+        margin-bottom: 18px;
+    }
+
+    .vs {
+        color: var(--muted);
+        font-size: 14px;
+        margin: 0 8px;
+    }
+
+    .difference-container {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .difference {
+        min-width: 180px;
+        padding: 14px;
+        border-radius: 10px;
+        font-weight: bold;
+    }
+
+    .positive {
+        background: var(--green-bg);
+        color: var(--green);
+    }
+
+    .negative {
+        background: var(--red-bg);
+        color: var(--red);
+    }
+
+    .zero {
+        background: var(--orange-bg);
+        color: var(--orange);
+    }
+
+    .difference-label {
+        display: block;
+        font-size: 13px;
+        margin-bottom: 5px;
+        font-weight: normal;
+    }
+
+    .difference-value {
+        font-size: 20px;
+    }
+
+    .loading {
+        text-align: center;
+        padding: 30px;
+        color: var(--muted);
+    }
+
+    .error {
+        background: var(--red-bg);
+        color: var(--red);
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+    }
+
+    .empty {
+        color: var(--muted);
+        text-align: center;
+        padding: 15px;
+    }
+
+    .footer {
+        text-align: center;
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 25px;
+        padding-bottom: 20px;
+    }
+
+    @media (max-width: 600px) {
+
+        .container {
+            padding: 12px;
+        }
+
+        .header h1 {
+            font-size: 25px;
+        }
+
+        .card {
+            padding: 14px;
+        }
+
+        th,
+        td {
+            padding: 8px 5px;
+        }
+
+        .teams {
+            font-size: 18px;
+        }
+
+        .difference {
+            width: 100%;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>🎳 Roll & Bowl</h1>
+        <p>Wekelijks overzicht</p>
+    </div>
+
+    <div class="controls">
+
+        <label for="speeldatum">
+            Speeldag:
+        </label>
+
+        <select id="speeldatum">
+            <option value="">Laden...</option>
+        </select>
+
+        <button onclick="toggleDarkMode()">
+            🌙 / ☀️
+        </button>
+
+    </div>
+
+    <div id="melding"></div>
+
+    <!-- 1. MEESTE PUNTEN -->
+    <div class="card">
+
+        <h2>🏆 Ploeg(en) van de week</h2>
+
+        <div class="subtitel">
+            Hoogste aantal punten op deze speeldag
+        </div>
+
+        <div id="meestePunten">
+            <div class="loading">Gegevens laden...</div>
+        </div>
+
+    </div>
+
+
+    <!-- 2. MEESTE KEGELS -->
+    <div class="card">
+
+        <h2>🎳 Ploeg van de week</h2>
+
+        <div class="subtitel">
+            Hoogste aantal kegels op deze speeldag
+        </div>
+
+        <div id="meesteKegels">
+            <div class="loading">Gegevens laden...</div>
+        </div>
+
+    </div>
+
+
+    <!-- 3. ALGEMEEN KLASSEMENT -->
+    <div class="card">
+
+        <h2>🥇 Algemeen klassement</h2>
+
+        <div class="subtitel">
+            Top 3 + RNB Geenens Construct-Vapor
+        </div>
+
+        <div id="klassement">
+            <div class="loading">Gegevens laden...</div>
+        </div>
+
+    </div>
+
+
+    <!-- 4. VOLGENDE WEDSTRIJD -->
+    <div class="card">
+
+        <h2>📅 Volgende wedstrijd RNB</h2>
+
+        <div id="volgendeWedstrijd">
+            <div class="loading">Gegevens laden...</div>
+        </div>
+
+    </div>
+
+
+    <div class="footer">
+        Roll & Bowl
+    </div>
+
+</div>
+
+
+<script>
+
+const SUPABASE_URL =
+    "https://wnsvbtskynkewxggmjem.supabase.co";
+
+/*
+ * VUL HIER JE BESTAANDE SUPABASE PUBLISHABLE / ANON KEY IN
+ */
+const SUPABASE_KEY =
+    "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+
+const supabaseClient =
+    supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+const ONZE_PLOEG =
+    "RNB Geenens Construct-Vapor";
+
+
+let alleScores = [];
+let alleWedstrijden = [];
+let huidigeSpeeldatum = null;
+
+
+/* ================================
+   START
+================================ */
+
+document.addEventListener("DOMContentLoaded", async () => {
+
+    laadDarkMode();
+
+    try {
+
+        await laadScores();
+        await laadWedstrijden();
+
+        vulSpeeldatumDropdown();
+
+        const laatsteDatum =
+            bepaalLaatsteGespeeldeDatum();
+
+        if (laatsteDatum) {
+
+            document.getElementById("speeldatum").value =
+                laatsteDatum;
+
+            huidigeSpeeldatum =
+                laatsteDatum;
+
+            toonWeekoverzicht();
+
+        } else {
+
+            toonFout(
+                "Er zijn nog geen gespeelde speeldagen gevonden."
+            );
+
+        }
+
+    } catch (error) {
+
+        console.error(error);
+
+        toonFout(
+            "Fout bij laden: " + error.message
+        );
+
+    }
+
+});
+
+
+/* ================================
+   SCORES LADEN
+================================ */
+
+async function laadScores() {
+
+    const { data, error } =
+        await supabaseClient
+            .from("interteam_scores")
+            .select("*")
+            .order("speeldatum", {
+                ascending: true
+            });
+
+    if (error) {
+        throw error;
+    }
+
+    alleScores = data || [];
+}
+
+
+/* ================================
+   WEDSTRIJDEN LADEN
+================================ */
+
+async function laadWedstrijden() {
+
+    const { data, error } =
+        await supabaseClient
+            .from("wedstrijden")
+            .select("*")
+            .order("geplande_datum", {
+                ascending: true
+            });
+
+    if (error) {
+        throw error;
+    }
+
+    alleWedstrijden = data || [];
+}
+
+
+/* ================================
+   DATUM FORMATTEREN
+================================ */
+
+function formatDatum(datum) {
+
+    if (!datum) return "";
+
+    const d =
+        new Date(datum + "T00:00:00");
+
+    return d.toLocaleDateString(
+        "nl-BE",
+        {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric"
+        }
+    );
+}
+
+
+/* ================================
+   DATUM DROPDOWN
+================================ */
+
+function vulSpeeldatumDropdown() {
+
+    const select =
+        document.getElementById("speeldatum");
+
+    select.innerHTML = "";
+
+    const datums =
+        [...new Set(
+            alleScores.map(
+                score => score.speeldatum
+            )
+        )]
+        .sort();
+
+    datums.forEach(datum => {
+
+        const option =
+            document.createElement("option");
+
+        option.value = datum;
+
+        option.textContent =
+            formatDatum(datum);
+
+        select.appendChild(option);
+
+    });
+
+
+    select.addEventListener(
+        "change",
+        function () {
+
+            huidigeSpeeldatum =
+                this.value;
+
+            toonWeekoverzicht();
+
+        }
+    );
+}
+
+
+/* ================================
+   LAATSTE GESPEELDE DATUM
+================================ */
+
+function bepaalLaatsteGespeeldeDatum() {
+
+    if (alleScores.length === 0) {
+        return null;
+    }
+
+    const vandaag =
+        new Date()
+            .toISOString()
+            .substring(0, 10);
+
+    const datums =
+        [...new Set(
+            alleScores
+                .map(s => s.speeldatum)
+                .filter(d => d <= vandaag)
+        )]
+        .sort();
+
+    return datums.length
+        ? datums[datums.length - 1]
+        : null;
+}
+
+
+/* ================================
+   WEEKOVERZICHT
+================================ */
+
+function toonWeekoverzicht() {
+
+    document.querySelector(".header p")
+        .textContent =
+        "Wekelijks overzicht – " +
+        formatDatum(huidigeSpeeldatum);
+
+    toonMeestePunten();
+    toonMeesteKegels();
+    toonKlassement();
+    toonVolgendeWedstrijd();
+}
+
+
+/* ================================
+   1. MEESTE PUNTEN
+================================ */
+
+function toonMeestePunten() {
+
+    const container =
+        document.getElementById("meestePunten");
+
+    const scores =
+        alleScores.filter(
+            s => s.speeldatum === huidigeSpeeldatum
+        );
+
+    if (!scores.length) {
+
+        container.innerHTML =
+            `<div class="empty">
+                Geen gegevens voor deze speeldag.
+             </div>`;
+
+        return;
+    }
+
+    const hoogstePunten =
+        Math.max(
+            ...scores.map(
+                s => Number(s.punten) || 0
+            )
+        );
+
+    const winnaars =
+        scores.filter(
+            s =>
+                Number(s.punten) ===
+                hoogstePunten
+        );
+
+    container.innerHTML =
+        winnaars.map(s => {
+
+            const kegels =
+                Number(s.kegels) || 0;
+
+            const gemiddelde =
+                kegels / 15;
+
+            return `
+                <div class="winner">
+
+                    <div class="winner-name">
+                        🏆 ${escapeHtml(s.ploeg)}
+                    </div>
+
+                    <div class="stats">
+
+                        <span>
+                            Punten:
+                            <span class="number">
+                                ${Number(s.punten)}
+                            </span>
+                        </span>
+
+                        <span>
+                            Kegels:
+                            <span class="number">
+                                ${kegels}
+                            </span>
+                        </span>
+
+                        <span>
+                            Gemiddelde:
+                            <span class="number">
+                                ${gemiddelde.toFixed(1)}
+                            </span>
+                        </span>
+
+                    </div>
+
+                </div>
+            `;
+
+        }).join("");
+}
+
+
+/* ================================
+   2. MEESTE KEGELS
+================================ */
+
+function toonMeesteKegels() {
+
+    const container =
+        document.getElementById("meesteKegels");
+
+    const scores =
+        alleScores.filter(
+            s => s.speeldatum === huidigeSpeeldatum
+        );
+
+    if (!scores.length) {
+
+        container.innerHTML =
+            `<div class="empty">
+                Geen gegevens voor deze speeldag.
+             </div>`;
+
+        return;
+    }
+
+    const hoogsteKegels =
+        Math.max(
+            ...scores.map(
+                s => Number(s.kegels) || 0
+            )
+        );
+
+    const winnaar =
+        scores.find(
+            s =>
+                Number(s.kegels) ===
+                hoogsteKegels
+        );
+
+    if (!winnaar) return;
+
+    const kegels =
+        Number(winnaar.kegels) || 0;
+
+    const gemiddelde =
+        kegels / 15;
+
+    container.innerHTML = `
+
+        <div class="winner">
+
+            <div class="winner-name">
+                🎳 ${escapeHtml(winnaar.ploeg)}
+            </div>
+
+            <div class="stats">
+
+                <span>
+                    Kegels:
+                    <span class="number">
+                        ${kegels}
+                    </span>
+                </span>
+
+                <span>
+                    Gemiddelde:
+                    <span class="number">
+                        ${gemiddelde.toFixed(1)}
+                    </span>
+                </span>
+
+                <span>
+                    Punten:
+                    <span class="number">
+                        ${Number(winnaar.punten)}
+                    </span>
+                </span>
+
+            </div>
+
+        </div>
+    `;
+}
+
+
+/* ================================
+   ALGEMENE STAND
+================================ */
+
+function berekenAlgemeenKlassement() {
+
+    /*
+     * Alleen scores tot en met de geselecteerde
+     * speeldatum worden meegenomen.
+     */
+
+    const relevanteScores =
+        alleScores.filter(
+            s =>
+                s.speeldatum <=
+                huidigeSpeeldatum
+        );
+
+    const ploegen = {};
+
+    relevanteScores.forEach(s => {
+
+        const ploeg =
+            s.ploeg;
+
+        if (!ploegen[ploeg]) {
+
+            ploegen[ploeg] = {
+                ploeg: ploeg,
+                punten: 0,
+                kegels: 0
+            };
+
+        }
+
+        ploegen[ploeg].punten +=
+            Number(s.punten) || 0;
+
+        ploegen[ploeg].kegels +=
+            Number(s.kegels) || 0;
+
+    });
+
+
+    return Object.values(ploegen)
+        .sort((a, b) => {
+
+            if (b.punten !== a.punten) {
+                return b.punten - a.punten;
+            }
+
+            return b.kegels - a.kegels;
+
+        });
+}
+
+
+/* ================================
+   3. KLASSEMENT TONEN
+================================ */
+
+function toonKlassement() {
+
+    const container =
+        document.getElementById("klassement");
+
+    const klassement =
+        berekenAlgemeenKlassement();
+
+    if (!klassement.length) {
+
+        container.innerHTML =
+            `<div class="empty">
+                Geen klassement beschikbaar.
+             </div>`;
+
+        return;
+    }
+
+
+    /*
+     * Bepaal plaatsen.
+     *
+     * Gelijke punten én kegels krijgen
+     * dezelfde plaats.
+     */
+
+    let vorigePunten = null;
+    let vorigeKegels = null;
+    let huidigePlaats = 0;
+
+
+    const metPlaats =
+        klassement.map(
+            (ploeg, index) => {
+
+                if (
+                    ploeg.punten !== vorigePunten ||
+                    ploeg.kegels !== vorigeKegels
+                ) {
+
+                    huidigePlaats =
+                        index + 1;
+
+                }
+
+                vorigePunten =
+                    ploeg.punten;
+
+                vorigeKegels =
+                    ploeg.kegels;
+
+                return {
+                    ...ploeg,
+                    plaats: huidigePlaats
+                };
+
+            }
+        );
+
+
+    const top3 =
+        metPlaats.slice(0, 3);
+
+
+    const onzePloeg =
+        metPlaats.find(
+            p =>
+                p.ploeg === ONZE_PLOEG
+        );
+
+
+    /*
+     * Maak lijst.
+     */
+
+    let teTonen = [...top3];
+
+
+    /*
+     * Als RNB al in top 3 staat,
+     * niet nog eens onderaan tonen.
+     */
+
+    if (
+        onzePloeg &&
+        !top3.some(
+            p =>
+                p.ploeg === ONZE_PLOEG
+        )
+    ) {
+
+        teTonen.push(
+            onzePloeg
+        );
+
+    }
+
+
+    let html = `
+        <table>
+
+            <thead>
+
+                <tr>
+                    <th class="rank">Plaats</th>
+                    <th>Ploeg</th>
+                    <th>Punten</th>
+                    <th>Kegels</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+    `;
+
+
+    teTonen.forEach((ploeg, index) => {
+
+        const isOnzePloeg =
+            ploeg.ploeg === ONZE_PLOEG;
+
+        html += `
+
+            <tr class="${isOnzePloeg ? "our-team" : ""}">
+
+                <td class="rank">
+                    ${ploeg.plaats}
+                </td>
+
+                <td>
+                    ${isOnzePloeg ? "🎳 " : ""}
+                    ${escapeHtml(ploeg.ploeg)}
+                </td>
+
+                <td>
+                    ${ploeg.punten}
+                </td>
+
+                <td>
+                    ${ploeg.kegels}
+                </td>
+
+            </tr>
+        `;
+
+    });
+
+
+    html += `
+            </tbody>
+        </table>
+    `;
+
+
+    container.innerHTML = html;
+}
+
+
+/* ================================
+   4. VOLGENDE WEDSTRIJD
+================================ */
+
+function toonVolgendeWedstrijd() {
+
+    const container =
+        document.getElementById(
+            "volgendeWedstrijd"
+        );
+
+
+    /*
+     * Zoek de eerstvolgende geplande
+     * wedstrijd van RNB.
+     */
+
+    const toekomstigeWedstrijden =
+        alleWedstrijden
+            .filter(w => {
+
+                const isRNB =
+                    w.thuisploeg === ONZE_PLOEG ||
+                    w.uitploeg === ONZE_PLOEG;
+
+                const juisteStatus =
+                    w.status === "gepland";
+
+                const naHuidigeDatum =
+                    w.geplande_datum >
+                    huidigeSpeeldatum;
+
+                return (
+                    isRNB &&
+                    juisteStatus &&
+                    naHuidigeDatum
+                );
+
+            })
+            .sort(
+                (a, b) =>
+                    a.geplande_datum.localeCompare(
+                        b.geplande_datum
+                    )
+            );
+
+
+    if (!toekomstigeWedstrijden.length) {
+
+        container.innerHTML =
+            `<div class="empty">
+                Er is momenteel geen volgende
+                geplande wedstrijd gevonden.
+             </div>`;
+
+        return;
+    }
+
+
+    const wedstrijd =
+        toekomstigeWedstrijden[0];
+
+
+    const tegenstander =
+        wedstrijd.thuisploeg === ONZE_PLOEG
+            ? wedstrijd.uitploeg
+            : wedstrijd.thuisploeg;
+
+
+    /*
+     * Actuele algemene stand.
+     */
+
+    const klassement =
+        berekenAlgemeenKlassement();
+
+
+    const rnb =
+        klassement.find(
+            p =>
+                p.ploeg === ONZE_PLOEG
+        );
+
+
+    const tegen =
+        klassement.find(
+            p =>
+                p.ploeg === tegenstander
+        );
+
+
+    if (!rnb || !tegen) {
+
+        container.innerHTML = `
+
+            <div class="next-match">
+
+                <div class="match-date">
+                    ${formatDatum(
+                        wedstrijd.geplande_datum
+                    )}
+                </div>
+
+                <div class="teams">
+
+                    ${escapeHtml(ONZE_PLOEG)}
+
+                    <span class="vs">
+                        tegen
+                    </span>
+
+                    ${escapeHtml(tegenstander)}
+
+                </div>
+
+                <div class="empty">
+                    Nog geen volledige stand
+                    beschikbaar voor beide ploegen.
+                </div>
+
+            </div>
+        `;
+
+        return;
+    }
+
+
+    /*
+     * RNB - tegenstander
+     */
+
+    const verschilPunten =
+        rnb.punten -
+        tegen.punten;
+
+
+    const verschilKegels =
+        rnb.kegels -
+        tegen.kegels;
+
+
+    const puntenKlasse =
+        bepaalVerschilKlasse(
+            verschilPunten
+        );
+
+
+    const kegelsKlasse =
+        bepaalVerschilKlasse(
+            verschilKegels
+        );
+
+
+    container.innerHTML = `
+
+        <div class="next-match">
+
+            <div class="match-date">
+                ${formatDatum(
+                    wedstrijd.geplande_datum
+                )}
+            </div>
+
+            <div class="teams">
+
+                ${escapeHtml(ONZE_PLOEG)}
+
+                <span class="vs">
+                    tegen
+                </span>
+
+                ${escapeHtml(tegenstander)}
+
+            </div>
+
+
+            <div class="difference-container">
+
+
+                <div class="difference ${puntenKlasse}">
+
+                    <span class="difference-label">
+                        Verschil punten
+                    </span>
+
+                    <span class="difference-value">
+                        ${formatVerschil(
+                            verschilPunten
+                        )}
+                    </span>
+
+                </div>
+
+
+                <div class="difference ${kegelsKlasse}">
+
+                    <span class="difference-label">
+                        Verschil kegels
+                    </span>
+
+                    <span class="difference-value">
+                        ${formatVerschil(
+                            verschilKegels
+                        )}
+                    </span>
+
+                </div>
+
+
+            </div>
+
+        </div>
+    `;
+}
+
+
+/* ================================
+   KLEUR VERSCHIL
+================================ */
+
+function bepaalVerschilKlasse(
+    verschil
+) {
+
+    if (verschil > 0) {
+        return "positive";
+    }
+
+    if (verschil < 0) {
+        return "negative";
+    }
+
+    return "zero";
+}
+
+
+/* ================================
+   VERSCHIL FORMATTEREN
+================================ */
+
+function formatVerschil(
+    verschil
+) {
+
+    if (verschil > 0) {
+        return "+" + verschil;
+    }
+
+    return String(verschil);
+}
+
+
+/* ================================
+   DARK MODE
+================================ */
+
+function toggleDarkMode() {
+
+    document.body.classList.toggle(
+        "dark"
+    );
+
+    localStorage.setItem(
+        "rollbowl-darkmode",
+        document.body.classList.contains(
+            "dark"
+        )
+            ? "1"
+            : "0"
+    );
+}
+
+
+function laadDarkMode() {
+
+    if (
+        localStorage.getItem(
+            "rollbowl-darkmode"
+        ) === "1"
+    ) {
+
+        document.body.classList.add(
+            "dark"
+        );
+
+    }
+}
+
+
+/* ================================
+   FOUTMELDING
+================================ */
+
+function toonFout(
+    tekst
+) {
+
+    document.getElementById(
+        "melding"
+    ).innerHTML = `
+        <div class="error">
+            ⚠️ ${escapeHtml(tekst)}
+        </div>
+    `;
+}
+
+
+/* ================================
+   HTML VEILIG MAKEN
+================================ */
+
+function escapeHtml(
+    tekst
+) {
+
+    return String(tekst ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+</script>
+
+</body>
+</html>

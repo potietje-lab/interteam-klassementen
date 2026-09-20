@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roll & Bowl - Pronostiekklassement</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#f4f7fb,#e9eef5);color:#1f2937}
+.container{width:100%;max-width:1150px;margin:25px auto;padding:15px}
+.card{background:#fff;border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.10);padding:25px}
+h1{text-align:center;margin:0 0 8px;font-size:30px}
+.subtitle{text-align:center;color:#667085;margin-bottom:24px}
+.info{background:#f5f7fa;border-radius:12px;padding:14px 17px;margin-bottom:20px;line-height:1.5}
+.status{padding:12px;border-radius:10px;text-align:center;margin-bottom:18px;font-weight:bold}
+.loading{background:#eef2ff;color:#3730a3}.error{background:#fee2e2;color:#b91c1c}.ok{background:#dcfce7;color:#166534}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:760px}
+th,td{padding:11px 8px;border-bottom:1px solid #e5e7eb;text-align:center}
+th{background:#f3f4f6;font-size:14px}
+td:nth-child(2),th:nth-child(2){text-align:left}
+tr:hover{background:#f8fafc}
+.rang{font-weight:bold;font-size:18px}
+.r1{background:#dcfce7}.r2{background:#fef3c7}.r3{background:#fee2e2}
+.total{font-size:18px;font-weight:bold}
+.exact{font-weight:bold}
+.myrow{outline:3px solid #2563eb;background:#eff6ff!important}
+.mymarker{display:inline-block;background:#2563eb;color:white;border-radius:999px;padding:5px 9px;font-weight:bold;font-size:12px}
+.details{background:#f8fafc}
+.rnb-prediction{background:#fef3c7!important;font-weight:bold}
+.rnb-prediction td{background:#fef3c7!important}
+.details td{text-align:left!important}
+.details table{min-width:0;margin:8px 0}
+.details th,.details td{padding:7px}
+button{border:0;border-radius:10px;padding:10px 14px;font-size:14px;font-weight:bold;cursor:pointer;background:#1f2937;color:white}
+button:hover{opacity:.9}
+.hidden{display:none}
+input{padding:11px;border:1px solid #cbd5e1;border-radius:10px;font-size:15px;width:100%;max-width:360px}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#e5e7eb;font-size:12px;font-weight:bold}
+.legend{font-size:13px;color:#667085;margin-top:15px}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="card">
+<h1>🏆 Roll & Bowl Pronostiekklassement</h1>
+<div class="subtitle">Tussenstand 2026-2027</div>
+
+<div class="info">
+<b>📊 Hoe wordt de score berekend?</b><br>
+Exact de juiste plaats = <b>10 punten</b> · 1 plaats verschil = <b>7</b> ·
+2 plaatsen verschil = <b>5</b> · 3 plaatsen verschil = <b>3</b> · meer dan 3 = <b>0</b>.<br>
+De twee schiftingsvragen leveren elk maximaal <b>15 bonuspunten</b> op.
+</div>
+
+<div id="status" class="status loading">⏳ Gegevens laden...</div>
+
+<div class="controls">
+<div style="flex:1;min-width:220px">
+<input id="naamZoek" type="text" placeholder="👤 Jouw voornaam">
+</div>
+<div style="flex:1;min-width:220px">
+<input id="nicknameZoek" type="text" placeholder="🎳 Jouw 3-cijferige code">
+</div>
+<button onclick="markeerMijnPlaats()">📍 Mijn plaats</button>
+<button onclick="wisMijnPlaats()">✖ Wissen</button>
+<button onclick="laadAlles()">🔄 Vernieuwen</button>
+</div>
+<div id="persoonStatus" style="text-align:center;font-weight:bold;margin:8px 0 15px;"></div>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Rang</th>
+<th>Deelnemer</th>
+<th>Pronostiek-<br>punten</th>
+<th>Bonus</th>
+<th>Totaal</th>
+<th>Exact<br>goed</th>
+<th>Gem.<br>afwijking</th>
+<th></th>
+</tr>
+</thead>
+<tbody id="klassement"></tbody>
+</table>
+</div>
+
+<div class="legend">
+Maximaal 150 punten: 120 punten voor de 12 voorspelde plaatsen + 30 bonuspunten voor de 2 schiftingsvragen.
+</div>
+</div>
+</div>
+
+<script>
+const SUPABASE_URL="https://wnsvbtskynkewxggmjem.supabase.co";
+const SUPABASE_KEY="sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let deelnemers=[];
+let voorspellingen=[];
+let scores=[];
+let mijnDeelnemerId=null;
+
+function status(tekst,klasse){
+  const el=document.getElementById("status");
+  el.className="status "+klasse;
+  el.textContent=tekst;
+}
+
+function escapeHtml(value){
+  return String(value??"")
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
+async function laadAlles(){
+  status("⏳ Gegevens laden...","loading");
+  try{
+    const [d,p,s]=await Promise.all([
+      supabaseClient.from("pronostiek_deelnemers")
+        .select("id,naam,nickname,grootste_kegelverschil,kleinste_kegelverschil"),
+      supabaseClient.from("pronostiek_voorspellingen")
+        .select("deelnemer_id,ploeg,voorspelde_plaats"),
+      supabaseClient.from("interteam_scores")
+        .select("speeldatum,ploeg,kegels,punten")
+    ]);
+
+    if(d.error) throw d.error;
+    if(p.error) throw p.error;
+    if(s.error) throw s.error;
+
+    deelnemers=d.data||[];
+    voorspellingen=p.data||[];
+    scores=s.data||[];
+
+    berekenEnToon();
+  }catch(error){
+    console.error(error);
+    status("❌ Fout bij laden: "+(error.message||error),"error");
+  }
+}
+
+function berekenStand(){
+  const teams={};
+
+  scores.forEach(r=>{
+    const ploeg=r.ploeg;
+    if(!teams[ploeg]) teams[ploeg]={ploeg,punten:0,kegels:0};
+    teams[ploeg].punten += Number(r.punten)||0;
+    teams[ploeg].kegels += Number(r.kegels)||0;
+  });
+
+  // Eerst punten, daarna kegels als tie-break.
+  return Object.values(teams).sort((a,b)=>
+    b.punten-a.punten || b.kegels-a.kegels || a.ploeg.localeCompare(b.ploeg)
+  );
+}
+
+function puntenVoorVerschil(verschil){
+  verschil=Math.abs(Number(verschil));
+  if(verschil===0) return 10;
+  if(verschil===1) return 7;
+  if(verschil===2) return 5;
+  if(verschil===3) return 3;
+  return 0;
+}
+
+function berekenSchiftingBonus(){
+  // Grootste en kleinste absolute verschillen tussen de
+  // cumulatieve kegeltotalen van alle teams.
+  const stand=berekenStand();
+  if(stand.length<2) return {grootste:0,kleinste:0,actueelGrootste:null,actueelKleinste:null};
+
+  const verschillen=[];
+  for(let i=0;i<stand.length;i++){
+    for(let j=i+1;j<stand.length;j++){
+      verschillen.push({
+        a:stand[i].ploeg,b:stand[j].ploeg,
+        verschil:Math.abs(stand[i].kegels-stand[j].kegels)
+      });
+    }
+  }
+
+  const grootste=Math.max(...verschillen.map(x=>x.verschil));
+  const kleinste=Math.min(...verschillen.map(x=>x.verschil));
+
+  return {
+    grootste:15, kleinste:15,
+    actueelGrootste:grootste,
+    actueelKleinste:kleinste
+  };
+}
+
+function berekenEnToon(){
+  const stand=berekenStand();
+  const positie={};
+  stand.forEach((t,i)=>positie[t.ploeg]=i+1);
+
+  const bonusInfo=berekenSchiftingBonus();
+
+  const resultaten=deelnemers.map(d=>{
+    const preds=voorspellingen
+      .filter(p=>Number(p.deelnemer_id)===Number(d.id))
+      .sort((a,b)=>Number(a.voorspelde_plaats)-Number(b.voorspelde_plaats));
+
+    let gewonePunten=0;
+    let exact=0;
+    let somAfwijking=0;
+
+    const details=preds.map(p=>{
+      const voorspeld=Number(p.voorspelde_plaats);
+      const werkelijk=positie[p.ploeg];
+      const verschil=werkelijk==null ? null : Math.abs(voorspeld-werkelijk);
+      const punten=werkelijk==null ? 0 : puntenVoorVerschil(verschil);
+
+      if(werkelijk!=null){
+        gewonePunten+=punten;
+        somAfwijking+=verschil;
+        if(verschil===0) exact++;
+      }
+
+      return {ploeg:p.ploeg,voorspeld,werkelijk,verschil,punten};
+    });
+
+    // Bonus: dichtst bij het actuele grootste/kleinste verschil.
+    // Bij gelijke afstand krijgen alle deelnemers de bonus.
+    let bonus=0;
+
+    const g=Number(d.grootste_kegelverschil);
+    const k=Number(d.kleinste_kegelverschil);
+
+    if(Number.isFinite(g) && bonusInfo.actueelGrootste!==null){
+      // voorlopig markeren via afstand; echte bonus later toegepast
+    }
+
+    return {
+      id:d.id,
+      naam:d.naam||"",
+      nickname:d.nickname||"",
+      grootste:d.grootste_kegelverschil,
+      kleinste:d.kleinste_kegelverschil,
+      gewonePunten,
+      bonus,
+      totaal:gewonePunten,
+      exact,
+      gemiddeldeAfwijking:details.length?(somAfwijking/details.length).toFixed(1):"0.0",
+      details
+    };
+  });
+
+  // Bepaal de kleinste afstand tot de actuele schiftingswaarden.
+  const kandidatenG= resultaterenMetGetal(resultaten,"grootste",bonusInfo.actueelGrootste);
+  const kandidatenK= resultaterenMetGetal(resultaten,"kleinste",bonusInfo.actueelKleinste);
+
+  resultaten.forEach(r=>{
+    r.bonus=(kandidatenG.has(r.id)?15:0)+(kandidatenK.has(r.id)?15:0);
+    r.totaal=r.gewonePunten+r.bonus;
+  });
+
+  resultaten.sort((a,b)=>
+    b.totaal-a.totaal ||
+    b.gewonePunten-a.gewonePunten ||
+    a.gemiddeldeAfwijking-b.gemiddeldeAfwijking ||
+    a.naam.localeCompare(b.naam)
+  );
+
+  window._laatsteResultaten=resultaten;
+  toonKlassement(resultaten,stand,bonusInfo);
+}
+
+function resultaterenMetGetal(resultaten,veld,actueel){
+  const map=new Map();
+  let minimum=Infinity;
+
+  resultaten.forEach(r=>{
+    const waarde=Number(r[veld]);
+    if(!Number.isFinite(waarde)||actueel===null) return;
+    const afstand=Math.abs(waarde-actueel);
+    map.set(r.id,afstand);
+    if(afstand<minimum) minimum=afstand;
+  });
+
+  const winnaarIds=new Set();
+  map.forEach((afstand,id)=>{
+    if(afstand===minimum) winnaarIds.add(id);
+  });
+  return winnaarIds;
+}
+
+function toonKlassement(resultaten,stand,bonusInfo){
+  const tbody=document.getElementById("klassement");
+  tbody.innerHTML="";
+
+  if(!resultaten.length){
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:25px">Nog geen deelnemers.</td></tr>';
+  }else{
+    resultaten.forEach(r=>{
+      const echteRang=resultaten.indexOf(r)+1;
+      const rangClass=echteRang===1?"r1":echteRang===2?"r2":echteRang===3?"r3":"";
+      const isMijnPlaats=Number(r.id)===Number(mijnDeelnemerId);
+
+      const tr=document.createElement("tr");
+      if(isMijnPlaats) tr.classList.add("myrow");
+
+      // Geen naam of nickname tonen. Alleen bij de gekozen deelnemer
+      // verschijnt een markering.
+      tr.innerHTML=`
+        <td class="rang ${rangClass}">${echteRang}</td>
+        <td>${isMijnPlaats?'<span class="mymarker">📍 Dit ben ik</span>':'—'}</td>
+        <td>${r.gewonePunten}</td>
+        <td>${r.bonus}</td>
+        <td class="total">${r.totaal}</td>
+        <td class="exact">${r.exact}</td>
+        <td>${r.gemiddeldeAfwijking}</td>
+        <td><button onclick="toonDetails(${r.id})">👁</button></td>
+      `;
+      tbody.appendChild(tr);
+
+      const detail=document.createElement("tr");
+      detail.id="detail-"+r.id;
+      detail.className="details hidden";
+      detail.innerHTML=`
+        <td colspan="8">
+          <b>🎯 Voorspelling</b>
+          <table>
+            <thead>
+              <tr><th>Plaats</th><th>Ploeg</th><th>Werkelijk</th><th>Verschil</th><th>Punten</th></tr>
+            </thead>
+            <tbody>
+              ${r.details.map(d=>`
+                <tr>
+                  <td>${d.voorspeld}</td>
+                  <td class="${escapeHtml(d.ploeg).trim().toLowerCase()==="rnb geenens construct-vapor" ? "rnb-prediction" : ""}">${escapeHtml(d.ploeg)}</td>
+                  <td>${d.werkelijk??"-"}</td>
+                  <td>${d.verschil??"-"}</td>
+                  <td>${d.punten}</td>
+                </tr>`).join("")}
+            </tbody>
+          </table>
+          <div class="small">
+            Grootste kegelverschil voorspeld: <b>${r.grootste??"-"}</b> |
+            Kleinste: <b>${r.kleinste??"-"}</b> |
+            Bonus: <b>${r.bonus}</b>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(detail);
+    });
+  }
+
+  status(
+    `✅ ${resultaten.length} deelnemer(s) · Actueel grootste verschil: ${bonusInfo.actueelGrootste??"-"} kegels · Actueel kleinste verschil: ${bonusInfo.actueelKleinste??"-"} kegels`,
+    "ok"
+  );
+}
+
+function markeerMijnPlaats(){
+  const naam=document.getElementById("naamZoek").value.trim();
+  const nickname=document.getElementById("nicknameZoek").value.trim();
+  const info=document.getElementById("persoonStatus");
+
+  mijnDeelnemerId=null;
+
+  if(!naam || !nickname){
+    info.style.color="#b91c1c";
+    info.textContent="❌ Vul zowel je naam als code in.";
+    berekenEnToon();
+    return;
+  }
+
+  const gevonden=deelnemers.find(d=>
+    (d.naam||"").trim().toLowerCase()===naam.toLowerCase() &&
+    (d.nickname||"").trim().toLowerCase()===nickname.toLowerCase()
+  );
+
+  if(!gevonden){
+    info.style.color="#b91c1c";
+    info.textContent="❌ Geen pronostiek gevonden met deze naam en nickname.";
+    berekenEnToon();
+    return;
+  }
+
+  mijnDeelnemerId=gevonden.id;
+  const resultaatIndex=window._laatsteResultaten ? window._laatsteResultaten.findIndex(r=>Number(r.id)===Number(mijnDeelnemerId)) : -1;
+  const rang=resultaatIndex>=0 ? resultaatIndex+1 : null;
+
+  info.style.color="#166534";
+  info.textContent=rang
+    ? `📍 Je staat momenteel op plaats ${rang} van ${deelnemers.length}.`
+    : "📍 Je bent gemarkeerd in het klassement.";
+
+  berekenEnToon();
+
+  setTimeout(()=>{
+    const row=document.querySelector("#klassement tr.myrow");
+    if(row) row.scrollIntoView({behavior:"smooth",block:"center"});
+  },100);
+}
+
+function wisMijnPlaats(){
+  mijnDeelnemerId=null;
+  document.getElementById("naamZoek").value="";
+  document.getElementById("nicknameZoek").value="";
+  document.getElementById("persoonStatus").textContent="";
+  berekenEnToon();
+}
+
+function toonDetails(id){
+  const row=document.getElementById("detail-"+id);
+  if(row) row.classList.toggle("hidden");
+}
+
+document.getElementById("naamZoek").addEventListener("keydown",e=>{if(e.key==="Enter")markeerMijnPlaats();});
+document.getElementById("nicknameZoek").addEventListener("keydown",e=>{if(e.key==="Enter")markeerMijnPlaats();});
+laadAlles();
+</script>
+</body>
+</html>

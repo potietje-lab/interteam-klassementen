@@ -1,0 +1,358 @@
+```html
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Bezoekersteller</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        font-family: Arial, sans-serif;
+        color: white;
+    }
+
+    .teller {
+        width: 220px;
+        margin: 5px auto;
+        padding: 12px 10px;
+        text-align: center;
+        background: #1e1e1e;
+        border-radius: 12px;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.35);
+    }
+
+    .kop {
+        font-size: 14px;
+        font-weight: bold;
+        margin-bottom: 6px;
+    }
+
+    .icoon {
+        font-size: 23px;
+        margin-right: 4px;
+    }
+
+    .totaal {
+        font-size: 30px;
+        font-weight: bold;
+        line-height: 1.1;
+        margin-bottom: 2px;
+    }
+
+    .subtitel {
+        font-size: 10px;
+        color: #aaa;
+        margin-bottom: 10px;
+    }
+
+    .onderkant {
+        display: flex;
+        justify-content: space-around;
+        border-top: 1px solid #444;
+        padding-top: 8px;
+    }
+
+    .blok {
+        width: 50%;
+    }
+
+    .waarde {
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    .label {
+        font-size: 10px;
+        color: #aaa;
+        margin-top: 2px;
+    }
+
+    .scheiding {
+        width: 1px;
+        background: #444;
+    }
+
+    .fout {
+        color: #ff6b6b;
+        font-size: 10px;
+        margin-top: 6px;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="teller">
+
+    <div class="kop">
+        <span class="icoon">🎳</span> Bezoekers
+    </div>
+
+    <div class="totaal" id="totaal">
+        ...
+    </div>
+
+    <div class="subtitel">
+        totaal
+    </div>
+
+    <div class="onderkant">
+
+        <div class="blok">
+            <div class="waarde" id="vandaag">
+                ...
+            </div>
+            <div class="label">
+                vandaag
+            </div>
+        </div>
+
+        <div class="scheiding"></div>
+
+        <div class="blok">
+            <div class="waarde" id="dezeMaand">
+                ...
+            </div>
+            <div class="label">
+                deze maand
+            </div>
+        </div>
+
+    </div>
+
+    <div id="fout" class="fout"></div>
+
+</div>
+
+
+<script>
+
+const SUPABASE_URL =
+    "https://wnsvbtskynkewxggmjem.supabase.co";
+
+const SUPABASE_KEY =
+    "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+
+
+const supabaseClient =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+/* ---------------------------------------
+   EIGEN BROWSER INSTELLEN
+--------------------------------------- */
+
+const parameters =
+    new URLSearchParams(window.location.search);
+
+if (parameters.get("beheer") === "1") {
+
+    localStorage.setItem(
+        "rollbowl_eigen_browser",
+        "ja"
+    );
+}
+
+
+/* ---------------------------------------
+   CONTROLEREN OF DIT DE EIGEN BROWSER IS
+--------------------------------------- */
+
+const eigenBrowser =
+    localStorage.getItem(
+        "rollbowl_eigen_browser"
+    ) === "ja";
+
+
+/* ---------------------------------------
+   TELLER LADEN
+--------------------------------------- */
+
+async function registreerBezoek() {
+
+    /*
+       Eigen browser:
+       niet registreren, maar wel de
+       huidige tellerstanden ophalen.
+    */
+
+    if (eigenBrowser) {
+
+        const { data, error } =
+            await supabaseClient
+                .from("website_bezoeken")
+                .select("id", { count: "exact", head: true });
+
+        /*
+           Voor de eigen browser halen we de
+           exacte dag/maand-statistieken via
+           dezelfde functie niet op, omdat die
+           functie ook een bezoek registreert.
+
+           Daarom tonen we hier een melding.
+        */
+
+        await laadTellerZonderRegistratie();
+
+        return;
+    }
+
+
+    /* Normale bezoeker */
+
+    const { data, error } =
+        await supabaseClient.rpc(
+            "registreer_bezoek"
+        );
+
+    if (error) {
+
+        console.error(
+            "Fout bij bezoekersteller:",
+            error
+        );
+
+        toonFout();
+        return;
+    }
+
+    toonTeller(data);
+}
+
+
+/* ---------------------------------------
+   TELLER OPHALEN ZONDER EXTRA BEZOEK
+--------------------------------------- */
+
+async function laadTellerZonderRegistratie() {
+
+    const vandaag =
+        new Date().toLocaleDateString("sv-SE", {
+            timeZone: "Europe/Brussels"
+        });
+
+    const nu =
+        new Date();
+
+    const jaar =
+        nu.toLocaleString("en-US", {
+            timeZone: "Europe/Brussels",
+            year: "numeric"
+        });
+
+    const maand =
+        nu.toLocaleString("en-US", {
+            timeZone: "Europe/Brussels",
+            month: "2-digit"
+        });
+
+    const beginMaand =
+        `${jaar}-${maand}-01T00:00:00+02:00`;
+
+    const beginVandaag =
+        `${vandaag}T00:00:00+02:00`;
+
+
+    /* Totaal */
+
+    const { count: totaal } =
+        await supabaseClient
+            .from("website_bezoeken")
+            .select("*", {
+                count: "exact",
+                head: true
+            });
+
+
+    /* Vandaag */
+
+    const { count: aantalVandaag } =
+        await supabaseClient
+            .from("website_bezoeken")
+            .select("*", {
+                count: "exact",
+                head: true
+            })
+            .gte("bezocht_op", beginVandaag);
+
+
+    /* Deze maand */
+
+    const { count: aantalMaand } =
+        await supabaseClient
+            .from("website_bezoeken")
+            .select("*", {
+                count: "exact",
+                head: true
+            })
+            .gte("bezocht_op", beginMaand);
+
+
+    document.getElementById("totaal").textContent =
+        Number(totaal || 0).toLocaleString("nl-BE");
+
+    document.getElementById("vandaag").textContent =
+        Number(aantalVandaag || 0).toLocaleString("nl-BE");
+
+    document.getElementById("dezeMaand").textContent =
+        Number(aantalMaand || 0).toLocaleString("nl-BE");
+}
+
+
+/* ---------------------------------------
+   TELLER TONEN
+--------------------------------------- */
+
+function toonTeller(data) {
+
+    document.getElementById("totaal").textContent =
+        Number(data.totaal).toLocaleString("nl-BE");
+
+    document.getElementById("vandaag").textContent =
+        Number(data.vandaag).toLocaleString("nl-BE");
+
+    document.getElementById("dezeMaand").textContent =
+        Number(data.deze_maand).toLocaleString("nl-BE");
+}
+
+
+/* ---------------------------------------
+   FOUTMELDING
+--------------------------------------- */
+
+function toonFout() {
+
+    document.getElementById("totaal").textContent = "-";
+    document.getElementById("vandaag").textContent = "-";
+    document.getElementById("dezeMaand").textContent = "-";
+
+    document.getElementById("fout").textContent =
+        "Teller kon niet worden geladen.";
+}
+
+
+/* ---------------------------------------
+   START
+--------------------------------------- */
+
+registreerBezoek();
+
+</script>
+
+</body>
+</html>
+```

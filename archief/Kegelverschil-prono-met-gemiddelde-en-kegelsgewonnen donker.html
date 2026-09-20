@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rollbowl - Kleinste kegelverschil per speeldag</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+<style>
+body{
+    font-family:Arial,sans-serif;
+    margin:0;
+    padding:15px;
+    background:#f5f5f5;
+    color:#222;
+}
+.container{
+    max-width:1000px;
+    margin:auto;
+}
+h1{
+    text-align:center;
+    font-size:27px;
+    margin:10px 0 22px;
+}
+.section{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+.status{
+    margin-bottom:18px;
+    padding:10px 12px;
+    border-radius:8px;
+    background:#eef5ff;
+}
+.error{
+    background:#ffecec;
+    color:#a00000;
+}
+.info{
+    background:#eef5ff;
+}
+.resultaten{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+    margin-bottom:22px;
+}
+.resultaat{
+    text-align:center;
+    padding:22px 15px;
+    border-radius:12px;
+    border:2px solid #ccc;
+}
+.grootste{
+    border-color:#2e9b4b;
+}
+.kleinste{
+    border-color:#f0a000;
+}
+.resultaat-titel{
+    font-size:20px;
+    font-weight:700;
+    margin-bottom:10px;
+}
+.getal{
+    font-size:34px;
+    font-weight:800;
+    margin-bottom:12px;
+}
+.grootste .getal{
+    color:#168a36;
+}
+.kleinste .getal{
+    color:#d98700;
+}
+.teams{
+    font-size:17px;
+    line-height:1.5;
+}
+.rnb-verschil{
+    text-align:center;
+    padding:16px;
+    margin:0 0 22px;
+    border:2px solid #e0b400;
+    border-radius:12px;
+    background:#fff9d8;
+}
+.rnb-titel{
+    font-size:19px;
+    font-weight:700;
+    margin-bottom:7px;
+}
+.rnb-getal{
+    font-size:30px;
+    font-weight:800;
+    color:#b18a00;
+    margin-bottom:5px;
+}
+#rnbVerschilTekst{
+    font-size:16px;
+}
+.uitleg{
+    text-align:center;
+    padding:13px;
+    margin-bottom:25px;
+    border-radius:8px;
+    background:#f2f2f2;
+    font-size:15px;
+}
+.klassement-lijst h2{
+    margin:0 0 12px;
+    font-size:21px;
+}
+.table-wrapper{
+    overflow-x:auto;
+}
+table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:17px;
+}
+th{
+    background:#f0f3f7;
+    font-weight:700;
+    text-align:left;
+}
+th,td{
+    padding:11px 12px;
+    border-bottom:1px solid #ddd;
+}
+.rnb-rij td{
+    background:#fff2a8;
+    font-weight:700;
+}
+body.dark-mode .rnb-rij td{
+    background:#665b18;
+    color:#fff;
+}
+th:first-child,td:first-child{
+    width:80px;
+    text-align:center;
+}
+th:last-child,td:last-child{
+    text-align:right;
+}
+.theme-toggle{
+    position:fixed;
+    top:15px;
+    right:15px;
+    z-index:9999;
+    padding:9px 13px;
+    border:1px solid #aaa;
+    border-radius:20px;
+    background:#fff;
+    color:#222;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:bold;
+    box-shadow:0 2px 8px rgba(0,0,0,.15);
+}
+body.dark-mode{
+    background:#111;
+    color:#fff;
+}
+body.dark-mode .section{
+    background:#1d1d1d;
+    color:#fff;
+    box-shadow:0 2px 8px rgba(0,0,0,.5);
+}
+body.dark-mode .status.info{
+    background:#263449;
+    color:#fff;
+}
+body.dark-mode .status.error{
+    background:#4a2222;
+    color:#fff;
+}
+body.dark-mode .rnb-verschil{
+    background:#4a4318;
+    border-color:#e5c52e;
+}
+body.dark-mode .rnb-getal{
+    color:#ffe45c;
+}
+body.dark-mode .uitleg{
+    background:#292929;
+}
+body.dark-mode th{
+    background:#292f38;
+    color:#fff;
+}
+body.dark-mode th,
+body.dark-mode td{
+    border-bottom-color:#444;
+}
+body.dark-mode table{
+    color:#fff;
+}
+body.dark-mode .grootste .getal{
+    color:#55d477;
+}
+body.dark-mode .kleinste .getal{
+    color:#ffbf45;
+}
+body.dark-mode .theme-toggle{
+    background:#2a2a2a;
+    color:#fff;
+    border-color:#777;
+}
+@media(max-width:700px){
+    body{padding:7px}
+    .section{padding:13px}
+    h1{font-size:23px}
+    .resultaten{grid-template-columns:1fr}
+    .resultaat-titel{font-size:19px}
+    .getal{font-size:29px}
+}
+</style>
+
+</head>
+
+<body>
+<button id="themeToggle" class="theme-toggle" type="button">🌙 Donker</button>
+
+<div class="container">
+  <h1>🎳 Kegelverschil eindklassement</h1>
+
+  <div class="section">
+    <div id="status" class="status info">Gegevens worden geladen...</div>
+
+    <div class="resultaten">
+      <div class="resultaat grootste">
+        <div class="resultaat-titel">Grootste kegelverschil</div>
+        <div id="grootsteVerschil" class="getal">—</div>
+        <div id="grootsteTeams" class="teams">—</div>
+      </div>
+
+      <div class="resultaat kleinste">
+        <div class="resultaat-titel">Kleinste kegelverschil</div>
+        <div id="kleinsteVerschil" class="getal">—</div>
+        <div id="kleinsteTeams" class="teams">—</div>
+      </div>
+    </div>
+
+    <div id="rnbVerschil" class="rnb-verschil">
+      <div class="rnb-titel">RNB – kegelverschil met de 1e plaats</div>
+      <div id="rnbVerschilGetal" class="rnb-getal">—</div>
+      <div id="rnbVerschilTekst">—</div>
+    </div>
+
+    <div class="uitleg">
+      De berekening gebruikt het <strong>totale aantal kegels in het eindklassement</strong>
+      van alle ploegen. Het grootste en kleinste verschil worden bepaald tussen
+      twee verschillende ploegen.
+    </div>
+
+    <div class="klassement-lijst">
+      <h2>Eindklassement kegels</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Plaats</th>
+              <th>Ploeg</th>
+              <th>Totale kegels</th>
+              <th>Gemiddelde</th>
+              <th>Gewonnen op kegels</th>
+            </tr>
+          </thead>
+          <tbody id="klassementTabelBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://wnsvbtskynkewxggmjem.supabase.co";
+const SUPABASE_KEY = "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const SPEELDAGEN = [
+    "2026-09-04",
+    "2026-09-11",
+    "2026-09-18",
+    "2026-09-25",
+    "2026-10-02",
+    "2026-10-09",
+    "2026-10-16",
+    "2026-11-20",
+    "2026-11-27",
+    "2026-12-04",
+    "2026-12-11",
+    "2027-01-15",
+    "2027-01-22",
+    "2027-01-29",
+    "2027-02-19",
+    "2027-02-26",
+    "2027-03-19",
+    "2027-03-26",
+    "2027-04-16",
+    "2027-04-23",
+    "2027-05-07",
+    "2027-05-14"
+];
+
+let alleScores = [];
+let alleWedstrijden = [];
+
+function normaliseer(naam) {
+    return String(naam || "").replace(/\s+/g, " ").trim();
+}
+
+function berekenEindklassement() {
+    const teams = {};
+
+    alleScores.forEach(r => {
+        const ploeg = normaliseer(r.ploeg);
+        const datum = String(r.speeldatum || "").slice(0, 10);
+
+        if (!ploeg || !SPEELDAGEN.includes(datum)) return;
+
+        const kegels = Number(r.kegels);
+        if (!Number.isFinite(kegels)) return;
+
+        if (!teams[ploeg]) {
+            teams[ploeg] = {
+                ploeg,
+                kegels: 0,
+                speeldagen: new Set(),
+                gewonnenOpKegels: 0
+            };
+        }
+
+        teams[ploeg].kegels += kegels;
+        teams[ploeg].speeldagen.add(datum);
+    });
+
+    return Object.values(teams).sort((a, b) => {
+        if (b.kegels !== a.kegels) return b.kegels - a.kegels;
+        return a.ploeg.localeCompare(b.ploeg);
+    });
+}
+
+function berekenGewonnenOpKegels(teams) {
+    const teamMap = {};
+    teams.forEach(team => {
+        teamMap[normaliseer(team.ploeg).toLowerCase()] = team;
+    });
+
+    const scoreMap = {};
+
+    alleScores.forEach(r => {
+        const ploeg = normaliseer(r.ploeg);
+        const datum = String(r.speeldatum || "").slice(0, 10);
+        const kegels = Number(r.kegels);
+
+        if (!ploeg || !SPEELDAGEN.includes(datum) || !Number.isFinite(kegels)) return;
+
+        scoreMap[datum + "||" + ploeg.toLowerCase()] = kegels;
+    });
+
+    alleWedstrijden.forEach(w => {
+        const datum = String(w.werkelijke_datum || w.geplande_datum || "").slice(0, 10);
+        if (!SPEELDAGEN.includes(datum)) return;
+
+        const thuis = normaliseer(w.thuisploeg);
+        const uit = normaliseer(w.uitploeg);
+
+        if (!thuis || !uit) return;
+
+        const thuisKegels = scoreMap[datum + "||" + thuis.toLowerCase()];
+        const uitKegels = scoreMap[datum + "||" + uit.toLowerCase()];
+
+        if (!Number.isFinite(thuisKegels) || !Number.isFinite(uitKegels)) return;
+
+        if (thuisKegels > uitKegels && teamMap[thuis.toLowerCase()]) {
+            teamMap[thuis.toLowerCase()].gewonnenOpKegels++;
+        } else if (uitKegels > thuisKegels && teamMap[uit.toLowerCase()]) {
+            teamMap[uit.toLowerCase()].gewonnenOpKegels++;
+        }
+    });
+}
+
+function berekenVerschillen(teams) {
+    if (teams.length < 2) {
+        throw new Error("Er zijn minstens 2 ploegen nodig om een kegelverschil te berekenen.");
+    }
+
+    let grootste = null;
+    let kleinste = null;
+
+    for (let i = 0; i < teams.length; i++) {
+        for (let j = i + 1; j < teams.length; j++) {
+            const a = teams[i];
+            const b = teams[j];
+            const verschil = Math.abs(a.kegels - b.kegels);
+
+            const paar = { team1: a, team2: b, verschil };
+
+            if (
+                grootste === null ||
+                verschil > grootste.verschil
+            ) {
+                grootste = paar;
+            }
+
+            if (
+                kleinste === null ||
+                verschil < kleinste.verschil
+            ) {
+                kleinste = paar;
+            }
+        }
+    }
+
+    return { grootste, kleinste };
+}
+
+function vulTabel(teams) {
+    const tbody = document.getElementById("klassementTabelBody");
+    tbody.innerHTML = "";
+
+    teams.forEach((team, index) => {
+        const tr = document.createElement("tr");
+
+        const isRNB = normaliseer(team.ploeg).toLowerCase() ===
+            "rnb geenens construct-vapor".toLowerCase();
+
+        tr.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${team.ploeg}</td>
+            <td><strong>${team.kegels}</strong></td>
+            <td><strong>${(
+                team.speeldagen.size > 0
+                    ? team.kegels / (team.speeldagen.size * 15)
+                    : 0
+            ).toFixed(1)}</strong></td>
+            <td><strong>${team.gewonnenOpKegels}</strong></td>
+        `;
+
+        if (isRNB) {
+            tr.classList.add("rnb-rij");
+        }
+
+        tbody.appendChild(tr);
+    });
+}
+
+function toonResultaten() {
+    const teams = berekenEindklassement();
+    const { grootste, kleinste } = berekenVerschillen(teams);
+
+    berekenGewonnenOpKegels(teams);
+    vulTabel(teams);
+
+    document.getElementById("grootsteVerschil").textContent =
+        grootste.verschil + " kegels";
+
+    document.getElementById("grootsteTeams").innerHTML =
+        `${grootste.team1.ploeg} (${grootste.team1.kegels})<br>
+         ↕<br>
+         ${grootste.team2.ploeg} (${grootste.team2.kegels})`;
+
+    document.getElementById("kleinsteVerschil").textContent =
+        kleinste.verschil + " kegels";
+
+    document.getElementById("kleinsteTeams").innerHTML =
+        `${kleinste.team1.ploeg} (${kleinste.team1.kegels})<br>
+         ↕<br>
+         ${kleinste.team2.ploeg} (${kleinste.team2.kegels})`;
+
+    const rnb = teams.find(t =>
+        normaliseer(t.ploeg).toLowerCase() ===
+        "rnb geenens construct-vapor".toLowerCase()
+    );
+
+    const eerste = teams[0];
+
+    if (rnb && eerste) {
+        const rnbVerschil = Math.abs(eerste.kegels - rnb.kegels);
+        document.getElementById("rnbVerschilGetal").textContent =
+            rnbVerschil + " kegels";
+
+        if (rnbVerschil === 0) {
+            document.getElementById("rnbVerschilTekst").textContent =
+                "RNB staat gelijk met de 1e plaats.";
+        } else if (rnb.kegels < eerste.kegels) {
+            document.getElementById("rnbVerschilTekst").textContent =
+                `RNB heeft ${rnbVerschil} kegels minder dan ${eerste.ploeg}.`;
+        } else {
+            document.getElementById("rnbVerschilTekst").textContent =
+                `RNB heeft ${rnbVerschil} kegels meer dan ${eerste.ploeg}.`;
+        }
+    } else {
+        document.getElementById("rnbVerschilGetal").textContent = "—";
+        document.getElementById("rnbVerschilTekst").textContent =
+            "RNB of de 1e plaats is nog niet beschikbaar.";
+    }
+
+    const status = document.getElementById("status");
+    status.className = "status info";
+    status.textContent =
+        `Eindklassement berekend voor ${teams.length} ploegen.`;
+}
+
+async function laadData() {
+    try {
+        const { data, error } = await db
+            .from("interteam_scores")
+            .select("speeldatum, ploeg, kegels")
+            .order("speeldatum", { ascending: true });
+
+        if (error) throw error;
+
+        alleScores = data || [];
+
+        if (!alleScores.length) {
+            throw new Error("De tabel interteam_scores bevat geen gegevens.");
+        }
+
+        const wedstrijdenResultaat = await db
+            .from("wedstrijden")
+            .select("geplande_datum, werkelijke_datum, thuisploeg, uitploeg");
+
+        if (wedstrijdenResultaat.error) throw wedstrijdenResultaat.error;
+
+        alleWedstrijden = wedstrijdenResultaat.data || [];
+
+        toonResultaten();
+
+    } catch (error) {
+        console.error(error);
+
+        const status = document.getElementById("status");
+        status.className = "status error";
+        status.innerHTML =
+            "Fout bij het laden van de klassementgegevens.<br><br>" +
+            error.message;
+    }
+}
+
+/* Licht/donker modus */
+const THEME_KEY = "rollbowl-thema";
+const themeToggle = document.getElementById("themeToggle");
+
+function pasThemaToe(thema) {
+    const donker = thema === "donker";
+    document.body.classList.toggle("dark-mode", donker);
+    themeToggle.textContent = donker ? "☀️ Licht" : "🌙 Donker";
+}
+
+const opgeslagenThema = localStorage.getItem(THEME_KEY) || "licht";
+pasThemaToe(opgeslagenThema);
+
+themeToggle.addEventListener("click", function() {
+    const nieuwThema =
+        document.body.classList.contains("dark-mode") ? "licht" : "donker";
+
+    localStorage.setItem(THEME_KEY, nieuwThema);
+    pasThemaToe(nieuwThema);
+});
+
+laadData();
+</script>
+</body>
+</html>

@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roll & Bowl - Spelers per ploeg</title>
+<style>
+:root{
+  --bg:#f3f3f3;
+  --card:#fff;
+  --text:#222;
+  --muted:#666;
+  --border:#ddd;
+  --header:#222;
+  --headerText:#fff;
+  --cat:#e9e9e9;
+}
+body.dark{
+  --bg:#171717;
+  --card:#242424;
+  --text:#fff;
+  --muted:#ccc;
+  --border:#505050;
+  --header:#000;
+  --headerText:#fff;
+  --cat:#353535;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  padding:20px;
+  font-family:Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+.container{
+  max-width:850px;
+  margin:auto;
+}
+.topbar{
+  display:flex;
+  justify-content:flex-end;
+  margin-bottom:15px;
+}
+button{
+  border:1px solid var(--border);
+  border-radius:9px;
+  padding:10px 15px;
+  background:var(--card);
+  color:var(--text);
+  cursor:pointer;
+  font-size:15px;
+}
+h1{
+  text-align:center;
+  margin:10px 0 25px;
+}
+.team{
+  background:var(--card);
+  border-radius:14px;
+  margin-bottom:20px;
+  overflow:hidden;
+  box-shadow:0 3px 12px rgba(0,0,0,.12);
+}
+.team-title{
+  background:var(--header);
+  color:var(--headerText);
+  padding:14px 18px;
+  font-size:20px;
+  font-weight:bold;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+th,td{
+  padding:10px 15px;
+  border-bottom:1px solid var(--border);
+}
+th{
+  text-align:left;
+  color:var(--muted);
+  font-size:13px;
+  text-transform:uppercase;
+}
+td:first-child{
+  width:130px;
+  font-weight:bold;
+}
+tr:last-child td{
+  border-bottom:none;
+}
+.cat-A{font-weight:bold;color:#d32f2f}
+.cat-B{font-weight:bold;color:#198754}
+.cat-C{font-weight:bold}
+.cat-D{font-weight:bold}
+.cat-unknown{font-weight:bold}
+
+@media print{
+  @page{size:A4 portrait;margin:12mm}
+  body{
+    background:#fff !important;
+    color:#000 !important;
+    padding:0;
+    font-size:12px;
+  }
+  .topbar{display:none !important}
+  h1{font-size:22px;margin:0 0 15px}
+  .container{max-width:none}
+  .team{
+    box-shadow:none;
+    border:1px solid #bbb;
+    margin-bottom:12px;
+    break-inside:avoid;
+    page-break-inside:avoid;
+  }
+  .team-title{
+    background:#222 !important;
+    color:#fff !important;
+    padding:8px 12px;
+    font-size:15px;
+  }
+
+  .rnb-title{
+    background:#ffd700 !important;
+    color:#000 !important;
+  }
+
+  th,td{
+    padding:5px 10px;
+    color:#000;
+    border-bottom:1px solid #ccc;
+  }
+  th{font-size:11px}
+  .cat-A{color:#d32f2f !important}
+  .cat-B{color:#198754 !important}
+  .cat-C,.cat-D,.cat-unknown{color:#000 !important}
+}
+
+@media(max-width:600px){
+  body{padding:10px}
+  .team-title{font-size:18px}
+  th,td{padding:9px 10px}
+}
+
+.rnb-title{
+  background:#ffd700 !important;
+  color:#000 !important;
+}
+
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="topbar">
+  <button id="printBtn">🖨️ Printversie</button>
+  <button id="themeBtn">🌙 Donkere modus</button>
+</div>
+
+<h1>🎳 Spelers per ploeg</h1>
+<div id="lijst"></div>
+
+</div>
+
+<script>
+const spelers = [
+  ["BC Ajuin",[
+    ["B","Reggy De Coninck"],
+    ["B","Tim Meert"],
+    ["C","Bennet Chiau"],
+    ["C","Filip Van Boxstael"],
+    ["D","Gerbrand Colombier"],
+    ["D","Sander Colombier"],
+    ["??","Yves Van den Berghe"]
+  ]],
+  ["BC Ledeganck 2 Burtline",[
+    ["B","Brieuc Derudder"],
+    ["C","Mark Boeykens"],
+    ["D","Dirk Boeykens"],
+    ["D","Johan De Ronne"],
+    ["??","Daniël Ruysschaert"],
+    ["??","Gialique Christiaens"]
+  ]],
+  ["DCG Yok Tha",[
+    ["B","Gerrit Bundervoet"],
+    ["B","Hans Ghysels"],
+    ["B","Pedro De Vos"],
+    ["C","Edward Verhelst"],
+    ["D","Nadine Drisse"],
+    ["D","Xander Bartels"]
+  ]],
+  ["FLP ALLCORE IT",[
+    ["D","Amo Baeyens"],
+    ["D","Davy De Cock"],
+    ["D","Els Verdonck"],
+    ["D","Roger Neyrinck"],
+    ["D","Rudy Praet"],
+    ["D","Tom Baeyens"],
+    ["??","Leila Vanoplynes"]
+  ]],
+  ["FLP Argenta Hamme",[
+    ["A","Alex De Bock"],
+    ["B","Jurgen Driesen"],
+    ["C","Denis Roegiest"],
+    ["C","José Hillaert"],
+    ["D","Ben Tosseyn"],
+    ["D","Cindy Braem"],
+    ["D","Jorrit Hillaert"],
+    ["D","Peggy Mannaert"]
+  ]],
+  ["LAT Esento",[
+    ["C","Freddy Claerman"],
+    ["C","Luc Van den Haute"],
+    ["D","John Troch"],
+    ["D","Katleen Gyselinck"],
+    ["D","Véronique Seynaeve"],
+    ["??","Romi Troch"]
+  ]],
+  ["Oilsjt 2 Yok Tha",[
+    ["B","Ruben Staelens"],
+    ["C","Luc Spruyt"],
+    ["C","Peter Fieremans"],
+    ["D","Hans De Wilde"],
+    ["D","Jeroen Ghijselinck"],
+    ["D","Lieven Van Den Driessche"],
+    ["D","Marc Baeyens"],
+    ["D","Rudy Troch"]
+  ]],
+  ["RNB Geenens Construct-Vapor",[
+    ["B","Glenn Geenens"],
+    ["B","Mathias Vanderlinden"],
+    ["C","Arne Boone"],
+    ["C","Stephan Van Isacker"],
+    ["D","Gary Geenens"]
+  ]],
+  ["Royal Ghent 3",[
+    ["B","Daniel Bruijnje"],
+    ["B","Herbert Valckeneire"],
+    ["B","Kevin Blairon"],
+    ["B","Paco Verstichel"],
+    ["B","Steven Braeckman"],
+    ["B","Tobias Deuvaert"],
+    ["C","Marco Nienhuijs"],
+    ["D","Danny Van Houte"]
+  ]],
+  ["Stene - Pleisterwerken Delrue JP",[
+    ["A","Martin Deceuninck"],
+    ["B","Yannick Rys"],
+    ["C","Dirk Meeze"],
+    ["C","Marc Rammelaere"],
+    ["C","Mathias Verminck"],
+    ["D","Kenny Cauwels"]
+  ]],
+  ["TSZ Bieshoop",[
+    ["A","Robby Derijck"],
+    ["B","Jelle Praet"],
+    ["C","Ivo Van De Wiele"],
+    ["C","Po Lung Lee"],
+    ["D","Sylvie Verpaele"]
+  ]],
+  ["Wuitens",[
+    ["B","Stefan Verrooten"],
+    ["C","Wery Willaert"],
+    ["D","Bart Piessens"],
+    ["D","Frans Malfliet"],
+    ["D","Frederic Piessens"],
+    ["D","Kif Willaert"]
+  ]]
+];
+
+const volgorde = {"A":1,"B":2,"C":3,"D":4,"??":5};
+
+function escapeHtml(text){
+  return String(text).replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[c]));
+}
+
+function bouwLijst(){
+  const container=document.getElementById("lijst");
+  container.innerHTML="";
+
+  spelers.forEach(([ploeg,lijst])=>{
+    const gesorteerd=[...lijst].sort((a,b)=>{
+      const verschil=volgorde[a[0]]-volgorde[b[0]];
+      if(verschil!==0) return verschil;
+      return a[1].localeCompare(b[1],"nl");
+    });
+
+    const div=document.createElement("div");
+    div.className="team";
+
+    let html=`<div class="team-title${ploeg==="RNB Geenens Construct-Vapor" ? " rnb-title" : ""}">${escapeHtml(ploeg)}</div>
+      <table>
+      <thead><tr><th>Categorie</th><th>Naam</th></tr></thead><tbody>`;
+
+    gesorteerd.forEach(([cat,naam])=>{
+      const cls=cat==="??" ? "cat-unknown" : "cat-"+cat;
+      html+=`<tr><td class="${cls}">${escapeHtml(cat)}</td><td>${escapeHtml(naam)}</td></tr>`;
+    });
+
+    html+=`</tbody></table>`;
+    div.innerHTML=html;
+    container.appendChild(div);
+  });
+}
+
+const THEME_KEY="rollbowl-spelers-thema";
+function applyTheme(theme){
+  document.body.classList.toggle("dark",theme==="donker");
+  document.getElementById("themeBtn").textContent =
+    theme==="donker" ? "☀️ Lichte modus" : "🌙 Donkere modus";
+}
+
+let theme=localStorage.getItem(THEME_KEY) || "donker";
+applyTheme(theme);
+
+document.getElementById("printBtn").addEventListener("click",()=>{
+  window.print();
+});
+
+document.getElementById("themeBtn").addEventListener("click",()=>{
+  theme=document.body.classList.contains("dark") ? "licht" : "donker";
+  localStorage.setItem(THEME_KEY,theme);
+  applyTheme(theme);
+});
+
+bouwLijst();
+</script>
+</body>
+</html>

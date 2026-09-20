@@ -1,0 +1,1880 @@
+
+<!DOCTYPE html>
+<html lang="nl">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Rollbowl - Interteam Invoer</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 15px;
+    font-family: Arial, sans-serif;
+    background: #f1f3f5;
+    color: #222;
+}
+
+.container {
+    max-width: 950px;
+    margin: auto;
+    background: white;
+    padding: 25px;
+    border-radius: 16px;
+    box-shadow: 0 3px 15px rgba(0,0,0,0.12);
+}
+
+h1 {
+    text-align: center;
+    margin: 0 0 25px 0;
+    font-size: 28px;
+}
+
+h2 {
+    margin: 25px 0 10px 0;
+    font-size: 20px;
+}
+
+
+/* SPEELDATUM */
+
+.datum-box {
+    background: #f7f7f7;
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+.datum-box label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 7px;
+}
+
+select {
+    width: 100%;
+    padding: 12px;
+    font-size: 17px;
+    border: 1px solid #bbb;
+    border-radius: 7px;
+    background: white;
+}
+
+
+/* INFO */
+
+.info-box {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 8px;
+    background: #eef6ff;
+    border: 1px solid #c8def5;
+    color: #174ea6;
+    font-size: 14px;
+    text-align: center;
+}
+
+
+/* STATUS */
+
+.status {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.status.info {
+    background: #e8f0fe;
+    color: #174ea6;
+}
+
+.status.success {
+    background: #e6f4ea;
+    color: #137333;
+}
+
+.status.warning {
+    background: #fff4ce;
+    color: #8a5a00;
+}
+
+.status.error {
+    background: #fce8e6;
+    color: #b00020;
+}
+
+
+/* WEDSTRIJD */
+
+.match {
+    margin-top: 18px;
+    border: 1px solid #d7d7d7;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.match-header {
+    display: grid;
+    grid-template-columns: 1fr 80px 80px;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    background: #f0f0f0;
+    font-weight: bold;
+    border-bottom: 1px solid #ddd;
+}
+
+.match-title {
+    font-size: 15px;
+}
+
+.match-title .vs {
+    font-weight: normal;
+    color: #666;
+    padding: 0 5px;
+}
+
+.team-row {
+    display: grid;
+    grid-template-columns: 1fr 80px 80px;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.team-row:last-child {
+    border-bottom: none;
+}
+
+.team-name {
+    font-weight: bold;
+}
+
+.team-name.home::before {
+    content: "🏠 ";
+}
+
+.team-name.away::before {
+    content: "   ";
+}
+
+input[type="number"] {
+    width: 100%;
+    padding: 9px 5px;
+    font-size: 15px;
+    border: 1px solid #bbb;
+    border-radius: 6px;
+    text-align: center;
+}
+
+input[type="number"]:focus {
+    outline: 2px solid #999;
+}
+
+input.invalid-input {
+    border: 2px solid #d93025;
+    background: #fff0f0;
+}
+
+
+/* RNB */
+
+.rnb-row {
+    background: #fffbe0;
+}
+
+input.auto-kegels {
+    background: #eeeeee;
+    border-color: #aaa;
+    font-weight: bold;
+    color: #333;
+    cursor: not-allowed;
+}
+
+.rnb-label {
+    display: block;
+    font-size: 11px;
+    color: #8a5a00;
+    font-weight: normal;
+    margin-top: 3px;
+}
+
+
+/* OPSLAAN */
+
+button {
+    width: 100%;
+    border: none;
+    border-radius: 9px;
+    padding: 15px;
+    margin-top: 20px;
+    font-size: 17px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.save-button {
+    background: #222;
+    color: white;
+}
+
+.save-button:hover {
+    background: #444;
+}
+
+.save-button:disabled {
+    background: #999;
+    cursor: not-allowed;
+}
+
+
+/* PUNTENTOTAAL */
+
+.total-box {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+}
+
+.total-ok {
+    background: #e6f4ea;
+    color: #137333;
+    border-color: #8bc995;
+}
+
+.total-error {
+    background: #fce8e6;
+    color: #b00020;
+    border-color: #e57373;
+}
+
+
+/* MOBIEL */
+
+@media (max-width: 600px) {
+
+    body {
+        padding: 7px;
+    }
+
+    .container {
+        padding: 12px;
+        border-radius: 10px;
+    }
+
+    h1 {
+        font-size: 23px;
+    }
+
+    .match-header,
+    .team-row {
+        grid-template-columns: minmax(150px, 1fr) 65px 65px;
+        gap: 5px;
+        padding: 8px 6px;
+    }
+
+    .team-name {
+        font-size: 13px;
+    }
+
+    .match-title {
+        font-size: 13px;
+    }
+
+    input[type="number"] {
+        padding: 8px 3px;
+        font-size: 13px;
+    }
+
+}
+
+</style>
+</head>
+
+
+<body>
+
+<div class="container">
+
+<h1>🎳 Interteam Scores invullen</h1>
+
+
+<!-- SPEELDATUM -->
+
+<h2>Speeldatum</h2>
+
+<div class="datum-box">
+
+<label for="speeldatum">
+    Kies de speeldatum:
+</label>
+
+<select id="speeldatum" onchange="laadScores()">
+
+    <option value="2026-09-04">04/09/2026</option>
+    <option value="2026-09-11">11/09/2026</option>
+    <option value="2026-09-18">18/09/2026</option>
+    <option value="2026-09-25">25/09/2026</option>
+    <option value="2026-10-02">02/10/2026</option>
+    <option value="2026-10-09">09/10/2026</option>
+    <option value="2026-10-16">16/10/2026</option>
+    <option value="2026-11-20">20/11/2026</option>
+    <option value="2026-11-27">27/11/2026</option>
+    <option value="2026-12-04">04/12/2026</option>
+    <option value="2026-12-11">11/12/2026</option>
+    <option value="2027-01-15">15/01/2027</option>
+    <option value="2027-01-22">22/01/2027</option>
+    <option value="2027-01-29">29/01/2027</option>
+    <option value="2027-02-19">19/02/2027</option>
+    <option value="2027-02-26">26/02/2027</option>
+    <option value="2027-03-19">19/03/2027</option>
+    <option value="2027-03-26">26/03/2027</option>
+    <option value="2027-04-16">16/04/2027</option>
+    <option value="2027-04-23">23/04/2027</option>
+    <option value="2027-05-07">07/05/2027</option>
+    <option value="2027-05-14">14/05/2027</option>
+
+</select>
+
+</div>
+
+
+<div class="info-box">
+
+🎳 <strong>RNB Geenens Construct-Vapor</strong>:
+de kegels worden automatisch berekend uit de 5 spelers × 3 games.
+
+<br><br>
+
+De wedstrijden worden hieronder rechtstreeks uit de kalender geladen.
+Een inhaalwedstrijd verschijnt op zijn werkelijke speeldatum.
+
+</div>
+
+
+<div id="status" class="status info">
+    Scores worden geladen...
+</div>
+
+
+<h2>Wedstrijden</h2>
+
+
+<div id="wedstrijden"></div>
+
+
+<!-- TOTAAL -->
+
+<div id="totaalBox" class="total-box">
+
+    Totaal punten: 0 / 186
+
+</div>
+
+
+<!-- OPSLAAN -->
+
+<button
+    id="saveButton"
+    class="save-button"
+    onclick="opslaan()">
+
+    💾 ALLE SCORES OPSLAAN
+
+</button>
+
+
+</div>
+
+
+
+<script>
+
+const SUPABASE_URL =
+    "https://wnsvbtskynkewxggmjem.supabase.co";
+
+const SUPABASE_KEY =
+    "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+
+const supabaseClient =
+    supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+const MAX_PUNTEN = 31;
+
+const AANTAL_RNB_SPELERS = 5;
+
+const AANTAL_GAMES_PER_SPELER = 3;
+
+const TOTAAL_RNB_GAMES =
+    AANTAL_RNB_SPELERS *
+    AANTAL_GAMES_PER_SPELER;
+
+const RNB =
+    "RNB Geenens Construct-Vapor";
+
+
+// =====================================================
+// NORMALE SPEELDAGEN
+// Deze blijven altijd in de dropdown staan.
+// =====================================================
+
+const NORMALE_SPEELDAGEN = [
+    "2026-09-04",
+    "2026-09-11",
+    "2026-09-18",
+    "2026-09-25",
+    "2026-10-02",
+    "2026-10-09",
+    "2026-10-16",
+    "2026-11-20",
+    "2026-11-27",
+    "2026-12-04",
+    "2026-12-11",
+    "2027-01-15",
+    "2027-01-22",
+    "2027-01-29",
+    "2027-02-19",
+    "2027-02-26",
+    "2027-03-19",
+    "2027-03-26",
+    "2027-04-16",
+    "2027-04-23",
+    "2027-05-07",
+    "2027-05-14"
+];
+
+
+// =====================================================
+// HULPFUNCTIES
+// =====================================================
+
+function normaliseerNaam(naam) {
+
+    return String(naam || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+}
+
+
+function isRNB(naam) {
+
+    return normaliseerNaam(naam) ===
+           normaliseerNaam(RNB);
+}
+
+
+function statusMelding(
+    tekst,
+    type = "info"
+) {
+
+    const element =
+        document.getElementById("status");
+
+    element.innerText =
+        tekst;
+
+    element.className =
+        "status " + type;
+}
+
+
+function datumNaarTekst(datum) {
+
+    const delen =
+        datum.split("-");
+
+    return (
+        delen[2] +
+        "/" +
+        delen[1] +
+        "/" +
+        delen[0]
+    );
+}
+
+
+function escapeHtml(tekst) {
+
+    const div =
+        document.createElement("div");
+
+    div.textContent =
+        tekst;
+
+    return div.innerHTML;
+}
+
+
+// =====================================================
+// INHAALDATUMS AAN DROPDOWN TOEVOEGEN
+//
+// De 22 normale datums staan al in HTML.
+// Alleen echte inhaaldatums worden extra toegevoegd.
+// =====================================================
+
+async function laadInhaalDatums() {
+
+    const select =
+        document.getElementById("speeldatum");
+
+    const {
+        data,
+        error
+    } = await supabaseClient
+        .from("wedstrijden")
+        .select(
+            "geplande_datum, werkelijke_datum"
+        );
+
+    if (error) {
+
+        console.error(error);
+
+        return;
+    }
+
+    const bestaandeDatums =
+        new Set(
+            NORMALE_SPEELDAGEN
+        );
+
+    const inhaalDatums =
+        new Set();
+
+    (data || []).forEach(
+        wedstrijd => {
+
+            if (
+                wedstrijd.werkelijke_datum &&
+                wedstrijd.geplande_datum &&
+                wedstrijd.werkelijke_datum !==
+                wedstrijd.geplande_datum
+            ) {
+
+                inhaalDatums.add(
+                    wedstrijd.werkelijke_datum
+                );
+            }
+        }
+    );
+
+    Array.from(inhaalDatums)
+        .sort()
+        .forEach(
+            datum => {
+
+                if (
+                    bestaandeDatums.has(
+                        datum
+                    )
+                ) {
+
+                    return;
+                }
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+                option.value =
+                    datum;
+
+                option.textContent =
+                    datumNaarTekst(datum) +
+                    " — inhaalwedstrijd";
+
+                select.appendChild(
+                    option
+                );
+            }
+        );
+}
+
+
+// =====================================================
+// WEDSTRIJDEN OPHALEN
+//
+// 1. Heeft datum een normale speeldag?
+//    Dan uitsluitend de normale 6 wedstrijden.
+//
+// 2. Geen normale speeldag?
+//    Zoek echte inhaalwedstrijden op
+//    werkelijke_datum.
+// =====================================================
+
+async function haalWedstrijden(
+    datum
+) {
+
+    const {
+        data: normale,
+        error: normaleError
+    } = await supabaseClient
+
+        .from("wedstrijden")
+
+        .select(
+            "id, geplande_datum, werkelijke_datum, thuisploeg, uitploeg, status"
+        )
+
+        .eq(
+            "geplande_datum",
+            datum
+        )
+
+        .order(
+            "id",
+            {
+                ascending: true
+            }
+        );
+
+
+    if (normaleError) {
+
+        console.error(
+            normaleError
+        );
+
+        return {
+            success: false,
+            wedstrijden: [],
+            inhaal: false
+        };
+    }
+
+
+    // Normale speeldag heeft altijd voorrang.
+    if (
+        normale &&
+        normale.length > 0
+    ) {
+
+        return {
+            success: true,
+            wedstrijden: normale,
+            inhaal: false
+        };
+    }
+
+
+    // Geen normale speeldag:
+    // zoek inhaalwedstrijden.
+    const {
+        data: inhaal,
+        error: inhaalError
+    } = await supabaseClient
+
+        .from("wedstrijden")
+
+        .select(
+            "id, geplande_datum, werkelijke_datum, thuisploeg, uitploeg, status"
+        )
+
+        .eq(
+            "werkelijke_datum",
+            datum
+        )
+
+        .order(
+            "id",
+            {
+                ascending: true
+            }
+        );
+
+
+    if (inhaalError) {
+
+        console.error(
+            inhaalError
+        );
+
+        return {
+            success: false,
+            wedstrijden: [],
+            inhaal: false
+        };
+    }
+
+
+    const echteInhaal =
+        (inhaal || [])
+            .filter(
+                wedstrijd =>
+                    wedstrijd.geplande_datum !==
+                    wedstrijd.werkelijke_datum
+            );
+
+
+    return {
+
+        success: true,
+
+        wedstrijden:
+            echteInhaal,
+
+        inhaal:
+            echteInhaal.length > 0
+    };
+}
+
+
+// =====================================================
+// RNB KEGELS BEREKENEN
+// =====================================================
+
+async function berekenRNBKegels(
+    datum
+) {
+
+    const {
+        data,
+        error
+    } = await supabaseClient
+
+        .from("bowling_scores")
+
+        .select(
+            "speeldatum, speler, game1, game2, game3"
+        )
+
+        .eq(
+            "speeldatum",
+            datum
+        );
+
+
+    if (error) {
+
+        console.error(
+            error
+        );
+
+        return {
+            success: false,
+            kegels: null,
+            spelers: 0,
+            games: 0
+        };
+    }
+
+
+    const scores =
+        data || [];
+
+
+    let totaal =
+        0;
+
+    let games =
+        0;
+
+
+    scores.forEach(
+        speler => {
+
+            [
+                speler.game1,
+                speler.game2,
+                speler.game3
+            ].forEach(
+                game => {
+
+                    if (
+                        game !== null &&
+                        game !== undefined &&
+                        game !== ""
+                    ) {
+
+                        const waarde =
+                            Number(game);
+
+                        if (
+                            Number.isFinite(
+                                waarde
+                            )
+                        ) {
+
+                            totaal +=
+                                waarde;
+
+                            games++;
+                        }
+                    }
+                }
+            );
+        }
+    );
+
+
+    const volledig =
+        scores.length ===
+        AANTAL_RNB_SPELERS &&
+        games ===
+        TOTAAL_RNB_GAMES;
+
+
+    return {
+
+        success:
+            volledig,
+
+        kegels:
+            volledig
+                ? totaal
+                : null,
+
+        spelers:
+            scores.length,
+
+        games:
+            games
+    };
+}
+
+
+// =====================================================
+// SCORE VINDEN
+// =====================================================
+
+function vindScore(
+    scores,
+    ploeg
+) {
+
+    const naam =
+        normaliseerNaam(
+            ploeg
+        );
+
+    return (
+        scores || []
+    ).find(
+        score =>
+            normaliseerNaam(
+                score.ploeg
+            ) === naam
+    ) || null;
+}
+
+
+// =====================================================
+// TEAM RIJ
+// =====================================================
+
+function maakTeamRij(
+    ploeg,
+    score,
+    positie,
+    wedstrijdId,
+    kant
+) {
+
+    const rnb =
+        isRNB(ploeg);
+
+    const id =
+        String(wedstrijdId) +
+        "-" +
+        kant;
+
+
+    const kegelsWaarde =
+        rnb
+            ? ""
+            : (
+                score &&
+                score.kegels !== null &&
+                score.kegels !== undefined
+                    ? score.kegels
+                    : ""
+            );
+
+
+    const puntenWaarde =
+        score &&
+        score.punten !== null &&
+        score.punten !== undefined
+            ? score.punten
+            : "";
+
+
+    return `
+
+        <div
+            class="team-row ${
+                rnb ? "rnb-row" : ""
+            }">
+
+            <div class="team-name ${positie}">
+
+                ${escapeHtml(ploeg)}
+
+                ${
+                    rnb
+                        ? `
+                            <span class="rnb-label">
+                                Kegels automatisch uit spelersscores
+                            </span>
+                          `
+                        : ""
+                }
+
+            </div>
+
+
+            <input
+                type="number"
+                min="0"
+                id="kegels-${id}"
+                value="${kegelsWaarde}"
+                placeholder="${
+                    rnb
+                        ? "Auto"
+                        : "Kegels"
+                }"
+                class="${
+                    rnb
+                        ? "auto-kegels"
+                        : ""
+                }"
+                ${
+                    rnb
+                        ? "readonly"
+                        : ""
+                }
+                ${
+                    rnb
+                        ? ""
+                        : `oninput="updateTotaal()"`
+                }
+            >
+
+
+            <input
+                type="number"
+                min="0"
+                max="31"
+                id="punten-${id}"
+                value="${puntenWaarde}"
+                placeholder="0-31"
+                oninput="updateTotaal()"
+            >
+
+        </div>
+    `;
+}
+
+
+// =====================================================
+// WEDSTRIJDEN TONEN
+// =====================================================
+
+function toonWedstrijden(
+    datum,
+    wedstrijden,
+    opgeslagenScores = [],
+    isInhaal = false
+) {
+
+    const container =
+        document.getElementById(
+            "wedstrijden"
+        );
+
+    container.innerHTML =
+        "";
+
+
+    if (
+        !wedstrijden ||
+        wedstrijden.length === 0
+    ) {
+
+        container.innerHTML = `
+            <div class="status warning">
+                Geen wedstrijden gevonden voor
+                ${datumNaarTekst(datum)}.
+            </div>
+        `;
+
+        updateTotaal();
+
+        return;
+    }
+
+
+    if (isInhaal) {
+
+        const info =
+            document.createElement(
+                "div"
+            );
+
+        info.className =
+            "info-box";
+
+        info.innerHTML =
+            "🔄 <strong>Inhaalwedstrijd</strong><br>" +
+            "Werkelijke speeldatum: " +
+            escapeHtml(
+                datumNaarTekst(datum)
+            );
+
+        container.appendChild(
+            info
+        );
+    }
+
+
+    wedstrijden.forEach(
+        (wedstrijd, index) => {
+
+            const isUitgesteld =
+                !isInhaal &&
+                wedstrijd.werkelijke_datum &&
+                wedstrijd.geplande_datum &&
+                wedstrijd.werkelijke_datum !== wedstrijd.geplande_datum;
+
+            // Een uitgestelde wedstrijd krijgt op de oorspronkelijke
+            // speeldag geen invoervelden. De scores worden ingevoerd
+            // op de werkelijke inhaaldatum.
+            if (isUitgesteld) {
+
+                const melding =
+                    document.createElement("div");
+
+                melding.className = "info-box";
+                melding.style.background = "#fff4ce";
+                melding.style.borderColor = "#e57373";
+                melding.style.color = "#8a1c1c";
+
+                melding.innerHTML =
+                    "⚠️ <strong>Wedstrijd uitgesteld</strong><br>" +
+                    escapeHtml(wedstrijd.thuisploeg) +
+                    " tegen " +
+                    escapeHtml(wedstrijd.uitploeg) +
+                    "<br>" +
+                    "Wordt ingehaald op " +
+                    escapeHtml(datumNaarTekst(wedstrijd.werkelijke_datum));
+
+                container.appendChild(melding);
+                return;
+            }
+
+            const thuis =
+                wedstrijd.thuisploeg;
+
+            const uit =
+                wedstrijd.uitploeg;
+
+
+            const thuisScore =
+                vindScore(
+                    opgeslagenScores,
+                    thuis
+                );
+
+            const uitScore =
+                vindScore(
+                    opgeslagenScores,
+                    uit
+                );
+
+
+            const match =
+                document.createElement(
+                    "div"
+                );
+
+            match.className =
+                "match";
+
+
+            let origineleInfo = "";
+
+            // Bij een normale speeldag tonen we ook duidelijk
+            // wanneer deze wedstrijd is uitgesteld en wanneer
+            // hij werkelijk ingehaald wordt.
+            if (
+                !isInhaal &&
+                wedstrijd.werkelijke_datum &&
+                wedstrijd.geplande_datum &&
+                wedstrijd.werkelijke_datum !==
+                    wedstrijd.geplande_datum
+            ) {
+
+                origineleInfo = `
+                    <div style="
+                        font-size:13px;
+                        color:#b00020;
+                        font-weight:bold;
+                        margin-top:5px;
+                    ">
+                        ⚠️ UITGESTELD —
+                        wordt ingehaald op
+                        ${escapeHtml(
+                            datumNaarTekst(
+                                wedstrijd.werkelijke_datum
+                            )
+                        )}
+                    </div>
+                `;
+
+            } else if (isInhaal) {
+
+                origineleInfo = `
+                    <div style="
+                        font-size:12px;
+                        color:#8a5a00;
+                        font-weight:normal;
+                        margin-top:3px;
+                    ">
+                        Oorspronkelijk gepland:
+                        ${escapeHtml(
+                            datumNaarTekst(
+                                wedstrijd.geplande_datum
+                            )
+                        )}
+                    </div>
+                `;
+            }
+
+
+            match.innerHTML = `
+
+                <div class="match-header">
+
+                    <div class="match-title">
+
+                        ${index + 1}.
+                        ${escapeHtml(thuis)}
+
+                        <span class="vs">
+                            tegen
+                        </span>
+
+                        ${escapeHtml(uit)}
+
+                        ${origineleInfo}
+
+                    </div>
+
+                    <div>Kegels</div>
+
+                    <div>Punten</div>
+
+                </div>
+
+
+                ${maakTeamRij(
+                    thuis,
+                    thuisScore,
+                    "home",
+                    wedstrijd.id,
+                    "thuis"
+                )}
+
+
+                ${maakTeamRij(
+                    uit,
+                    uitScore,
+                    "away",
+                    wedstrijd.id,
+                    "uit"
+                )}
+
+            `;
+
+
+            container.appendChild(
+                match
+            );
+        }
+    );
+
+
+    updateTotaal();
+}
+
+
+// =====================================================
+// RNB KEGELS INVULLEN
+// =====================================================
+
+function zetRNBKegels(
+    kegels
+) {
+
+    document
+        .querySelectorAll(
+            ".auto-kegels"
+        )
+        .forEach(
+            veld => {
+
+                veld.value =
+                    kegels;
+            }
+        );
+}
+
+
+// =====================================================
+// TOTAAL PUNTEN
+// GEEN VERPLICHTE 186-CONTROLE MEER
+// =====================================================
+
+function updateTotaal() {
+
+    let totaal =
+        0;
+
+
+    document
+        .querySelectorAll(
+            'input[id^="punten-"]'
+        )
+        .forEach(
+            veld => {
+
+                if (
+                    veld.value !== ""
+                ) {
+
+                    const waarde =
+                        Number(
+                            veld.value
+                        );
+
+                    if (
+                        Number.isFinite(
+                            waarde
+                        )
+                    ) {
+
+                        totaal +=
+                            waarde;
+                    }
+                }
+            }
+        );
+
+
+    const box =
+        document.getElementById(
+            "totaalBox"
+        );
+
+
+    box.innerText =
+        "Totaal ingevoerde punten: " +
+        totaal;
+
+
+    box.classList.remove(
+        "total-ok",
+        "total-error"
+    );
+}
+
+
+// =====================================================
+// SCORES LADEN
+// =====================================================
+
+async function laadScores() {
+
+    const datum =
+        document.getElementById(
+            "speeldatum"
+        ).value;
+
+
+    if (!datum) {
+        return;
+    }
+
+
+    statusMelding(
+        "Wedstrijden en scores worden geladen...",
+        "info"
+    );
+
+
+    const wedstrijdResultaat =
+        await haalWedstrijden(
+            datum
+        );
+
+
+    if (
+        !wedstrijdResultaat.success
+    ) {
+
+        statusMelding(
+            "❌ Fout bij laden van de wedstrijden.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const wedstrijden =
+        wedstrijdResultaat.wedstrijden;
+
+    const isInhaal =
+        wedstrijdResultaat.inhaal;
+
+
+    const {
+        data,
+        error
+    } = await supabaseClient
+
+        .from("interteam_scores")
+
+        .select(
+            "speeldatum, ploeg, kegels, punten"
+        )
+
+        .eq(
+            "speeldatum",
+            datum
+        );
+
+
+    if (error) {
+
+        console.error(
+            error
+        );
+
+        statusMelding(
+            "❌ Fout bij laden van scores.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    toonWedstrijden(
+        datum,
+        wedstrijden,
+        data || [],
+        isInhaal
+    );
+
+
+    const rnb =
+        await berekenRNBKegels(
+            datum
+        );
+
+
+    if (
+        rnb.success
+    ) {
+
+        zetRNBKegels(
+            rnb.kegels
+        );
+
+
+        if (
+            isInhaal
+        ) {
+
+            statusMelding(
+                datumNaarTekst(datum) +
+                ": inhaalwedstrijd geladen. " +
+                "RNB-kegels automatisch berekend.",
+                "success"
+            );
+
+        }
+        else if (
+            data &&
+            data.length > 0
+        ) {
+
+            statusMelding(
+                datumNaarTekst(datum) +
+                ": scores geladen. " +
+                "RNB-kegels automatisch berekend.",
+                "success"
+            );
+
+        }
+        else {
+
+            statusMelding(
+                datumNaarTekst(datum) +
+                ": nieuwe invoer. " +
+                "RNB-kegels automatisch beschikbaar.",
+                "info"
+            );
+        }
+
+    }
+    else {
+
+        statusMelding(
+            datumNaarTekst(datum) +
+            ": RNB heeft " +
+            rnb.spelers +
+            "/5 spelers en " +
+            rnb.games +
+            "/15 games ingevuld.",
+            "warning"
+        );
+    }
+
+
+    updateTotaal();
+}
+
+
+// =====================================================
+// OPSLAAN
+// =====================================================
+
+async function opslaan() {
+
+    const datum =
+        document.getElementById(
+            "speeldatum"
+        ).value;
+
+
+    const wedstrijdResultaat =
+        await haalWedstrijden(
+            datum
+        );
+
+
+    if (
+        !wedstrijdResultaat.success ||
+        wedstrijdResultaat.wedstrijden.length === 0
+    ) {
+
+        alert(
+            "❌ Er zijn geen wedstrijden voor " +
+            datumNaarTekst(datum) +
+            "."
+        );
+
+        return;
+    }
+
+
+    const wedstrijden =
+        wedstrijdResultaat.wedstrijden;
+
+
+    const rnb =
+        await berekenRNBKegels(
+            datum
+        );
+
+
+    if (
+        !rnb.success
+    ) {
+
+        alert(
+            "❌ RNB kan niet worden opgeslagen.\n\n" +
+            "Voor " +
+            datumNaarTekst(datum) +
+            " zijn " +
+            rnb.spelers +
+            " van de 5 spelers gevonden en " +
+            rnb.games +
+            " van de 15 games ingevuld.\n\n" +
+            "Alle 5 spelers en alle 3 games per speler moeten ingevuld zijn."
+        );
+
+        return;
+    }
+
+
+    // Team-ID's ophalen zodat nieuwe/gewijzigde records
+    // correct aan de tabel teams gekoppeld worden.
+    const {
+        data: teamsData,
+        error: teamsError
+    } = await supabaseClient
+        .from("teams")
+        .select("id, naam")
+        .eq("actief", true);
+
+    if (teamsError) {
+        console.error("Fout bij ophalen team-ID's:", teamsError);
+        statusMelding(
+            "❌ Teamgegevens konden niet worden opgehaald: " +
+            teamsError.message,
+            "error"
+        );
+        return;
+    }
+
+    const teamMap = {};
+    (teamsData || []).forEach(team => {
+        teamMap[normaliseerNaam(team.naam)] = team.id;
+    });
+
+    let records =
+        [];
+
+    let fouten =
+        [];
+
+
+    wedstrijden.forEach(
+        wedstrijd => {
+
+            const isUitgesteld =
+                !wedstrijdResultaat.inhaal &&
+                wedstrijd.werkelijke_datum &&
+                wedstrijd.geplande_datum &&
+                wedstrijd.werkelijke_datum !== wedstrijd.geplande_datum;
+
+            // Uitgestelde wedstrijd niet opslaan op de oorspronkelijke datum.
+            if (isUitgesteld) {
+                return;
+            }
+
+            const teams = [
+                {
+                    ploeg:
+                        wedstrijd.thuisploeg,
+
+                    kant:
+                        "thuis"
+                },
+                {
+                    ploeg:
+                        wedstrijd.uitploeg,
+
+                    kant:
+                        "uit"
+                }
+            ];
+
+
+            teams.forEach(
+                team => {
+
+                    const id =
+                        String(
+                            wedstrijd.id
+                        ) +
+                        "-" +
+                        team.kant;
+
+
+                    const puntenElement =
+                        document.getElementById(
+                            "punten-" + id
+                        );
+
+
+                    if (
+                        !puntenElement
+                    ) {
+
+                        fouten.push(
+                            team.ploeg +
+                            ": puntenveld ontbreekt."
+                        );
+
+                        return;
+                    }
+
+
+                    const punten =
+                        puntenElement.value;
+
+
+                    if (
+                        punten === ""
+                    ) {
+
+                        fouten.push(
+                            team.ploeg +
+                            ": punten niet ingevuld."
+                        );
+
+                        return;
+                    }
+
+
+                    const puntenGetal =
+                        Number(punten);
+
+
+                    if (
+                        !Number.isFinite(
+                            puntenGetal
+                        ) ||
+                        puntenGetal < 0 ||
+                        puntenGetal > MAX_PUNTEN
+                    ) {
+
+                        fouten.push(
+                            team.ploeg +
+                            ": maximaal 31 punten."
+                        );
+
+                        return;
+                    }
+
+
+                    let kegelsGetal;
+
+
+                    if (
+                        isRNB(
+                            team.ploeg
+                        )
+                    ) {
+
+                        kegelsGetal =
+                            rnb.kegels;
+
+                    }
+                    else {
+
+                        const kegelsElement =
+                            document.getElementById(
+                                "kegels-" + id
+                            );
+
+
+                        if (
+                            !kegelsElement ||
+                            kegelsElement.value === ""
+                        ) {
+
+                            fouten.push(
+                                team.ploeg +
+                                ": kegels niet ingevuld."
+                            );
+
+                            return;
+                        }
+
+
+                        kegelsGetal =
+                            Number(
+                                kegelsElement.value
+                            );
+
+
+                        if (
+                            !Number.isFinite(
+                                kegelsGetal
+                            ) ||
+                            kegelsGetal < 0
+                        ) {
+
+                            fouten.push(
+                                team.ploeg +
+                                ": ongeldig aantal kegels."
+                            );
+
+                            return;
+                        }
+                    }
+
+
+                    const teamId =
+                        teamMap[
+                            normaliseerNaam(team.ploeg)
+                        ];
+
+                    if (!teamId) {
+                        fouten.push(
+                            team.ploeg +
+                            ": team niet gevonden in Supabase."
+                        );
+                        return;
+                    }
+
+                    records.push({
+
+                        speeldatum:
+                            datum,
+
+                        ploeg:
+                            team.ploeg,
+
+                        team_id:
+                            teamId,
+
+                        kegels:
+                            kegelsGetal,
+
+                        punten:
+                            puntenGetal
+                    });
+                }
+            );
+        }
+    );
+
+
+    if (
+        fouten.length > 0
+    ) {
+
+        alert(
+            "❌ Controleer de invoer:\n\n" +
+            fouten.join("\n")
+        );
+
+        return;
+    }
+
+
+    // GEEN CONTROLE MEER OP TOTAAL 186.
+
+
+    const button =
+        document.getElementById(
+            "saveButton"
+        );
+
+
+    button.disabled =
+        true;
+
+    button.innerText =
+        "⏳ Opslaan...";
+
+
+    const {
+        error
+    } = await supabaseClient
+
+        .from("interteam_scores")
+
+        .upsert(
+            records,
+            {
+                onConflict:
+                    "speeldatum,ploeg"
+            }
+        );
+
+
+    button.disabled =
+        false;
+
+    button.innerText =
+        "💾 ALLE SCORES OPSLAAN";
+
+
+    if (
+        error
+    ) {
+
+        console.error(
+            error
+        );
+
+        statusMelding(
+            "❌ Fout bij opslaan: " +
+            error.message,
+            "error"
+        );
+
+        return;
+    }
+
+
+    statusMelding(
+        "✅ " +
+        (
+            wedstrijdResultaat.inhaal
+                ? "Inhaalwedstrijd"
+                : "Scores"
+        ) +
+        " opgeslagen voor " +
+        datumNaarTekst(datum) +
+        ". " +
+        records.length +
+        " teamrecords opgeslagen. RNB-kegels: " +
+        rnb.kegels +
+        ".",
+        "success"
+    );
+
+
+    alert(
+        "✅ Scores succesvol opgeslagen!\n\n" +
+        (
+            wedstrijdResultaat.inhaal
+                ? "Inhaalwedstrijd\n"
+                : ""
+        ) +
+        "Speeldatum: " +
+        datumNaarTekst(datum) +
+        "\n" +
+        "Teamrecords: " +
+        records.length +
+        "\n" +
+        "RNB kegels: " +
+        rnb.kegels
+    );
+
+
+    await laadScores();
+}
+
+
+// =====================================================
+// START
+// =====================================================
+
+async function startPagina() {
+
+    await laadInhaalDatums();
+
+    await laadScores();
+}
+
+
+startPagina();
+
+</script>
+
+</body>
+</html>

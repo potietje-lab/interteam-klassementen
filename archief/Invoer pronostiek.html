@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roll & Bowl - Pronostiek 2026-2027</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:linear-gradient(135deg,#f4f7fb,#e9eef5);
+  color:#1f2937
+}
+
+.container{
+  width:100%;
+  max-width:900px;
+  margin:30px auto;
+  padding:20px
+}
+
+.card{
+  background:#fff;
+  border-radius:18px;
+  box-shadow:0 8px 28px rgba(0,0,0,.10);
+  padding:28px
+}
+
+h1{
+  text-align:center;
+  margin:0 0 8px;
+  font-size:32px
+}
+
+.subtitle{
+  text-align:center;
+  color:#667085;
+  margin-bottom:24px
+}
+
+.deadline{
+  background:#fff4c2;
+  border:2px solid #f0c419;
+  border-radius:14px;
+  padding:15px;
+  text-align:center;
+  margin-bottom:22px
+}
+
+.deadline strong{
+  display:block;
+  font-size:20px;
+  margin-bottom:5px
+}
+
+#countdown{
+  font-weight:bold;
+  font-size:22px
+}
+
+.instructions{
+  background:#f5f7fa;
+  border-radius:12px;
+  padding:15px 18px;
+  margin-bottom:22px
+}
+
+.name-box{
+  margin-bottom:20px
+}
+
+.name-box label{
+  display:block;
+  font-weight:bold;
+  margin-bottom:7px
+}
+
+.name-box input,
+.name-box select{
+  width:100%;
+  padding:12px;
+  border:1px solid #cbd5e1;
+  border-radius:9px;
+  font-size:16px;
+  background:#fff
+}
+
+/* Codeveld met oogje */
+.code-wrapper{
+  position:relative;
+}
+
+.code-wrapper input{
+  padding-right:50px;
+}
+
+.toggle-code{
+  position:absolute;
+  right:10px;
+  top:50%;
+  transform:translateY(-50%);
+  width:auto;
+  margin:0;
+  padding:5px 8px;
+  background:transparent;
+  color:#64748b;
+  font-size:20px;
+  line-height:1;
+  border:0;
+  cursor:pointer;
+}
+
+.toggle-code:hover{
+  background:transparent;
+  color:#1f2937;
+}
+
+ol{
+  list-style:none;
+  padding:0;
+  margin:0
+}
+
+li{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  background:#f8fafc;
+  border:2px solid #e2e8f0;
+  border-radius:12px;
+  padding:12px 14px;
+  margin-bottom:9px;
+  cursor:grab;
+  user-select:none;
+  transition:.15s
+}
+
+li:hover{
+  border-color:#94a3b8;
+  transform:translateY(-1px)
+}
+
+li.dragging{
+  opacity:.45
+}
+
+.place{
+  min-width:38px;
+  height:38px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#1f2937;
+  color:white;
+  font-weight:bold
+}
+
+.team{
+  font-size:17px;
+  font-weight:bold
+}
+
+.handle{
+  margin-left:auto;
+  font-size:20px;
+  color:#94a3b8
+}
+
+button{
+  width:100%;
+  border:0;
+  border-radius:12px;
+  padding:15px;
+  font-size:18px;
+  font-weight:bold;
+  cursor:pointer;
+  background:#16a34a;
+  color:white;
+  margin-top:15px
+}
+
+button:hover{
+  background:#15803d
+}
+
+button:disabled{
+  background:#9ca3af;
+  cursor:not-allowed
+}
+
+#message{
+  margin-top:16px;
+  text-align:center;
+  font-weight:bold
+}
+
+.note{
+  margin-top:18px;
+  text-align:center;
+  color:#667085;
+  font-size:14px
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<div class="card">
+
+<h1>🏆 Roll & Bowl Pronostiek</h1>
+
+<div class="subtitle">
+Teamklassement 2026-2027
+</div>
+
+<div class="deadline">
+<strong>⏳ Pronostiek indienen vóór 31/12/2026 om 23:59</strong>
+<span id="countdown">Berekenen...</span>
+</div>
+
+<div class="instructions">
+<b>Hoe werkt het?</b><br>
+Kies je voornaam en geef je persoonlijke 3-cijferige code in.
+Sleep daarna de ploegen naar de plaats waarvan jij denkt dat ze
+aan het einde van het seizoen zullen eindigen.
+Plaats 1 is jouw voorspelde kampioen.
+</div>
+
+
+<!-- VOORNAAM -->
+
+<div class="name-box">
+
+<label for="naam">👤 Jouw voornaam</label>
+
+<select id="naam">
+
+<option value="">-- Kies je voornaam --</option>
+<option value="Gary">Gary</option>
+<option value="Stephan">Stephan</option>
+<option value="Glenn">Glenn</option>
+<option value="Mathias">Mathias</option>
+<option value="Arne">Arne</option>
+<option value="Nancy">Nancy</option>
+<option value="Yannick">Yannick</option>
+<option value="Silke">Silke</option>
+<option value="Christian">Christian</option>
+
+</select>
+
+</div>
+
+
+<!-- CODE -->
+
+<div class="name-box">
+
+<label for="nickname">🔐 Jouw 3-cijferige code</label>
+
+<div class="code-wrapper">
+
+<input
+  id="nickname"
+  type="password"
+  inputmode="numeric"
+  maxlength="3"
+  pattern="[0-9]{3}"
+  placeholder="Bijvoorbeeld 427"
+  autocomplete="off">
+
+<button
+  type="button"
+  class="toggle-code"
+  id="toggleCode"
+  onclick="toggleCodeVisibility()"
+  aria-label="Code tonen">
+👁️
+</button>
+
+</div>
+
+</div>
+
+
+<div class="instructions" style="margin-top:22px;">
+
+<b>🎯 Schiftingsvragen</b><br>
+
+Geef hieronder jouw voorspelling in voor het grootste en kleinste kegelverschil
+tussen 2 ploegen van het <b style="color:red;">eindklassement</b>.
+Je geeft een getal in. Wie achteraf het dichtst bij het werkelijke verschil zit,
+krijgt <b>15 bonuspunten</b> per vraag.
+
+</div>
+
+
+<div class="name-box">
+
+<label for="grootsteKegelverschil">
+🥇 Grootste kegelverschil
+</label>
+
+<input
+  id="grootsteKegelverschil"
+  type="number"
+  min="0"
+  step="1">
+
+</div>
+
+
+<div class="name-box">
+
+<label for="kleinsteKegelverschil">
+🥉 Kleinste kegelverschil
+</label>
+
+<input
+  id="kleinsteKegelverschil"
+  type="number"
+  min="0"
+  step="1">
+
+</div>
+
+
+<ol id="teamList"></ol>
+
+
+<button id="submitBtn" onclick="dienPronostiekIn()">
+💾 Pronostiek opslaan
+</button>
+
+<div id="message"></div>
+
+
+<div class="note">
+Je kunt je pronostiek opnieuw opslaan en wijzigen zolang de countdown nog loopt.
+</div>
+
+</div>
+</div>
+
+
+<script>
+
+const SUPABASE_URL =
+"https://wnsvbtskynkewxggmjem.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+
+const supabaseClient =
+window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+
+/* =========================
+   PLOEGEN
+========================= */
+
+const teams = [
+  "BC Ajuin",
+  "BC Ledeganck 2 Burtline",
+  "DCG Yok Tha",
+  "FLP ALLCORE IT",
+  "LAT Esento",
+  "Oilsjt 2 Yok Tha",
+  "FLP Argenta Hamme",
+  "RNB Geenens Construct-Vapor",
+  "Royal Ghent 3",
+  "Stene - Pleisterwerken Delrue JP",
+  "TSZ Bieshoop",
+  "Wuitens"
+];
+
+
+const DEADLINE =
+new Date("2026-12-31T23:59:00+01:00");
+
+const list =
+document.getElementById("teamList");
+
+let draggedItem = null;
+
+
+/* =========================
+   CODE TONEN / VERBERGEN
+========================= */
+
+function toggleCodeVisibility(){
+
+  const input =
+    document.getElementById("nickname");
+
+  const button =
+    document.getElementById("toggleCode");
+
+  if(input.type === "password"){
+
+    input.type = "text";
+
+    button.textContent = "🙈";
+
+    button.setAttribute(
+      "aria-label",
+      "Code verbergen"
+    );
+
+  }else{
+
+    input.type = "password";
+
+    button.textContent = "👁️";
+
+    button.setAttribute(
+      "aria-label",
+      "Code tonen"
+    );
+
+  }
+
+}
+
+
+/* =========================
+   PLOEGEN TONEN
+========================= */
+
+function toonTeams(){
+
+  list.innerHTML="";
+
+  teams.forEach((team,index)=>{
+
+    const li=document.createElement("li");
+
+    li.draggable=true;
+
+    li.dataset.team=team;
+
+    li.innerHTML=`
+
+      <span class="place">
+        ${index+1}
+      </span>
+
+      <span
+        class="team"
+        style="${
+          team === 'RNB Geenens Construct-Vapor'
+          ? 'color:green;font-weight:bold;'
+          : ''
+        }"
+      >
+        ${team}
+      </span>
+
+      <span class="handle">☰</span>
+
+    `;
+
+
+    li.addEventListener("dragstart",()=>{
+
+      draggedItem=li;
+
+      li.classList.add("dragging");
+
+    });
+
+
+    li.addEventListener("dragend",()=>{
+
+      li.classList.remove("dragging");
+
+      draggedItem=null;
+
+      updatePlaces();
+
+    });
+
+
+    li.addEventListener("dragover",e=>{
+
+      e.preventDefault();
+
+      if(!draggedItem || draggedItem===li)
+        return;
+
+      const rect=
+        li.getBoundingClientRect();
+
+      const after=
+        e.clientY >
+        rect.top + rect.height/2;
+
+      if(after)
+        li.after(draggedItem);
+      else
+        li.before(draggedItem);
+
+    });
+
+
+    list.appendChild(li);
+
+  });
+
+}
+
+
+/* =========================
+   PLAATSEN BIJWERKEN
+========================= */
+
+function updatePlaces(){
+
+  [...list.children].forEach((li,index)=>{
+
+    li.querySelector(".place").textContent =
+      index+1;
+
+  });
+
+}
+
+
+/* =========================
+   DEADLINE
+========================= */
+
+function deadlineVoorbij(){
+
+  return new Date() >= DEADLINE;
+
+}
+
+
+/* =========================
+   PRONOSTIEK OPSLAAN
+========================= */
+
+async function dienPronostiekIn(){
+
+  const message =
+    document.getElementById("message");
+
+  const btn =
+    document.getElementById("submitBtn");
+
+
+  const naam =
+    document.getElementById("naam").value.trim();
+
+  const nickname =
+    document.getElementById("nickname").value.trim();
+
+
+  const grootsteInput =
+    document.getElementById(
+      "grootsteKegelverschil"
+    );
+
+  const kleinsteInput =
+    document.getElementById(
+      "kleinsteKegelverschil"
+    );
+
+
+  const grootsteKegelverschil =
+    grootsteInput.value.trim();
+
+  const kleinsteKegelverschil =
+    kleinsteInput.value.trim();
+
+
+  message.textContent="";
+
+
+  /* DEADLINE */
+
+  if(deadlineVoorbij()){
+
+    message.style.color="#dc2626";
+
+    message.textContent =
+      "🔒 De pronostiek is gesloten.";
+
+    return;
+
+  }
+
+
+  /* VOORNAAM */
+
+  if(!naam){
+
+    message.style.color="#dc2626";
+
+    message.textContent =
+      "❌ Kies eerst je voornaam.";
+
+    return;
+
+  }
+
+
+  /* CODE */
+
+  if(!/^\d{3}$/.test(nickname)){
+
+    message.style.color="#dc2626";
+
+    message.textContent =
+      "❌ Geef een code van exact 3 cijfers in.";
+
+    return;
+
+  }
+
+
+  /* SCHIFTINGSVRAGEN */
+
+  if(
+    grootsteKegelverschil === "" ||
+    kleinsteKegelverschil === ""
+  ){
+
+    message.style.color="#dc2626";
+
+    message.textContent =
+      "❌ Vul beide schiftingsvragen in.";
+
+    return;
+
+  }
+
+
+  if(
+    Number(grootsteKegelverschil)<0 ||
+    Number(kleinsteKegelverschil)<0 ||
+    !Number.isInteger(
+      Number(grootsteKegelverschil)
+    ) ||
+    !Number.isInteger(
+      Number(kleinsteKegelverschil)
+    )
+  ){
+
+    message.style.color="#dc2626";
+
+    message.textContent =
+      "❌ Gebruik gehele getallen van 0 of hoger.";
+
+    return;
+
+  }
+
+
+  const voorspelling =
+    [...list.children].map((li,index)=>({
+
+      plaats:index+1,
+
+      ploeg:li.dataset.team
+
+    }));
+
+
+  btn.disabled=true;
+
+  btn.textContent="⏳ Controleren...";
+
+
+  try{
+
+
+    /*
+      Zoek speler op basis van voornaam.
+      ilike maakt hoofdletters/kleine letters
+      onbelangrijk.
+    */
+
+    const {
+      data:spelers,
+      error:zoekNaamFout
+    } = await supabaseClient
+
+      .from("pronostiek_deelnemers")
+
+      .select("id,naam,nickname")
+
+      .ilike("naam",naam)
+
+      .limit(1);
+
+
+    if(zoekNaamFout)
+      throw zoekNaamFout;
+
+
+    let deelnemerId;
+
+
+    /* =========================
+       BESTAANDE SPELER
+    ========================= */
+
+    if(spelers && spelers.length){
+
+      const speler=spelers[0];
+
+
+      /*
+        Controleer de persoonlijke code.
+      */
+
+      if(
+        String(speler.nickname) !==
+        String(nickname)
+      ){
+
+        message.style.color="#dc2626";
+
+        message.textContent =
+          "❌ De code voor deze speler klopt niet. Gebruik je oorspronkelijke 3-cijferige code.";
+
+        return;
+
+      }
+
+
+      deelnemerId=speler.id;
+
+
+      /*
+        Bestaande schiftingsvragen aanpassen.
+      */
+
+      const {
+        error:updateError
+      } = await supabaseClient
+
+        .from("pronostiek_deelnemers")
+
+        .update({
+
+          grootste_kegelverschil:
+            Number(grootsteKegelverschil),
+
+          kleinste_kegelverschil:
+            Number(kleinsteKegelverschil)
+
+        })
+
+        .eq("id",deelnemerId);
+
+
+      if(updateError)
+        throw updateError;
+
+
+      /*
+        Oude voorspelling verwijderen.
+      */
+
+      const {
+        error:delError
+      } = await supabaseClient
+
+        .from("pronostiek_voorspellingen")
+
+        .delete()
+
+        .eq("deelnemer_id",deelnemerId);
+
+
+      if(delError)
+        throw delError;
+
+
+    }
+
+
+    /* =========================
+       NIEUWE SPELER
+    ========================= */
+
+    else{
+
+      /*
+        Nieuwe speler registreren.
+        De gekozen 3-cijferige code
+        wordt opgeslagen in nickname.
+      */
+
+      const {
+        data:deelnemer,
+        error:insertError
+      } = await supabaseClient
+
+        .from("pronostiek_deelnemers")
+
+        .insert({
+
+          naam:naam,
+
+          nickname:nickname,
+
+          grootste_kegelverschil:
+            Number(grootsteKegelverschil),
+
+          kleinste_kegelverschil:
+            Number(kleinsteKegelverschil)
+
+        })
+
+        .select("id")
+
+        .single();
+
+
+      if(insertError)
+        throw insertError;
+
+
+      deelnemerId =
+        deelnemer.id;
+
+    }
+
+
+    /* =========================
+       VOORSPELLINGEN OPSLAAN
+    ========================= */
+
+    const records =
+      voorspelling.map(v=>({
+
+        deelnemer_id:
+          deelnemerId,
+
+        ploeg:v.ploeg,
+
+        voorspelde_plaats:
+          v.plaats
+
+      }));
+
+
+    /*
+       Gebruik UPSERT zodat een bestaande voorspelling
+       van dezelfde deelnemer + ploeg wordt bijgewerkt.
+       Dit voorkomt de duplicate key-fout bij het wijzigen
+       van een reeds opgeslagen pronostiek.
+    */
+
+    const {
+      error:insError
+    } = await supabaseClient
+
+      .from("pronostiek_voorspellingen")
+
+      .upsert(
+        records,
+        {
+          onConflict:"deelnemer_id,ploeg"
+        }
+      );
+
+
+    if(insError)
+      throw insError;
+
+
+    /* =========================
+       SUCCES
+    ========================= */
+
+    message.style.color="#16a34a";
+
+    message.textContent =
+      spelers && spelers.length
+
+      ? "✅ Je pronostiek is aangepast en opgeslagen!"
+
+      : "✅ Je pronostiek is opgeslagen!";
+
+
+    /*
+      Formulier leegmaken.
+    */
+
+    document.getElementById("naam").value="";
+
+    document.getElementById("nickname").value="";
+
+    document.getElementById(
+      "grootsteKegelverschil"
+    ).value="";
+
+    document.getElementById(
+      "kleinsteKegelverschil"
+    ).value="";
+
+
+    toonTeams();
+
+  }
+
+
+  catch(error){
+
+    console.error(error);
+
+    message.style.color="#dc2626";
+
+    message.textContent =
+      "❌ " +
+      (
+        error.message ||
+        "Er ging iets mis bij het opslaan."
+      );
+
+  }
+
+
+  finally{
+
+    btn.disabled=false;
+
+    btn.textContent =
+      "💾 Pronostiek opslaan";
+
+  }
+
+}
+
+
+/* =========================
+   COUNTDOWN
+========================= */
+
+function updateCountdown(){
+
+  const el =
+    document.getElementById("countdown");
+
+  const btn =
+    document.getElementById("submitBtn");
+
+
+  const verschil =
+    DEADLINE-new Date();
+
+
+  if(verschil<=0){
+
+    el.textContent =
+      "🔒 De pronostiek is gesloten.";
+
+    btn.disabled=true;
+
+    return;
+
+  }
+
+
+  const dagen =
+    Math.floor(
+      verschil/86400000
+    );
+
+  const uren =
+    Math.floor(
+      (verschil%86400000)/3600000
+    );
+
+  const minuten =
+    Math.floor(
+      (verschil%3600000)/60000
+    );
+
+  const seconden =
+    Math.floor(
+      (verschil%60000)/1000
+    );
+
+
+  el.textContent =
+    `Nog ${dagen} dagen, ${uren} uur, ${minuten} min. en ${seconden} sec.`;
+
+}
+
+
+/* =========================
+   START
+========================= */
+
+toonTeams();
+
+updateCountdown();
+
+setInterval(
+  updateCountdown,
+  1000
+);
+
+</script>
+
+</body>
+</html>

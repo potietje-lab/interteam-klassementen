@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rollbowl - Kleinste kegelverschil per speeldag</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+    font-family:Arial,sans-serif;
+    margin:0;
+    padding:15px;
+    background:#f5f5f5;
+}
+.container{
+    max-width:1000px;
+    margin:auto;
+}
+h1{
+    text-align:center;
+    font-size:26px;
+    margin-bottom:20px;
+}
+.section{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+.controls{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+    margin-bottom:15px;
+}
+select{
+    padding:10px;
+    border:1px solid #bbb;
+    border-radius:8px;
+    font-size:16px;
+    background:white;
+    min-width:280px;
+}
+.chart-wrapper{
+    position:relative;
+    width:100%;
+    height:430px;
+}
+canvas{
+    width:100%!important;
+    height:100%!important;
+}
+.status{
+    margin-bottom:15px;
+    padding:10px 12px;
+    border-radius:8px;
+    background:#eef5ff;
+}
+.error{
+    background:#ffecec;
+    color:#a00000;
+}
+.info{
+    background:#eef5ff;
+}
+
+.theme-toggle{
+    position:fixed;
+    top:15px;
+    right:15px;
+    z-index:9999;
+    padding:9px 13px;
+    border:1px solid #aaa;
+    border-radius:20px;
+    background:#fff;
+    color:#222;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:bold;
+    box-shadow:0 2px 8px rgba(0,0,0,.15);
+}
+body.dark-mode{
+    background:#111;
+    color:#fff;
+}
+body.dark-mode .section{
+    background:#1d1d1d;
+    color:#fff;
+    box-shadow:0 2px 8px rgba(0,0,0,.5);
+}
+body.dark-mode select{
+    background:#2a2a2a;
+    color:#fff;
+    border-color:#666;
+}
+body.dark-mode .status.info{
+    background:#263449;
+    color:#fff;
+}
+body.dark-mode .status.error{
+    background:#4a2222;
+    color:#fff;
+}
+body.dark-mode .theme-toggle{
+    background:#2a2a2a;
+    color:#fff;
+    border-color:#777;
+}
+
+
+.verschil-lijst{
+    margin-top:28px;
+}
+.verschil-lijst h2{
+    margin:0 0 12px;
+    font-size:21px;
+}
+.table-wrapper{
+    overflow-x:auto;
+}
+table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:17px;
+}
+th{
+    background:#f0f3f7;
+    font-weight:700;
+    text-align:left;
+}
+th,td{
+    padding:11px 12px;
+    border-bottom:1px solid #ddd;
+    vertical-align:middle;
+}
+th:last-child,td:last-child{
+    text-align:center;
+    font-weight:700;
+}
+.verschil-hoog{
+    font-weight:800;
+}
+body.dark-mode th{
+    background:#292f38;
+    color:#fff;
+}
+body.dark-mode th,body.dark-mode td{
+    border-bottom-color:#444;
+}
+body.dark-mode table{
+    color:#fff;
+}
+@media(max-width:700px){
+    body{padding:7px}
+    .section{padding:13px}
+    h1{font-size:23px}
+    .chart-wrapper{height:330px}
+    select{width:100%;min-width:0}
+}
+</style>
+</head>
+
+<body>
+<button id="themeToggle" class="theme-toggle" type="button">🌙 Donker</button>
+<div class="container">
+
+<h1>📊 Kleinste kegelverschil per speeldag</h1>
+
+<div class="section">
+
+<div id="status" class="status info">
+    Gegevens worden geladen...
+</div>
+
+<div class="chart-wrapper">
+    <canvas id="klassementChart"></canvas>
+</div>
+
+<div class="verschil-lijst">
+    <h2>Spannendste match per speeldatum</h2>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Speeldatum</th>
+                    <th>Ploeg 1</th>
+                    <th>Ploeg 2</th>
+                    <th>Verschil</th>
+                </tr>
+            </thead>
+            <tbody id="verschilTabelBody"></tbody>
+        </table>
+    </div>
+</div>
+
+</div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://wnsvbtskynkewxggmjem.supabase.co";
+const SUPABASE_KEY = "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const RNB_NAAM = "RNB Geenens Construct-Vapor";
+
+const SPEELDAGEN = [
+    "2026-09-04",
+    "2026-09-11",
+    "2026-09-18",
+    "2026-09-25",
+    "2026-10-02",
+    "2026-10-09",
+    "2026-10-16",
+    "2026-11-20",
+    "2026-11-27",
+    "2026-12-04",
+    "2026-12-11",
+    "2027-01-15",
+    "2027-01-22",
+    "2027-01-29",
+    "2027-02-19",
+    "2027-02-26",
+    "2027-03-19",
+    "2027-03-26",
+    "2027-04-16",
+    "2027-04-23",
+    "2027-05-07",
+    "2027-05-14"
+];
+
+let alleScores = [];
+let klassementPerDatum = {};
+let chart = null;
+
+function normaliseer(naam) {
+    return String(naam || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+}
+
+/*
+ * Belangrijk:
+ * De database kan de ploegnaam korter opslaan.
+ * Daarom herkennen we zowel
+ * "RNB Geenens"
+ * als
+ * "RNB Geenens Construct-Vapor"
+ * als onze ploeg.
+ */
+function isRNB(naam) {
+    const n = normaliseer(naam);
+    return n === normaliseer(RNB_NAAM) ||
+           n === "rnb geenens" ||
+           n.startsWith("rnb geenens ");
+}
+
+function datumNL(datum) {
+    const delen = datum.split("-");
+    return delen[2] + "/" + delen[1] + "/" + delen[0];
+}
+
+function rangschikkingOpDatum(datum) {
+
+    const teams = {};
+
+    alleScores
+        .filter(r => String(r.speeldatum) <= datum)
+        .forEach(r => {
+
+            const ploeg = String(r.ploeg || "").trim();
+
+            if (!ploeg) return;
+
+            if (!teams[ploeg]) {
+                teams[ploeg] = {
+                    ploeg: ploeg,
+                    punten: 0,
+                    kegels: 0
+                };
+            }
+
+            teams[ploeg].punten += Number(r.punten) || 0;
+            teams[ploeg].kegels += Number(r.kegels) || 0;
+        });
+
+    const lijst = Object.values(teams);
+
+    lijst.sort((a,b) => {
+        if (b.punten !== a.punten)
+            return b.punten - a.punten;
+
+        return b.kegels - a.kegels;
+    });
+
+    lijst.forEach((team,index) => {
+        team.plaats = index + 1;
+    });
+
+    return lijst;
+}
+
+function bouwKlassementen() {
+
+    klassementPerDatum = {};
+
+    SPEELDAGEN.forEach(datum => {
+
+        const heeftData = alleScores.some(
+            r => String(r.speeldatum) === datum
+        );
+
+        if (!heeftData) return;
+
+        klassementPerDatum[datum] =
+            rangschikkingOpDatum(datum);
+    });
+}
+
+function vindRNB(lijst) {
+    return lijst.find(team => isRNB(team.ploeg));
+}
+
+function vulDropdown() {
+    // Geen tegenstander-dropdown nodig voor deze grafiek.
+}
+
+function vulTabel(wedstrijden) {
+    const tbody = document.getElementById("verschilTabelBody");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+
+    SPEELDAGEN.forEach((datum, index) => {
+        const w = wedstrijden[index];
+        if (!w) return;
+
+        const rij = document.createElement("tr");
+        rij.innerHTML = `
+            <td>${datumNL(datum)}</td>
+            <td>${w.team1.ploeg} — ${w.team1.kegels}</td>
+            <td>${w.team2.ploeg} — ${w.team2.kegels}</td>
+            <td class="verschil-hoog">${w.verschil}</td>
+        `;
+        tbody.appendChild(rij);
+    });
+}
+
+function tekenGrafiek() {
+
+    const labels = SPEELDAGEN.map(datumNL);
+    const verschillen = [];
+    const wedstrijden = [];
+
+    SPEELDAGEN.forEach(datum => {
+        const scoresDatum = alleScores.filter(
+            r => String(r.speeldatum) === datum
+        );
+
+        const geldige = scoresDatum
+            .map(r => ({
+                ploeg: String(r.ploeg || "").trim(),
+                kegels: Number(r.kegels)
+            }))
+            .filter(r => r.ploeg && Number.isFinite(r.kegels));
+
+        if (geldige.length < 2) {
+            verschillen.push(null);
+            wedstrijden.push(null);
+            return;
+        }
+
+        // Sorteer op aantal kegels. De kleinste afstand tussen twee ploegen
+        // staat altijd tussen twee naast elkaar gelegen waarden.
+        geldige.sort((a, b) => a.kegels - b.kegels);
+
+        let beste = null;
+
+        for (let i = 0; i < geldige.length - 1; i++) {
+            const team1 = geldige[i];
+            const team2 = geldige[i + 1];
+            const verschil = team2.kegels - team1.kegels;
+
+            if (!beste || verschil < beste.verschil) {
+                beste = { team1, team2, verschil };
+            }
+        }
+
+        verschillen.push(beste.verschil);
+        wedstrijden.push(beste);
+    });
+
+    const status = document.getElementById("status");
+    const geldigeVerschillen = verschillen.filter(v => v !== null);
+
+    if (!geldigeVerschillen.length) {
+        status.className = "status error";
+        status.textContent = "Geen kegelgegevens gevonden.";
+        if (chart) chart.destroy();
+        return;
+    }
+
+    const laatste = geldigeVerschillen[geldigeVerschillen.length - 1];
+    status.className = "status info";
+    status.textContent = "Kleinste kegelverschil op de laatste gespeelde speeldag: " + laatste + " kegels.";
+
+    vulTabel(wedstrijden);
+
+    const canvas = document.getElementById("klassementChart");
+    if (chart) chart.destroy();
+
+    const dark = document.body.classList.contains("dark-mode");
+    const tekstKleur = dark ? "#ffffff" : "#222222";
+    const rasterKleur = dark ? "rgba(255,255,255,0.16)" : "rgba(0,0,0,0.10)";
+
+    chart = new Chart(canvas, {
+        type: "line",
+        data: {
+            labels: labels,
+            datasets: [{
+                label: "Kleinste kegelverschil",
+                data: verschillen,
+                borderColor: "#9c27b0",
+                backgroundColor: "#9c27b0",
+                pointBackgroundColor: "#9c27b0",
+                pointBorderColor: "#ffffff",
+                borderWidth: 3,
+                pointRadius: 6,
+                pointHoverRadius: 8,
+                tension: 0.2,
+                fill: false,
+                spanGaps: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: tekstKleur },
+                    title: { display: true, color: tekstKleur, text: "Kegelverschil" },
+                    grid: { color: rasterKleur },
+                    border: { color: tekstKleur }
+                },
+                x: {
+                    ticks: { color: tekstKleur, autoSkip: false, maxRotation: 45, minRotation: 45, padding: 0 },
+                    title: { display: true, color: tekstKleur, text: "Speeldatum" },
+                    grid: { color: rasterKleur },
+                    border: { color: tekstKleur }
+                }
+            },
+            plugins: {
+                legend: { display: true, labels: { color: tekstKleur, usePointStyle: true } },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            if (context.raw === null) return "";
+                            return "Verschil: " + context.raw + " kegels";
+                        },
+                        afterLabel: function(context) {
+                            const w = wedstrijden[context.dataIndex];
+                            if (!w) return "";
+                            return [
+                                w.team1.ploeg + ": " + w.team1.kegels + " kegels",
+                                w.team2.ploeg + ": " + w.team2.kegels + " kegels"
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+
+/* Licht/donker modus */
+const THEME_KEY = "rollbowl-thema";
+const themeToggle = document.getElementById("themeToggle");
+
+function pasThemaToe(thema) {
+    const donker = thema === "donker";
+    document.body.classList.toggle("dark-mode", donker);
+    themeToggle.textContent = donker ? "☀️ Licht" : "🌙 Donker";
+
+    if (chart) {
+        tekenGrafiek();
+    }
+}
+
+const opgeslagenThema = localStorage.getItem(THEME_KEY) || "licht";
+pasThemaToe(opgeslagenThema);
+
+themeToggle.addEventListener("click", function(){
+    const nieuwThema =
+        document.body.classList.contains("dark-mode") ? "licht" : "donker";
+
+    localStorage.setItem(THEME_KEY, nieuwThema);
+    pasThemaToe(nieuwThema);
+});
+
+async function laadData() {
+
+    try {
+
+        const { data, error } = await db
+            .from("interteam_scores")
+            .select("speeldatum, ploeg, punten, kegels")
+            .order("speeldatum", { ascending: true });
+
+        if (error) throw error;
+
+        alleScores = data || [];
+
+        if (!alleScores.length) {
+            throw new Error("De tabel interteam_scores bevat geen gegevens.");
+        }
+
+        bouwKlassementen();
+        vulDropdown();
+        tekenGrafiek();
+
+    } catch(error) {
+
+        console.error(error);
+
+        const status = document.getElementById("status");
+
+        status.className = "status error";
+        status.innerHTML =
+            "Fout bij het laden van de klassementgegevens.<br><br>" +
+            error.message;
+    }
+}
+
+laadData();
+</script>
+
+</body>
+</html>

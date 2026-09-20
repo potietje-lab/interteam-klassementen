@@ -1,0 +1,861 @@
+
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bezoekersteller beheer</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        background: #111;
+        color: #fff;
+        font-family: Arial, sans-serif;
+    }
+
+    .container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    h1 {
+        text-align: center;
+        margin-bottom: 5px;
+    }
+
+    .datum {
+        text-align: center;
+        color: #aaa;
+        margin-bottom: 25px;
+    }
+
+    .stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .kaart {
+        background: #1d1d1d;
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 18px;
+        text-align: center;
+    }
+
+    .kaart .titel {
+        color: #aaa;
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+
+    .kaart .waarde {
+        font-size: 30px;
+        font-weight: bold;
+    }
+
+    button {
+        display: block;
+        margin: 0 auto 12px auto;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        background: #333;
+        color: white;
+        font-size: 15px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background: #444;
+    }
+
+    .reset-knop {
+        background: #8b1e1e;
+        margin-bottom: 25px;
+    }
+
+    .reset-knop:hover {
+        background: #b52b2b;
+    }
+
+    .grafiek-blok {
+        background: #1d1d1d;
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .grafiek-blok h2 {
+        margin-top: 0;
+        font-size: 20px;
+    }
+
+    .keuze {
+        margin-bottom: 15px;
+    }
+
+    .keuze label {
+        display: block;
+        margin-bottom: 7px;
+        color: #aaa;
+        font-size: 14px;
+    }
+
+    select {
+        width: 100%;
+        max-width: 300px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid #444;
+        background: #111;
+        color: white;
+        font-size: 15px;
+    }
+
+    .grafiek-container {
+        position: relative;
+        height: 350px;
+    }
+
+    #status {
+        text-align: center;
+        color: #aaa;
+        margin-top: 10px;
+    }
+
+    #fout {
+        text-align: center;
+        color: #ff6b6b;
+        margin-top: 10px;
+    }
+
+    @media (max-width: 700px) {
+        .stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .grafiek-container {
+            height: 300px;
+        }
+    }
+
+    @media (max-width: 400px) {
+        .stats {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🎳 Bezoekersteller beheer</h1>
+
+    <div class="datum" id="datum"></div>
+
+    <div class="stats">
+
+        <div class="kaart">
+            <div class="titel">Totaal bezoeken</div>
+            <div class="waarde" id="totaal">0</div>
+        </div>
+
+        <div class="kaart">
+            <div class="titel">Vandaag</div>
+            <div class="waarde" id="vandaag">0</div>
+        </div>
+
+        <div class="kaart">
+            <div class="titel">Gisteren</div>
+            <div class="waarde" id="gisteren">0</div>
+        </div>
+
+        <div class="kaart">
+            <div class="titel">Deze maand</div>
+            <div class="waarde" id="dezeMaand">0</div>
+        </div>
+
+    </div>
+
+    <button onclick="laadAlles()">
+        🔄 Vernieuwen
+    </button>
+
+    <button class="reset-knop" onclick="resetTeller()">
+        🗑️ Teller resetten
+    </button>
+
+
+    <!-- DAGGRAFIEK -->
+
+    <div class="grafiek-blok">
+
+        <h2>📈 Bezoeken per dag</h2>
+
+        <div class="keuze">
+
+            <label for="maandKeuze">
+                Kies een maand:
+            </label>
+
+            <select id="maandKeuze"
+                    onchange="toonGekozenMaand()">
+
+                <option value="">
+                    Laden...
+                </option>
+
+            </select>
+
+        </div>
+
+        <div class="grafiek-container">
+
+            <canvas id="grafiekDag"></canvas>
+
+        </div>
+
+    </div>
+
+
+    <!-- MAANDGRAFIEK -->
+
+    <div class="grafiek-blok">
+
+        <h2>📈 Bezoeken per maand</h2>
+
+        <div class="grafiek-container">
+
+            <canvas id="grafiekMaand"></canvas>
+
+        </div>
+
+    </div>
+
+
+    <div id="status"></div>
+
+    <div id="fout"></div>
+
+</div>
+
+
+<script>
+
+const SUPABASE_URL =
+    "https://wnsvbtskynkewxggmjem.supabase.co";
+
+const SUPABASE_KEY =
+    "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+
+const supabaseClient =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+const tijdzone =
+    "Europe/Brussels";
+
+let grafiekDag = null;
+let grafiekMaand = null;
+
+let alleDagGegevens = [];
+
+
+/* DATUM */
+
+function toonDatum() {
+
+    const nu = new Date();
+
+    document.getElementById("datum").textContent =
+        nu.toLocaleDateString("nl-BE", {
+            timeZone: tijdzone,
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric"
+        });
+}
+
+
+/* STATISTIEKEN LADEN */
+
+async function laadStatistieken() {
+
+    const { data, error } =
+        await supabaseClient.rpc(
+            "haal_bezoekstatistieken"
+        );
+
+    if (error) {
+        throw error;
+    }
+
+    document.getElementById("totaal").textContent =
+        data.totaal ?? 0;
+
+    document.getElementById("vandaag").textContent =
+        data.vandaag ?? 0;
+
+    document.getElementById("gisteren").textContent =
+        data.gisteren ?? 0;
+
+    document.getElementById("dezeMaand").textContent =
+        data.deze_maand ?? 0;
+}
+
+
+/* GRAFIEKGEGEVENS LADEN */
+
+async function laadGrafiekgegevens() {
+
+    const { data, error } =
+        await supabaseClient.rpc(
+            "haal_bezoekgrafieken"
+        );
+
+    if (error) {
+        throw error;
+    }
+
+    alleDagGegevens =
+        data.per_dag || [];
+
+    maakMaandKeuze(
+        alleDagGegevens
+    );
+
+    toonGekozenMaand();
+
+    maakMaandGrafiek(
+        data.per_maand || []
+    );
+}
+
+
+/* MAANDKEUZELIJST */
+
+function maakMaandKeuze(data) {
+
+    const select =
+        document.getElementById(
+            "maandKeuze"
+        );
+
+    const maanden = {};
+
+    data.forEach(item => {
+
+        if (!item.datum) return;
+
+        const maand =
+            item.datum.substring(0, 7);
+
+        maanden[maand] = true;
+    });
+
+    const beschikbareMaanden =
+        Object.keys(maanden)
+            .sort()
+            .reverse();
+
+    select.innerHTML = "";
+
+    if (beschikbareMaanden.length === 0) {
+
+        const optie =
+            document.createElement("option");
+
+        optie.value = "";
+
+        optie.textContent =
+            "Geen gegevens beschikbaar";
+
+        select.appendChild(optie);
+
+        return;
+    }
+
+
+    beschikbareMaanden.forEach(maand => {
+
+        const [jaar, maandNummer] =
+            maand.split("-");
+
+        const datum =
+            new Date(
+                Number(jaar),
+                Number(maandNummer) - 1,
+                1
+            );
+
+        const naam =
+            datum.toLocaleDateString(
+                "nl-BE",
+                {
+                    month: "long",
+                    year: "numeric"
+                }
+            );
+
+        const optie =
+            document.createElement("option");
+
+        optie.value = maand;
+
+        optie.textContent =
+            naam.charAt(0).toUpperCase() +
+            naam.slice(1);
+
+        select.appendChild(optie);
+    });
+
+
+    /* HUIDIGE MAAND */
+
+    const nu = new Date();
+
+    const huidigeMaand =
+        nu.toLocaleDateString(
+            "sv-SE",
+            {
+                timeZone: tijdzone,
+                year: "numeric",
+                month: "2-digit"
+            }
+        );
+
+    if (
+        beschikbareMaanden.includes(
+            huidigeMaand
+        )
+    ) {
+
+        select.value =
+            huidigeMaand;
+
+    } else {
+
+        select.value =
+            beschikbareMaanden[0];
+    }
+}
+
+
+/* GEKOZEN MAAND */
+
+function toonGekozenMaand() {
+
+    const maand =
+        document.getElementById(
+            "maandKeuze"
+        ).value;
+
+    if (!maand) return;
+
+    const gegevens =
+        alleDagGegevens.filter(
+            item =>
+                item.datum &&
+                item.datum.substring(0, 7)
+                === maand
+        );
+
+    maakDagGrafiek(gegevens);
+}
+
+
+/* DAG LIJNGRAFIEK */
+
+function maakDagGrafiek(data) {
+
+    const labels =
+        data.map(item => {
+
+            const datum =
+                new Date(
+                    item.datum +
+                    "T12:00:00"
+                );
+
+            return datum.toLocaleDateString(
+                "nl-BE",
+                {
+                    day: "2-digit",
+                    month: "2-digit"
+                }
+            );
+
+        });
+
+
+    const waarden =
+        data.map(item =>
+            Number(item.aantal || 0)
+        );
+
+
+    if (grafiekDag) {
+        grafiekDag.destroy();
+    }
+
+
+    const ctx =
+        document.getElementById(
+            "grafiekDag"
+        ).getContext("2d");
+
+
+    grafiekDag =
+        new Chart(ctx, {
+
+            type: "line",
+
+            data: {
+
+                labels: labels,
+
+                datasets: [{
+
+                    label: "Bezoeken",
+
+                    data: waarden,
+
+                    borderWidth: 2,
+
+                    tension: 0.25,
+
+                    fill: false,
+
+                    pointRadius: 4,
+
+                    pointHoverRadius: 6
+
+                }]
+
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false,
+
+                scales: {
+
+                    x: {
+
+                        ticks: {
+                            color: "#ffffff"
+                        },
+
+                        grid: {
+                            color: "#333333"
+                        }
+
+                    },
+
+                    y: {
+
+                        beginAtZero: true,
+
+                        ticks: {
+                            color: "#ffffff",
+                            precision: 0
+                        },
+
+                        grid: {
+                            color: "#333333"
+                        }
+
+                    }
+
+                },
+
+                plugins: {
+
+                    legend: {
+
+                        labels: {
+                            color: "#ffffff"
+                        }
+
+                    }
+
+                }
+
+            }
+
+        });
+
+}
+
+
+/* MAAND LIJNGRAFIEK */
+
+function maakMaandGrafiek(data) {
+
+    const labels =
+        data.map(item => {
+
+            const delen =
+                item.maand.split("-");
+
+            const datum =
+                new Date(
+                    Number(delen[0]),
+                    Number(delen[1]) - 1,
+                    1
+                );
+
+            return datum.toLocaleDateString(
+                "nl-BE",
+                {
+                    month: "short",
+                    year: "numeric"
+                }
+            );
+
+        });
+
+
+    const waarden =
+        data.map(item =>
+            Number(item.aantal || 0)
+        );
+
+
+    if (grafiekMaand) {
+        grafiekMaand.destroy();
+    }
+
+
+    const ctx =
+        document.getElementById(
+            "grafiekMaand"
+        ).getContext("2d");
+
+
+    grafiekMaand =
+        new Chart(ctx, {
+
+            type: "line",
+
+            data: {
+
+                labels: labels,
+
+                datasets: [{
+
+                    label: "Bezoeken",
+
+                    data: waarden,
+
+                    borderWidth: 2,
+
+                    tension: 0.25,
+
+                    fill: false,
+
+                    pointRadius: 4,
+
+                    pointHoverRadius: 6
+
+                }]
+
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false,
+
+                scales: {
+
+                    x: {
+
+                        ticks: {
+                            color: "#ffffff"
+                        },
+
+                        grid: {
+                            color: "#333333"
+                        }
+
+                    },
+
+                    y: {
+
+                        beginAtZero: true,
+
+                        ticks: {
+                            color: "#ffffff",
+                            precision: 0
+                        },
+
+                        grid: {
+                            color: "#333333"
+                        }
+
+                    }
+
+                },
+
+                plugins: {
+
+                    legend: {
+
+                        labels: {
+                            color: "#ffffff"
+                        }
+
+                    }
+
+                }
+
+            }
+
+        });
+
+}
+
+
+/* RESET TELLER */
+
+async function resetTeller() {
+
+    const bevestiging =
+        confirm(
+            "⚠️ Weet je zeker dat je ALLE bezoekersgegevens wilt verwijderen?\n\n" +
+            "Deze actie kan niet ongedaan worden gemaakt."
+        );
+
+    if (!bevestiging) {
+        return;
+    }
+
+
+    const status =
+        document.getElementById(
+            "status"
+        );
+
+    const fout =
+        document.getElementById(
+            "fout"
+        );
+
+    status.textContent =
+        "Teller wordt gereset...";
+
+    fout.textContent = "";
+
+
+    const { data, error } =
+        await supabaseClient.rpc(
+            "reset_bezoekersteller"
+        );
+
+
+    if (error) {
+
+        console.error(error);
+
+        status.textContent = "";
+
+        fout.textContent =
+            "Fout bij resetten: " +
+            error.message;
+
+        return;
+    }
+
+
+    const aantal =
+        data?.verwijderd ?? 0;
+
+
+    status.textContent =
+        "Teller gereset. " +
+        aantal +
+        " bezoeken verwijderd.";
+
+
+    /* Grafieken en cijfers opnieuw laden */
+
+    await laadAlles();
+
+}
+
+
+/* ALLES LADEN */
+
+async function laadAlles() {
+
+    const status =
+        document.getElementById(
+            "status"
+        );
+
+    const fout =
+        document.getElementById(
+            "fout"
+        );
+
+
+    status.textContent =
+        "Gegevens laden...";
+
+    fout.textContent = "";
+
+
+    try {
+
+        await laadStatistieken();
+
+        await laadGrafiekgegevens();
+
+        status.textContent =
+            "Gegevens bijgewerkt.";
+
+    } catch (error) {
+
+        console.error(error);
+
+        status.textContent = "";
+
+        fout.textContent =
+            "Fout bij laden: " +
+            error.message;
+    }
+}
+
+
+/* START */
+
+toonDatum();
+
+laadAlles();
+
+</script>
+
+</body>
+</html>
+```

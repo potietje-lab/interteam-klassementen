@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Controle kegels - RNB</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f2f2f2;
+        margin: 0;
+        padding: 20px;
+        color: #222;
+    }
+
+    .container {
+        max-width: 900px;
+        margin: auto;
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+    }
+
+    h1 {
+        text-align: center;
+        margin-top: 0;
+    }
+
+    .subtitel {
+        text-align: center;
+        color: #666;
+        margin-bottom: 25px;
+    }
+
+    .datum-box {
+        text-align: center;
+        margin-bottom: 25px;
+    }
+
+    select {
+        font-size: 18px;
+        padding: 10px 15px;
+        border-radius: 8px;
+        border: 1px solid #aaa;
+        min-width: 220px;
+    }
+
+    .status {
+        text-align: center;
+        font-size: 25px;
+        font-weight: bold;
+        padding: 18px;
+        border-radius: 12px;
+        margin: 20px 0;
+    }
+
+    .status-ok {
+        background: #d9f7df;
+        color: #087f23;
+        border: 2px solid #087f23;
+    }
+
+    .status-fout {
+        background: #ffe0e0;
+        color: #c00000;
+        border: 2px solid #c00000;
+    }
+
+    .status-waarschuwing {
+        background: #fff2cc;
+        color: #946200;
+        border: 2px solid #d6a500;
+    }
+
+    .gegevens {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+
+    .kaart {
+        background: #f8f8f8;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 15px;
+    }
+
+    .kaart-titel {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 7px;
+    }
+
+    .kaart-waarde {
+        font-size: 26px;
+        font-weight: bold;
+    }
+
+    .verschil {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 18px;
+        border-radius: 10px;
+        font-size: 26px;
+        font-weight: bold;
+    }
+
+    .verschil-ok {
+        background: #d9f7df;
+        color: #087f23;
+    }
+
+    .verschil-fout {
+        background: #ffe0e0;
+        color: #c00000;
+    }
+
+    .spelers {
+        margin-top: 30px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+
+    th {
+        background: #333;
+        color: white;
+        padding: 10px;
+    }
+
+    td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+        text-align: center;
+    }
+
+    .speler-ok {
+        color: green;
+        font-weight: bold;
+    }
+
+    .speler-fout {
+        color: red;
+        font-weight: bold;
+    }
+
+    .melding {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 10px;
+        background: #fff2cc;
+        color: #7a5a00;
+        font-weight: bold;
+    }
+
+    .laden {
+        text-align: center;
+        padding: 25px;
+        font-size: 18px;
+    }
+
+    @media (max-width: 600px) {
+        .gegevens {
+            grid-template-columns: 1fr;
+        }
+
+        .verschil {
+            grid-column: auto;
+        }
+
+        .container {
+            padding: 15px;
+        }
+
+        table {
+            font-size: 13px;
+        }
+
+        th, td {
+            padding: 7px 4px;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🎳 Controle kegels RNB</h1>
+
+    <div class="subtitel">
+        RNB Geenens Construct-Vapor · 5 spelers
+    </div>
+
+    <div class="datum-box">
+
+        <strong>Kies speeldatum:</strong><br><br>
+
+        <select id="datum" onchange="voerControleUit()">
+            <option value="">-- Kies datum --</option>
+        </select>
+
+    </div>
+
+    <div id="resultaat">
+
+        <div class="laden">
+            Kies hierboven een speeldatum.
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+/* =========================================================
+   SUPABASE
+   ========================================================= */
+
+const SUPABASE_URL =
+    "https://wnsvbtskynkewxggmjem.supabase.co";
+
+const SUPABASE_KEY =
+    "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+
+const supabaseClient =
+    supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+/* =========================================================
+   RNB
+   ========================================================= */
+
+const RNB_PLOEG =
+    "RNB Geenens Construct-Vapor";
+
+
+/* =========================================================
+   SPEELDATA
+   ========================================================= */
+
+const SPEELDATUMS = [
+
+    "2026-09-04",
+    "2026-09-11",
+    "2026-09-18",
+    "2026-09-25",
+    "2026-10-02",
+    "2026-10-09",
+    "2026-10-16",
+
+    "2026-11-20",
+    "2026-11-27",
+    "2026-12-04",
+    "2026-12-11",
+
+    "2027-01-15",
+    "2027-01-22",
+    "2027-01-29",
+
+    "2027-02-19",
+    "2027-02-26",
+
+    "2027-03-19",
+    "2027-03-26",
+
+    "2027-04-16",
+    "2027-04-23",
+
+    "2027-05-07",
+    "2027-05-14"
+];
+
+
+/* =========================================================
+   DATUM FORMATTEREN
+   ========================================================= */
+
+function datumNL(datum) {
+
+    const delen = datum.split("-");
+
+    return (
+        delen[2] + "/" +
+        delen[1] + "/" +
+        delen[0]
+    );
+}
+
+
+/* =========================================================
+   DATUMMENU VULLEN
+   ========================================================= */
+
+function vulDatums() {
+
+    const select =
+        document.getElementById("datum");
+
+    SPEELDATUMS.forEach(datum => {
+
+        const optie =
+            document.createElement("option");
+
+        optie.value = datum;
+
+        optie.textContent =
+            datumNL(datum);
+
+        select.appendChild(optie);
+
+    });
+}
+
+
+/* =========================================================
+   GETAL VEILIG MAKEN
+   ========================================================= */
+
+function getal(waarde) {
+
+    if (
+        waarde === null ||
+        waarde === undefined ||
+        waarde === ""
+    ) {
+        return null;
+    }
+
+    return Number(waarde);
+}
+
+
+/* =========================================================
+   CONTROLE UITVOEREN
+   ========================================================= */
+
+async function voerControleUit() {
+
+    const datum =
+        document.getElementById("datum").value;
+
+    const resultaat =
+        document.getElementById("resultaat");
+
+
+    if (!datum) {
+
+        resultaat.innerHTML = `
+            <div class="laden">
+                Kies hierboven een speeldatum.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    resultaat.innerHTML = `
+        <div class="laden">
+            ⏳ Controle wordt uitgevoerd...
+        </div>
+    `;
+
+
+    /* =====================================================
+       SPELERS OPHALEN
+       ===================================================== */
+
+    const {
+        data: spelers,
+        error: spelersError
+    } = await supabaseClient
+
+        .from("bowling_scores")
+
+        .select(
+            "speler, game1, game2, game3, totaal"
+        )
+
+        .eq("speeldatum", datum)
+
+        .order("speler", {
+            ascending: true
+        });
+
+
+    if (spelersError) {
+
+        toonFout(
+            "Fout bij ophalen van bowling_scores",
+            spelersError.message
+        );
+
+        return;
+    }
+
+
+    /* =====================================================
+       RNB OFFICIEEL TOTAAL OPHALEN
+       ===================================================== */
+
+    const {
+        data: rnbRows,
+        error: rnbError
+    } = await supabaseClient
+
+        .from("interteam_scores")
+
+        .select(
+            "ploeg, kegels, punten"
+        )
+
+        .eq("speeldatum", datum)
+
+        .eq("ploeg", RNB_PLOEG);
+
+
+    if (rnbError) {
+
+        toonFout(
+            "Fout bij ophalen van interteam_scores",
+            rnbError.message
+        );
+
+        return;
+    }
+
+
+    /* =====================================================
+       OFFICIEEL RNB TOTAAL
+       ===================================================== */
+
+    let officieelKegels = 0;
+
+    if (rnbRows && rnbRows.length > 0) {
+
+        officieelKegels =
+            Number(rnbRows[0].kegels) || 0;
+
+    }
+
+
+    /* =====================================================
+       SPELERS CONTROLEREN
+       ===================================================== */
+
+    let totaalGame1 = 0;
+    let totaalGame2 = 0;
+    let totaalGame3 = 0;
+
+    let totaalSpelers = 0;
+
+    let volledigeSpelers = 0;
+    let onvolledigeSpelers = 0;
+
+
+    const spelerDetails = [];
+
+
+    spelers.forEach(speler => {
+
+        const g1 = getal(speler.game1);
+        const g2 = getal(speler.game2);
+        const g3 = getal(speler.game3);
+
+
+        const volledig =
+            g1 !== null &&
+            g2 !== null &&
+            g3 !== null;
+
+
+        const serie =
+            (g1 || 0) +
+            (g2 || 0) +
+            (g3 || 0);
+
+
+        if (g1 !== null) {
+            totaalGame1 += g1;
+        }
+
+        if (g2 !== null) {
+            totaalGame2 += g2;
+        }
+
+        if (g3 !== null) {
+            totaalGame3 += g3;
+        }
+
+
+        totaalSpelers += serie;
+
+
+        if (volledig) {
+            volledigeSpelers++;
+        } else {
+            onvolledigeSpelers++;
+        }
+
+
+        spelerDetails.push({
+
+            speler: speler.speler,
+
+            game1: g1,
+
+            game2: g2,
+
+            game3: g3,
+
+            totaal: serie,
+
+            volledig: volledig
+
+        });
+
+    });
+
+
+    /* =====================================================
+       VERSCHIL
+       ===================================================== */
+
+    const verschil =
+        totaalSpelers -
+        officieelKegels;
+
+
+    /* =====================================================
+       ALGEMENE STATUS
+       ===================================================== */
+
+    let status;
+    let statusClass;
+
+
+    if (
+        spelers.length === 5 &&
+        onvolledigeSpelers === 0 &&
+        verschil === 0
+    ) {
+
+        status =
+            "🟢 CONTROLE IN ORDE";
+
+        statusClass =
+            "status-ok";
+
+    } else if (verschil !== 0) {
+
+        status =
+            "🔴 CONTROLE FOUT";
+
+        statusClass =
+            "status-fout";
+
+    } else {
+
+        status =
+            "🟠 CONTROLE ONVOLLEDIG";
+
+        statusClass =
+            "status-waarschuwing";
+    }
+
+
+    /* =====================================================
+       VERSCHIL TEKST
+       ===================================================== */
+
+    let verschilTekst;
+
+    if (verschil > 0) {
+
+        verschilTekst =
+            "+" +
+            verschil.toLocaleString("nl-BE");
+
+    } else {
+
+        verschilTekst =
+            verschil.toLocaleString("nl-BE");
+    }
+
+
+    const verschilClass =
+        verschil === 0
+            ? "verschil-ok"
+            : "verschil-fout";
+
+
+    /* =====================================================
+       SPELERSTABEL
+       ===================================================== */
+
+    let tabelRijen = "";
+
+
+    if (spelerDetails.length === 0) {
+
+        tabelRijen = `
+            <tr>
+                <td colspan="6">
+                    Geen spelers gevonden.
+                </td>
+            </tr>
+        `;
+
+    } else {
+
+        spelerDetails.forEach(speler => {
+
+            tabelRijen += `
+
+                <tr>
+
+                    <td>
+                        <strong>
+                            ${speler.speler}
+                        </strong>
+                    </td>
+
+                    <td>
+                        ${speler.game1 ?? "—"}
+                    </td>
+
+                    <td>
+                        ${speler.game2 ?? "—"}
+                    </td>
+
+                    <td>
+                        ${speler.game3 ?? "—"}
+                    </td>
+
+                    <td>
+                        <strong>
+                            ${speler.totaal}
+                        </strong>
+                    </td>
+
+                    <td class="${
+                        speler.volledig
+                            ? "speler-ok"
+                            : "speler-fout"
+                    }">
+
+                        ${
+                            speler.volledig
+                                ? "✓ OK"
+                                : "⚠ ONVOLLEDIG"
+                        }
+
+                    </td>
+
+                </tr>
+            `;
+        });
+    }
+
+
+    /* =====================================================
+       MELDINGEN
+       ===================================================== */
+
+    let meldingen = "";
+
+
+    if (spelers.length !== 5) {
+
+        meldingen += `
+
+            <div class="melding">
+
+                ⚠️ Er zijn
+                <strong>${spelers.length}</strong>
+                spelers ingevoerd.
+
+                Verwacht:
+                <strong>5 spelers</strong>.
+
+            </div>
+
+        `;
+    }
+
+
+    if (onvolledigeSpelers > 0) {
+
+        meldingen += `
+
+            <div class="melding">
+
+                ⚠️ Er zijn
+                <strong>${onvolledigeSpelers}</strong>
+                speler(s) waarvan niet alle 3 games
+                zijn ingevuld.
+
+            </div>
+
+        `;
+    }
+
+
+    if (rnbRows.length === 0) {
+
+        meldingen += `
+
+            <div class="melding">
+
+                ⚠️ Geen officieel RNB-totaal gevonden
+                in <strong>interteam_scores</strong>
+                voor deze speeldatum.
+
+            </div>
+
+        `;
+    }
+
+
+    /* =====================================================
+       RESULTAAT TONEN
+       ===================================================== */
+
+    resultaat.innerHTML = `
+
+        <div class="status ${statusClass}">
+            ${status}
+        </div>
+
+
+        <h2 style="text-align:center;">
+            ${RNB_PLOEG}
+        </h2>
+
+        <p style="text-align:center;">
+            Speeldatum:
+            <strong>${datumNL(datum)}</strong>
+        </p>
+
+
+        <div class="gegevens">
+
+
+            <div class="kaart">
+
+                <div class="kaart-titel">
+                    Aantal spelers
+                </div>
+
+                <div class="kaart-waarde">
+                    ${spelers.length}
+                </div>
+
+            </div>
+
+
+            <div class="kaart">
+
+                <div class="kaart-titel">
+                    Volledige spelers
+                </div>
+
+                <div class="kaart-waarde">
+                    ${volledigeSpelers}
+                </div>
+
+            </div>
+
+
+            <div class="kaart">
+
+                <div class="kaart-titel">
+                    Totaal Game 1
+                </div>
+
+                <div class="kaart-waarde">
+                    ${totaalGame1.toLocaleString("nl-BE")}
+                </div>
+
+            </div>
+
+
+            <div class="kaart">
+
+                <div class="kaart-titel">
+                    Totaal Game 2
+                </div>
+
+                <div class="kaart-waarde">
+                    ${totaalGame2.toLocaleString("nl-BE")}
+                </div>
+
+            </div>
+
+
+            <div class="kaart">
+
+                <div class="kaart-titel">
+                    Totaal Game 3
+                </div>
+
+                <div class="kaart-waarde">
+                    ${totaalGame3.toLocaleString("nl-BE")}
+                </div>
+
+            </div>
+
+
+            <div class="kaart">
+
+                <div class="kaart-titel">
+                    Kegels 5 spelers
+                </div>
+
+                <div class="kaart-waarde">
+                    ${totaalSpelers.toLocaleString("nl-BE")}
+                </div>
+
+            </div>
+
+
+            <div class="kaart">
+
+                <div class="kaart-titel">
+                    Officieel RNB kegeltotaal
+                </div>
+
+                <div class="kaart-waarde">
+                    ${officieelKegels.toLocaleString("nl-BE")}
+                </div>
+
+            </div>
+
+
+            <div class="verschil ${verschilClass}">
+
+                Verschil:
+                ${verschilTekst}
+                kegels
+
+            </div>
+
+
+        </div>
+
+
+        ${meldingen}
+
+
+        <div class="spelers">
+
+            <h2>👤 Spelerscontrole</h2>
+
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>Speler</th>
+                        <th>Game 1</th>
+                        <th>Game 2</th>
+                        <th>Game 3</th>
+                        <th>Totaal</th>
+                        <th>Status</th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    ${tabelRijen}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    `;
+}
+
+
+/* =========================================================
+   FOUTMELDING
+   ========================================================= */
+
+function toonFout(titel, bericht) {
+
+    document.getElementById("resultaat").innerHTML = `
+
+        <div class="status status-fout">
+            🔴 FOUT
+        </div>
+
+        <div class="melding">
+
+            <strong>${titel}</strong>
+
+            <br><br>
+
+            ${bericht}
+
+        </div>
+
+    `;
+}
+
+
+/* =========================================================
+   START
+   ========================================================= */
+
+vulDatums();
+
+</script>
+
+</body>
+</html>

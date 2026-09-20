@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interteam punten calculator - test</title>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:Arial,sans-serif;margin:0;background:#f3f4f6;color:#222}
+  .wrap{max-width:1200px;margin:20px auto;padding:15px}
+  h1{text-align:center;margin:5px 0 18px}
+  .card{background:white;border-radius:12px;padding:16px;margin-bottom:18px;box-shadow:0 2px 8px #0001}
+  .controls{display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap}
+  select,input{font-size:16px;padding:8px;border:1px solid #bbb;border-radius:7px}
+  table{width:100%;border-collapse:collapse;margin-top:12px}
+  th,td{border:1px solid #ccc;padding:8px;text-align:center}
+  th{background:#e9ecef}
+  .team-title{font-size:21px;font-weight:bold;margin-bottom:8px}
+  .team1{border-left:6px solid #333}
+  .team2{border-left:6px solid #777}
+  .score{width:85px;text-align:center}
+  .total{font-weight:bold;background:#f7f7f7}
+  .winner{background:transparent !important;color:#168a35 !important;font-weight:bold;border:2px solid #168a35 !important}
+  .tie{background:transparent !important;color:#d88900 !important;border:2px solid #d88900 !important}
+  .points-box{display:flex;gap:20px;justify-content:center;flex-wrap:wrap}
+  .points{min-width:240px;text-align:center;border:2px solid #bbb;border-radius:12px;padding:15px}
+  .points strong{font-size:36px}
+  .detail{margin-top:12px}
+  .detail div{padding:5px;border-bottom:1px solid #eee}
+  .ok{color:green;font-weight:bold}
+  .warn{color:#b36b00;font-weight:bold}
+  button{padding:9px 16px;border:0;border-radius:7px;cursor:pointer;background:#333;color:white}
+  #status{text-align:center;margin-top:10px}
+  .small{font-size:13px;color:#666}
+  @media(max-width:700px){
+    th,td{padding:5px;font-size:13px}
+    .score{width:65px}
+    select{max-width:150px}
+  }
+
+/* Licht/donker modus */
+.theme-toggle{position:fixed;top:15px;right:15px;z-index:9999;padding:9px 14px;border:0;border-radius:8px;background:#333;color:#fff;cursor:pointer;font-weight:bold;box-shadow:0 2px 8px #0003}
+body.dark-mode{background:#121212;color:#f5f5f5}
+body.dark-mode .card{background:#1e1e1e;color:#f5f5f5;box-shadow:0 2px 8px #0008}
+body.dark-mode select,body.dark-mode input{background:#2a2a2a;color:#fff;border-color:#666}
+body.dark-mode th{background:#333;color:#fff;border-color:#666}
+body.dark-mode td{border-color:#555;color:#fff}
+body.dark-mode .total{background:#292929}
+body.dark-mode .points{border-color:#666}
+body.dark-mode .small{color:#ccc}
+body.dark-mode .status{color:#fff}
+body.dark-mode .detail div{border-color:#444}
+body.dark-mode .theme-toggle{background:#eee;color:#111}
+
+.dark-mode .winner{background:transparent !important;color:#55d978 !important;border:2px solid #55d978 !important}
+.dark-mode .tie{background:transparent !important;color:#ffd45c !important;border:2px solid #ffd45c !important}
+</style>
+</head>
+<body>\n<button id="themeToggle" class="theme-toggle" onclick="toggleTheme()">🌙 Donker</button>
+<div class="wrap">
+  <h1>🏆 Interteam punten calculator</h1>
+
+  <div class="card">
+    <div class="controls">
+      <label><b>Speeldatum:</b>
+        <select id="datum"><option value="">Laden...</option></select>
+      </label>
+      <button onclick="laadDatum()">Scores laden</button>
+    </div>
+    <div id="status" class="small"></div>
+  </div>
+
+  <div class="card team1">
+    <div class="team-title">Team 1 — mijn team </div>
+    <div class="small">Kies na het selecteren van de speeldatum de 5 spelers in de gespeelde volgorde.</div>
+    <table>
+      <thead><tr><th>#</th><th>Speler</th><th>Game 1</th><th>Game 2</th><th>Game 3</th><th>Serie</th></tr></thead>
+      <tbody id="team1Body"></tbody>
+      <tfoot><tr><th colspan="2">Totaal</th><th id="t1g1">0</th><th id="t1g2">0</th><th id="t1g3">0</th><th id="t1ser">0</th></tr></tfoot>
+    </table>
+  </div>
+
+  <div class="card team2">
+    <div class="team-title">Team 2 — tegenstander</div>
+    <div class="small">Geen namen nodig. Vul alleen de scores van de 5 spelers in dezelfde volgorde in.</div>
+    <table>
+      <thead><tr><th>#</th><th>Game 1</th><th>Game 2</th><th>Game 3</th><th>Serie</th></tr></thead>
+      <tbody id="team2Body"></tbody>
+      <tfoot><tr><th>Totaal</th><th id="t2g1">0</th><th id="t2g2">0</th><th id="t2g3">0</th><th id="t2ser">0</th></tr></tfoot>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2 style="text-align:center">Puntentelling</h2>
+    <div class="points-box">
+      <div class="points"><div>Team 1</div><strong id="p1">0</strong><div>/ 31 punten</div></div>
+      <div class="points"><div>Team 2</div><strong id="p2">0</strong><div>/ 31 punten</div></div>
+    </div>
+    <div id="details" class="detail" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// SUPABASE INSTELLINGEN
+// Vul hier dezelfde gegevens in als in je bestaande Roll & Bowl HTML.
+// ============================================================
+const SUPABASE_URL = "https://wnsvbtskynkewxggmjem.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+
+let datumRows = [];
+let spelersRows = [];
+
+function sbUrl(path) {
+  return SUPABASE_URL + "/rest/v1/" + path;
+}
+
+async function sbFetch(path) {
+  const r = await fetch(sbUrl(path), {
+    headers: {
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": "Bearer " + SUPABASE_ANON_KEY
+    }
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function init() {
+  const d = document.getElementById("datum");
+  try {
+    const rows = await sbFetch("bowling_scores?select=speeldatum&order=speeldatum.desc");
+    const dates = [...new Set(rows.map(x => x.speeldatum))];
+    d.innerHTML = '<option value="">-- kies speeldatum --</option>';
+    dates.forEach(date => {
+      const o = document.createElement("option");
+      o.value = date;
+      o.textContent = new Date(date + "T00:00:00").toLocaleDateString("nl-BE");
+      d.appendChild(o);
+    });
+    if (dates.length) {
+      d.value = dates[0];
+      await laadDatum();
+    } else {
+      document.getElementById("status").textContent = "Geen speeldatums gevonden.";
+    }
+  } catch(e) {
+    d.innerHTML = '<option value="">Supabase instellen</option>';
+    document.getElementById("status").innerHTML =
+      '<span class="warn">Vul SUPABASE_URL en SUPABASE_ANON_KEY bovenaan de HTML in.</span>';
+  }
+}
+
+async function laadDatum() {
+  const date = document.getElementById("datum").value;
+  if (!date) return;
+
+  try {
+    spelersRows = await sbFetch(
+      "bowling_scores?select=speeldatum,speler,game1,game2,game3,totaal&speeldatum=eq." +
+      encodeURIComponent(date) + "&order=speler"
+    );
+
+    bouwTeam1();
+    bouwTeam2();
+    bereken();
+    document.getElementById("status").innerHTML =
+      '<span class="ok">' + spelersRows.length + ' spelers gevonden voor ' +
+      new Date(date+"T00:00:00").toLocaleDateString("nl-BE") + '.</span>';
+  } catch(e) {
+    document.getElementById("status").innerHTML =
+      '<span class="warn">Fout bij laden: ' + escapeHtml(e.message) + '</span>';
+  }
+}
+
+function bouwTeam1() {
+  const body = document.getElementById("team1Body");
+  body.innerHTML = "";
+
+  const names = spelersRows.map(r => r.speler);
+  for (let i=0;i<5;i++) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${i+1}</td>
+      <td><select id="t1name${i}" onchange="selectSpeler(${i})"></select></td>
+      <td id="t1g1_${i}">0</td>
+      <td id="t1g2_${i}">0</td>
+      <td id="t1g3_${i}">0</td>
+      <td class="total" id="t1s_${i}">0</td>`;
+    body.appendChild(tr);
+
+    const sel = tr.querySelector("select");
+    names.forEach(name => {
+      const o=document.createElement("option");
+      o.value=name; o.textContent=name; sel.appendChild(o);
+    });
+    if (names[i]) sel.value=names[i];
+    selectSpeler(i);
+  }
+}
+
+function selectSpeler(i) {
+  const name = document.getElementById("t1name"+i).value;
+  const row = spelersRows.find(r => r.speler === name);
+  const g1 = Number(row?.game1 || 0);
+  const g2 = Number(row?.game2 || 0);
+  const g3 = Number(row?.game3 || 0);
+  document.getElementById("t1g1_"+i).textContent=g1;
+  document.getElementById("t1g2_"+i).textContent=g2;
+  document.getElementById("t1g3_"+i).textContent=g3;
+  document.getElementById("t1s_"+i).textContent=g1+g2+g3;
+  bereken();
+}
+
+function bouwTeam2() {
+  const body=document.getElementById("team2Body");
+  body.innerHTML="";
+  for(let i=0;i<5;i++){
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${i+1}</td>
+      <td><input class="score" type="number" min="0" id="t2_${i}_1" oninput="bereken()"></td>
+      <td><input class="score" type="number" min="0" id="t2_${i}_2" oninput="bereken()"></td>
+      <td><input class="score" type="number" min="0" id="t2_${i}_3" oninput="bereken()"></td>
+      <td class="total" id="t2s_${i}">0</td>`;
+    body.appendChild(tr);
+  }
+}
+
+function t1scores(){
+  const a=[];
+  for(let i=0;i<5;i++){
+    a.push([
+      Number(document.getElementById("t1g1_"+i)?.textContent||0),
+      Number(document.getElementById("t1g2_"+i)?.textContent||0),
+      Number(document.getElementById("t1g3_"+i)?.textContent||0)
+    ]);
+  }
+  return a;
+}
+function t2scores(){
+  const a=[];
+  for(let i=0;i<5;i++){
+    const g1=Number(document.getElementById(`t2_${i}_1`)?.value||0);
+    const g2=Number(document.getElementById(`t2_${i}_2`)?.value||0);
+    const g3=Number(document.getElementById(`t2_${i}_3`)?.value||0);
+    a.push([g1,g2,g3]);
+    const s=g1+g2+g3;
+    const el=document.getElementById(`t2s_${i}`);
+    if(el) el.textContent=s;
+  }
+  return a;
+}
+
+function bereken(){
+  const a=t1scores(), b=t2scores();
+  const t1=[0,0,0], t2=[0,0,0];
+  a.forEach(x=>x.forEach((v,j)=>t1[j]+=v));
+  b.forEach(x=>x.forEach((v,j)=>t2[j]+=v));
+  const s1=t1.reduce((x,y)=>x+y,0), s2=t2.reduce((x,y)=>x+y,0);
+
+  ["t1g1","t1g2","t1g3"].forEach((id,j)=>document.getElementById(id).textContent=t1[j]);
+  document.getElementById("t1ser").textContent=s1;
+  ["t2g1","t2g2","t2g3"].forEach((id,j)=>document.getElementById(id).textContent=t2[j]);
+  document.getElementById("t2ser").textContent=s2;
+
+  // Verwijder oude kleurmarkeringen.
+  document.querySelectorAll(
+    "#t1g1,#t1g2,#t1g3,#t1ser,#t2g1,#t2g2,#t2g3,#t2ser"
+  ).forEach(el => el.classList.remove("winner","tie"));
+
+  // Hoogste Game-totalen: groen. Gelijkspel: beide oranje.
+  for(let j=0;j<3;j++){
+    const e1=document.getElementById(["t1g1","t1g2","t1g3"][j]);
+    const e2=document.getElementById(["t2g1","t2g2","t2g3"][j]);
+    if(t1[j]>t2[j]){
+      e1.classList.add("winner");
+    } else if(t2[j]>t1[j]){
+      e2.classList.add("winner");
+    } else {
+      e1.classList.add("tie");
+      e2.classList.add("tie");
+    }
+  }
+
+  // Hoogste Serie-totaal: groen. Gelijkspel: beide oranje.
+  const es1=document.getElementById("t1ser");
+  const es2=document.getElementById("t2ser");
+  if(s1>s2){
+    es1.classList.add("winner");
+  } else if(s2>s1){
+    es2.classList.add("winner");
+  } else {
+    es1.classList.add("tie");
+    es2.classList.add("tie");
+  }
+
+  // Individuele hoogste scores: groen. Gelijkspel: oranje.
+  // De puntentoekenning blijft intern volgens de afgesproken regels.
+  let p1=0,p2=0;
+
+  for(let j=0;j<3;j++){
+    if(t1[j]>t2[j]) p1+=4;
+    else if(t2[j]>t1[j]) p2+=4;
+  }
+  if(s1>s2) p1+=4;
+  else if(s2>s1) p2+=4;
+
+  for(let i=0;i<5;i++){
+    for(let j=0;j<3;j++){
+      const e1=document.getElementById(`t1g${j+1}_${i}`);
+      const input2=document.getElementById(`t2_${i}_${j+1}`);
+      const e2=input2 ? input2.parentElement : null;
+
+      // Tijdens het opbouwen kan één van de velden nog ontbreken.
+      // Dan slaan we alleen de kleurmarkering over.
+      if(!e1 || !e2) continue;
+
+      e1.classList.remove("winner","tie");
+      e2.classList.remove("winner","tie");
+
+      if(a[i][j]>b[i][j]){
+        e1.classList.add("winner");
+        p1++;
+      } else if(b[i][j]>a[i][j]){
+        e2.classList.add("winner");
+        p2++;
+      } else {
+        // Gelijk individuele score: beide oranje.
+        e1.classList.add("tie");
+        e2.classList.add("tie");
+
+        // Het punt gaat naar het hoogste totaal van die game.
+        if(t1[j]>t2[j]) p1++;
+        else if(t2[j]>t1[j]) p2++;
+      }
+    }
+  }
+
+  // Punten worden niet meer onderaan weergegeven.
+  document.getElementById("p1").textContent=p1;
+  document.getElementById("p2").textContent=p2;
+  document.getElementById("details").style.display="none";
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+
+bouwTeam2();
+init();
+
+function applyTheme(){
+  const dark=localStorage.getItem("rollbowl-thema")==="dark";
+  document.body.classList.toggle("dark-mode",dark);
+  document.getElementById("themeToggle").textContent=dark?"☀️ Licht":"🌙 Donker";
+}
+function toggleTheme(){
+  const dark=document.body.classList.toggle("dark-mode");
+  localStorage.setItem("rollbowl-thema",dark?"dark":"light");
+  document.getElementById("themeToggle").textContent=dark?"☀️ Licht":"🌙 Donker";
+}
+applyTheme();
+</script>
+</body>
+</html>

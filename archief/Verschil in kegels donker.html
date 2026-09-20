@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Onze gespeelde matchen</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root { --bg:#f4f6f8; --card:#fff; --text:#222; --muted:#666; --border:#ddd; --green:#168a3b; --red:#d52b2b; --orange:#d97900; }
+* { box-sizing:border-box; }
+body { margin:0; padding:20px; background:var(--bg); color:var(--text); font-family:Arial,sans-serif; transition:.2s; }
+.container { max-width:850px; margin:auto; }
+h1 { text-align:center; margin:10px 0 4px; }
+.subtitle { text-align:center; color:var(--muted); margin-bottom:20px; }
+.theme-btn { position:fixed; top:14px; right:14px; border:1px solid var(--border); background:var(--card); color:var(--text); border-radius:20px; padding:8px 13px; cursor:pointer; font-weight:bold; box-shadow:0 2px 6px rgba(0,0,0,.12); }
+.datum { margin-top:22px; font-size:19px; font-weight:bold; padding:10px 12px; border-radius:9px; background:var(--card); border-left:5px solid #777; }
+.match { margin-top:9px; padding:13px 15px; background:var(--card); border-radius:9px; box-shadow:0 2px 6px rgba(0,0,0,.08); display:grid; grid-template-columns:1fr auto 1fr auto; align-items:center; gap:12px; }
+.team { font-weight:bold; }
+.team.right { text-align:right; }
+.score { text-align:center; font-size:18px; font-weight:bold; white-space:nowrap; }
+.diff { min-width:90px; text-align:right; font-size:19px; font-weight:800; }
+.win { color:var(--green); } .loss { color:var(--red); } .tie { color:var(--orange); }
+.kegels { grid-column:1 / -1; display:grid; grid-template-columns:1fr auto 1fr; color:var(--muted); font-size:14px; margin-top:-4px; }
+.kegels .right { text-align:right; }
+.loading,.error { text-align:center; padding:25px; } .error {color:var(--red);}
+@media(max-width:650px) { body{padding:10px;} .match{grid-template-columns:1fr auto auto;} .team.right{grid-column:1;grid-row:2;text-align:left;} .score{grid-column:2;grid-row:1 / span 2;} .diff{grid-column:3;grid-row:1 / span 2; min-width:70px;} .kegels{grid-column:1 / -1;grid-row:3;} }
+body.dark { --bg:#12161b; --card:#1c2229; --text:#f1f1f1; --muted:#aeb6bf; --border:#39414a; --green:#42d879; --red:#ff6262; --orange:#ffb347; }
+body.dark .theme-btn { box-shadow:none; }
+</style>
+</head>
+<body>
+<button class="theme-btn" id="themeBtn">🌙 Donker</button>
+<div class="container">
+<h1>🎳 Onze gespeelde matchen</h1>
+<div class="subtitle">Per speeldatum — kegelverschil RNB tegenover de tegenstander</div>
+<div id="lijst"><div class="loading">Gegevens laden...</div></div>
+</div>
+<script>
+const SUPABASE_URL = "https://wnsvbtskynkewxggmjem.supabase.co";
+const SUPABASE_KEY = "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+const RNB = "RNB Geenens Construct-Vapor";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const WEDSTRIJDEN = {
+
+"2026-09-04": [
+["BC Ajuin","DCG Yok Tha"],
+["BC Ledeganck 2 Burtline","LAT Esento"],
+["TSZ Bieshoop","FLP ALLCORE IT"],
+["RNB Geenens Construct-Vapor","FLP Argenta Hamme"],
+["Royal Ghent 3","Stene - Pleisterwerken Delrue JP"],
+["Oilsjt 2 Yok Tha","Wuitens"]
+],
+
+"2026-09-11": [
+["FLP ALLCORE IT","BC Ajuin"],
+["Stene - Pleisterwerken Delrue JP","FLP Argenta Hamme"],
+["LAT Esento","Royal Ghent 3"],
+["Wuitens","DCG Yok Tha"],
+["Oilsjt 2 Yok Tha","TSZ Bieshoop"],
+["RNB Geenens Construct-Vapor","BC Ledeganck 2 Burtline"]
+],
+
+"2026-09-18": [
+["Royal Ghent 3","FLP ALLCORE IT"],
+["FLP Argenta Hamme","Wuitens"],
+["DCG Yok Tha","LAT Esento"],
+["BC Ajuin","Stene - Pleisterwerken Delrue JP"],
+["TSZ Bieshoop","RNB Geenens Construct-Vapor"],
+["BC Ledeganck 2 Burtline","Oilsjt 2 Yok Tha"]
+],
+
+"2026-09-25": [
+["Royal Ghent 3","RNB Geenens Construct-Vapor"],
+["Wuitens","BC Ajuin"],
+["FLP Argenta Hamme","BC Ledeganck 2 Burtline"],
+["Oilsjt 2 Yok Tha","LAT Esento"],
+["Stene - Pleisterwerken Delrue JP","TSZ Bieshoop"],
+["FLP ALLCORE IT","DCG Yok Tha"]
+],
+
+"2026-10-02": [
+["BC Ledeganck 2 Burtline","FLP ALLCORE IT"],
+["LAT Esento","FLP Argenta Hamme"],
+["RNB Geenens Construct-Vapor","Stene - Pleisterwerken Delrue JP"],
+["DCG Yok Tha","Oilsjt 2 Yok Tha"],
+["BC Ajuin","Royal Ghent 3"],
+["TSZ Bieshoop","Wuitens"]
+],
+
+"2026-10-09": [
+["FLP Argenta Hamme","FLP ALLCORE IT"],
+["LAT Esento","Wuitens"],
+["Stene - Pleisterwerken Delrue JP","DCG Yok Tha"],
+["Oilsjt 2 Yok Tha","Royal Ghent 3"],
+["BC Ajuin","RNB Geenens Construct-Vapor"],
+["TSZ Bieshoop","BC Ledeganck 2 Burtline"]
+],
+
+"2026-10-16": [
+["FLP ALLCORE IT","LAT Esento"],
+["FLP Argenta Hamme","Oilsjt 2 Yok Tha"],
+["Wuitens","Stene - Pleisterwerken Delrue JP"],
+["BC Ledeganck 2 Burtline","BC Ajuin"],
+["DCG Yok Tha","RNB Geenens Construct-Vapor"],
+["Royal Ghent 3","TSZ Bieshoop"]
+],
+
+"2026-11-20": [
+["Stene - Pleisterwerken Delrue JP","FLP ALLCORE IT"],
+["Royal Ghent 3","FLP Argenta Hamme"],
+["RNB Geenens Construct-Vapor","LAT Esento"],
+["BC Ajuin","Oilsjt 2 Yok Tha"],
+["Wuitens","BC Ledeganck 2 Burtline"],
+["DCG Yok Tha","TSZ Bieshoop"]
+],
+
+"2026-11-27": [
+["FLP Argenta Hamme","DCG Yok Tha"],
+["LAT Esento","Stene - Pleisterwerken Delrue JP"],
+["BC Ledeganck 2 Burtline","Royal Ghent 3"],
+["Oilsjt 2 Yok Tha","RNB Geenens Construct-Vapor"],
+["TSZ Bieshoop","BC Ajuin"],
+["FLP ALLCORE IT","Wuitens"]
+],
+
+"2026-12-04": [
+["LAT Esento","BC Ajuin"],
+["Wuitens","Royal Ghent 3"],
+["FLP ALLCORE IT","RNB Geenens Construct-Vapor"],
+["FLP Argenta Hamme","TSZ Bieshoop"],
+["Stene - Pleisterwerken Delrue JP","Oilsjt 2 Yok Tha"],
+["DCG Yok Tha","BC Ledeganck 2 Burtline"]
+],
+
+"2026-12-11": [
+["Royal Ghent 3","DCG Yok Tha"],
+["BC Ajuin","FLP Argenta Hamme"],
+["BC Ledeganck 2 Burtline","Stene - Pleisterwerken Delrue JP"],
+["Oilsjt 2 Yok Tha","FLP ALLCORE IT"],
+["RNB Geenens Construct-Vapor","Wuitens"],
+["TSZ Bieshoop","LAT Esento"]
+],
+
+"2027-01-15": [
+["DCG Yok Tha","BC Ajuin"],
+["LAT Esento","BC Ledeganck 2 Burtline"],
+["FLP ALLCORE IT","TSZ Bieshoop"],
+["FLP Argenta Hamme","RNB Geenens Construct-Vapor"],
+["Stene - Pleisterwerken Delrue JP","Royal Ghent 3"],
+["Wuitens","Oilsjt 2 Yok Tha"]
+],
+
+"2027-01-22": [
+["BC Ajuin","FLP ALLCORE IT"],
+["FLP Argenta Hamme","Stene - Pleisterwerken Delrue JP"],
+["Royal Ghent 3","LAT Esento"],
+["DCG Yok Tha","Wuitens"],
+["TSZ Bieshoop","Oilsjt 2 Yok Tha"],
+["BC Ledeganck 2 Burtline","RNB Geenens Construct-Vapor"]
+],
+
+"2027-01-29": [
+["FLP ALLCORE IT","Royal Ghent 3"],
+["Wuitens","FLP Argenta Hamme"],
+["LAT Esento","DCG Yok Tha"],
+["Stene - Pleisterwerken Delrue JP","BC Ajuin"],
+["RNB Geenens Construct-Vapor","TSZ Bieshoop"],
+["Oilsjt 2 Yok Tha","BC Ledeganck 2 Burtline"]
+],
+
+"2027-02-19": [
+["RNB Geenens Construct-Vapor","Royal Ghent 3"],
+["BC Ajuin","Wuitens"],
+["BC Ledeganck 2 Burtline","FLP Argenta Hamme"],
+["LAT Esento","Oilsjt 2 Yok Tha"],
+["TSZ Bieshoop","Stene - Pleisterwerken Delrue JP"],
+["DCG Yok Tha","FLP ALLCORE IT"]
+],
+
+"2027-02-26": [
+["FLP ALLCORE IT","BC Ledeganck 2 Burtline"],
+["FLP Argenta Hamme","LAT Esento"],
+["Stene - Pleisterwerken Delrue JP","RNB Geenens Construct-Vapor"],
+["Oilsjt 2 Yok Tha","DCG Yok Tha"],
+["Royal Ghent 3","BC Ajuin"],
+["Wuitens","TSZ Bieshoop"]
+],
+
+"2027-03-19": [
+["FLP ALLCORE IT","FLP Argenta Hamme"],
+["Wuitens","LAT Esento"],
+["DCG Yok Tha","Stene - Pleisterwerken Delrue JP"],
+["Royal Ghent 3","Oilsjt 2 Yok Tha"],
+["RNB Geenens Construct-Vapor","BC Ajuin"],
+["BC Ledeganck 2 Burtline","TSZ Bieshoop"]
+],
+
+"2027-03-26": [
+["LAT Esento","FLP ALLCORE IT"],
+["Oilsjt 2 Yok Tha","FLP Argenta Hamme"],
+["Stene - Pleisterwerken Delrue JP","Wuitens"],
+["BC Ajuin","BC Ledeganck 2 Burtline"],
+["RNB Geenens Construct-Vapor","DCG Yok Tha"],
+["TSZ Bieshoop","Royal Ghent 3"]
+],
+
+"2027-04-16": [
+["FLP ALLCORE IT","Stene - Pleisterwerken Delrue JP"],
+["FLP Argenta Hamme","Royal Ghent 3"],
+["LAT Esento","RNB Geenens Construct-Vapor"],
+["Oilsjt 2 Yok Tha","BC Ajuin"],
+["BC Ledeganck 2 Burtline","Wuitens"],
+["TSZ Bieshoop","DCG Yok Tha"]
+],
+
+"2027-04-23": [
+["DCG Yok Tha","FLP Argenta Hamme"],
+["Stene - Pleisterwerken Delrue JP","LAT Esento"],
+["Royal Ghent 3","BC Ledeganck 2 Burtline"],
+["RNB Geenens Construct-Vapor","Oilsjt 2 Yok Tha"],
+["BC Ajuin","TSZ Bieshoop"],
+["Wuitens","FLP ALLCORE IT"]
+],
+
+"2027-05-07": [
+["BC Ajuin","LAT Esento"],
+["Royal Ghent 3","Wuitens"],
+["RNB Geenens Construct-Vapor","FLP ALLCORE IT"],
+["TSZ Bieshoop","FLP Argenta Hamme"],
+["Oilsjt 2 Yok Tha","Stene - Pleisterwerken Delrue JP"],
+["BC Ledeganck 2 Burtline","DCG Yok Tha"]
+],
+
+"2027-05-14": [
+["DCG Yok Tha","Royal Ghent 3"],
+["FLP Argenta Hamme","BC Ajuin"],
+["Stene - Pleisterwerken Delrue JP","BC Ledeganck 2 Burtline"],
+["FLP ALLCORE IT","Oilsjt 2 Yok Tha"],
+["Wuitens","RNB Geenens Construct-Vapor"],
+["LAT Esento","TSZ Bieshoop"]
+]
+
+};
+function datumNL(d) { return new Date(d+'T00:00:00').toLocaleDateString('nl-BE',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+async function laad() {
+ const {data,error}=await supabaseClient.from('interteam_scores').select('*').order('speeldatum',{ascending:true});
+ const el=document.getElementById('lijst');
+ if(error){el.innerHTML=`<div class="error">Fout bij het laden: ${error.message}</div>`;return;}
+ const scores=data||[];
+ const scoreMap=new Map(scores.map(r=>[`${r.speeldatum}|${r.ploeg}`,r]));
+ let out=''; let count=0;
+ for(const datum of Object.keys(WEDSTRIJDEN)) {
+   const matches=WEDSTRIJDEN[datum].filter(([t,u])=>t===RNB||u===RNB);
+   const played=matches.filter(([t,u])=>scoreMap.has(`${datum}|${t}`)&&scoreMap.has(`${datum}|${u}`));
+   if(!played.length) continue;
+   out+=`<div class="datum">Speeldatum: ${datumNL(datum)}</div>`;
+   for(const [thuis,uit] of played) {
+     const a=scoreMap.get(`${datum}|${thuis}`), b=scoreMap.get(`${datum}|${uit}`);
+     const rnbIsThuis=thuis===RNB;
+     const rnbK=Number(rnbIsThuis?a.kegels:b.kegels), tegenK=Number(rnbIsThuis?b.kegels:a.kegels);
+     const rnbP=Number(rnbIsThuis?a.punten:b.punten), tegenP=Number(rnbIsThuis?b.punten:a.punten);
+     const diff=rnbK-tegenK; const cls=diff>0?'win':diff<0?'loss':'tie'; const sign=diff>0?'+':'';
+     out+=`<div class="match"><div class="team">${thuis}</div><div class="score">${a.punten} - ${b.punten}</div><div class="team right">${uit}</div><div class="diff ${cls}">${sign}${diff} kegels</div><div class="kegels"><div>${a.kegels} kegels</div><div></div><div class="right">${b.kegels} kegels</div></div></div>`;
+     count++;
+   }
+ }
+ el.innerHTML=count?out:'<div class="loading">Nog geen gespeelde matchen gevonden.</div>';
+}
+const btn=document.getElementById('themeBtn');
+function thema(t){document.body.classList.toggle('dark',t==='dark');btn.textContent=t==='dark'?'☀️ Licht':'🌙 Donker';localStorage.setItem('rollbowl-thema',t);}
+thema(localStorage.getItem('rollbowl-thema')||'light'); btn.onclick=()=>thema(document.body.classList.contains('dark')?'light':'dark');
+laad();
+</script>
+</body></html>

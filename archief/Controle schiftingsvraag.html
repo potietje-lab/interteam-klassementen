@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roll & Bowl - Controle Schiftingsvragen</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#f4f7fb,#e9eef5);color:#1f2937}
+.container{width:100%;max-width:1100px;margin:25px auto;padding:15px}
+.card{background:#fff;border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.10);padding:25px;margin-bottom:20px}
+h1{text-align:center;margin:0 0 7px;font-size:30px}
+.subtitle{text-align:center;color:#667085;margin-bottom:22px}
+.info{background:#f5f7fa;border-radius:12px;padding:15px 18px;margin-bottom:20px;line-height:1.55}
+.status{text-align:center;padding:18px;color:#667085}
+.error{color:#dc2626;font-weight:bold}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:20px 0}
+.question{border-radius:14px;padding:20px;text-align:center;border:2px solid #e5e7eb}
+.question h2{margin:0 0 10px;font-size:20px}
+.actual{font-size:38px;font-weight:bold;margin:10px 0}
+.label{color:#667085;font-size:14px}
+.winner{font-weight:bold;margin-top:8px}
+.green{color:#15803d}
+.orange{color:#c2410c}
+table{width:100%;border-collapse:collapse}
+th{background:#1f2937;color:#fff;padding:11px;text-align:left}
+td{padding:10px;border-bottom:1px solid #e5e7eb}
+td.center,th.center{text-align:center}
+tr.bonus{background:#ecfdf5}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-weight:bold;font-size:13px}
+.badge.green{background:#dcfce7;color:#166534}
+.badge.gray{background:#f3f4f6;color:#4b5563}
+.number{font-weight:bold}
+.small{font-size:13px;color:#667085}
+.refresh{display:block;margin:0 auto 10px;padding:11px 20px;border:0;border-radius:9px;background:#1f2937;color:white;cursor:pointer;font-size:15px}
+.refresh:hover{opacity:.9}
+.note{background:#fff7ed;border-left:4px solid #f59e0b;padding:12px 15px;margin-top:18px}
+@media(max-width:700px){
+ .cards{grid-template-columns:1fr}
+ .card{padding:17px}
+ th,td{padding:8px 6px;font-size:13px}
+ .actual{font-size:31px}
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+<div class="card">
+<h1>🎯 Schiftingsvragen</h1>
+<div class="subtitle">Roll & Bowl 2026-2027 — controle en berekening bonuspunten</div>
+
+<div class="info">
+<b>De twee schiftingsvragen worden automatisch berekend.</b><br>
+De werkelijke waarden worden bepaald op basis van de <b>cumulatieve kegels van alle gespeelde speeldagen</b>.
+<br><br>
+• Grootste cumulatieve kegelverschil → <b>15 bonuspunten</b> voor de deelnemer(s) die het dichtst bij de werkelijke waarde zitten.<br>
+• Kleinste cumulatieve kegelverschil → <b>15 bonuspunten</b> voor de deelnemer(s) die het dichtst bij de werkelijke waarde zitten.<br>
+• Bij een gelijke kleinste afwijking krijgen alle betrokken deelnemers de volledige 15 bonuspunten.
+</div>
+
+<button class="refresh" onclick="laadData()">🔄 Gegevens vernieuwen</button>
+<div id="status" class="status">⏳ Gegevens laden...</div>
+
+<div id="resultaat" style="display:none">
+
+<div class="cards">
+  <div class="question">
+    <h2>📈 Grootste kegelverschil</h2>
+    <div class="label">Werkelijke waarde tot nu toe</div>
+    <div id="werkelijkGrootste" class="actual">-</div>
+    <div id="paarGrootste" class="small"></div>
+    <div id="winnaarGrootste" class="winner green"></div>
+  </div>
+
+  <div class="question">
+    <h2>📉 Kleinste kegelverschil</h2>
+    <div class="label">Werkelijke waarde tot nu toe</div>
+    <div id="werkelijkKleinste" class="actual">-</div>
+    <div id="paarKleinste" class="small"></div>
+    <div id="winnaarKleinste" class="winner green"></div>
+  </div>
+</div>
+
+<div class="card" style="box-shadow:none;border:1px solid #e5e7eb">
+<h2 style="margin-top:0">Controle per deelnemer</h2>
+<div class="small" style="margin-bottom:12px">
+De afwijking is het absolute verschil tussen de voorspelling en de werkelijke cumulatieve kegelverschilwaarde.
+</div>
+<div style="overflow-x:auto">
+<table>
+<thead>
+<tr>
+<th>Deelnemer</th>
+<th class="center">Voorspeld grootste</th>
+<th class="center">Afwijking</th>
+<th class="center">Bonus</th>
+<th class="center">Voorspeld kleinste</th>
+<th class="center">Afwijking</th>
+<th class="center">Bonus</th>
+<th class="center">Totaal bonus</th>
+</tr>
+</thead>
+<tbody id="body"></tbody>
+</table>
+</div>
+</div>
+
+<div class="note">
+<b>Belangrijk:</b> dit is een tussenstand zolang het seizoen nog bezig is.
+De werkelijke waarden veranderen automatisch wanneer nieuwe interteam-scores worden toegevoegd.
+De definitieve bonus wordt pas bepaald op basis van de uiteindelijke cumulatieve kegels van het volledige seizoen.
+</div>
+
+</div>
+</div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://wnsvbtskynkewxggmjem.supabase.co";
+const SUPABASE_KEY = "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function fmt(n){
+  return Number.isFinite(Number(n)) ? Number(n).toLocaleString("nl-BE") : "-";
+}
+
+function berekenKegelVerschillen(scores){
+  const perPloeg = {};
+
+  (scores || []).forEach(r=>{
+    const ploeg = String(r.ploeg || "").trim();
+    if(!ploeg) return;
+
+    if(!perPloeg[ploeg]) perPloeg[ploeg] = 0;
+    perPloeg[ploeg] += Number(r.kegels) || 0;
+  });
+
+  const ploegen = Object.entries(perPloeg)
+    .map(([ploeg,kegels])=>({ploeg,kegels}))
+    .filter(x=>Number.isFinite(x.kegels));
+
+  if(ploegen.length < 2){
+    return {
+      grootste:null,
+      kleinste:null,
+      grootstePaar:null,
+      kleinstePaar:null
+    };
+  }
+
+  let grootste = -Infinity;
+  let kleinste = Infinity;
+  let grootstePaar = null;
+  let kleinstePaar = null;
+
+  for(let i=0;i<ploegen.length;i++){
+    for(let j=i+1;j<ploegen.length;j++){
+      const verschil = Math.abs(ploegen[i].kegels - ploegen[j].kegels);
+
+      if(verschil > grootste){
+        grootste = verschil;
+        grootstePaar = [ploegen[i],ploegen[j]];
+      }
+
+      if(verschil < kleinste){
+        kleinste = verschil;
+        kleinstePaar = [ploegen[i],ploegen[j]];
+      }
+    }
+  }
+
+  return {
+    grootste,
+    kleinste,
+    grootstePaar,
+    kleinstePaar
+  };
+}
+
+function bonusWinnaars(deelnemers, veld, werkelijk){
+  const geldige = (deelnemers || [])
+    .map(d=>({
+      id:d.id,
+      naam:d.naam || "",
+      nickname:d.nickname || "",
+      waarde:Number(d[veld])
+    }))
+    .filter(x=>Number.isFinite(x.waarde) && Number.isFinite(werkelijk));
+
+  if(!geldige.length) return new Set();
+
+  const kleinsteAfwijking = Math.min(
+    ...geldige.map(x=>Math.abs(x.waarde - werkelijk))
+  );
+
+  return new Set(
+    geldige
+      .filter(x=>Math.abs(x.waarde - werkelijk) === kleinsteAfwijking)
+      .map(x=>x.id)
+  );
+}
+
+function afwijking(waarde, werkelijk){
+  if(!Number.isFinite(Number(waarde)) || !Number.isFinite(Number(werkelijk))) return null;
+  return Math.abs(Number(waarde)-Number(werkelijk));
+}
+
+function naamWeergave(d){
+  if(d.nickname && d.naam) return `${d.naam} (${d.nickname})`;
+  return d.naam || d.nickname || `Deelnemer #${d.id}`;
+}
+
+async function laadData(){
+  const status=document.getElementById("status");
+  const resultaat=document.getElementById("resultaat");
+
+  status.className="status";
+  status.textContent="⏳ Gegevens laden...";
+  resultaat.style.display="none";
+
+  try{
+    const [d,s]=await Promise.all([
+      db.from("pronostiek_deelnemers")
+        .select("id,naam,nickname,grootste_kegelverschil,kleinste_kegelverschil"),
+      db.from("interteam_scores")
+        .select("speeldatum,ploeg,kegels,punten")
+    ]);
+
+    if(d.error) throw new Error("Deelnemers: "+d.error.message);
+    if(s.error) throw new Error("Interteam scores: "+s.error.message);
+
+    const deelnemers=d.data || [];
+    const scores=s.data || [];
+
+    const resultaatKegels=berekenKegelVerschillen(scores);
+
+    if(resultaatKegels.grootste === null){
+      throw new Error("Er zijn nog onvoldoende teamgegevens om de schiftingsvragen te berekenen.");
+    }
+
+    document.getElementById("werkelijkGrootste").textContent=fmt(resultaatKegels.grootste);
+    document.getElementById("werkelijkKleinste").textContent=fmt(resultaatKegels.kleinste);
+
+    if(resultaatKegels.grootstePaar){
+      const [a,b]=resultaatKegels.grootstePaar;
+      document.getElementById("paarGrootste").textContent =
+        `${a.ploeg}: ${fmt(a.kegels)} · ${b.ploeg}: ${fmt(b.kegels)}`;
+    }
+
+    if(resultaatKegels.kleinstePaar){
+      const [a,b]=resultaatKegels.kleinstePaar;
+      document.getElementById("paarKleinste").textContent =
+        `${a.ploeg}: ${fmt(a.kegels)} · ${b.ploeg}: ${fmt(b.kegels)}`;
+    }
+
+    const winGrootste=bonusWinnaars(
+      deelnemers,
+      "grootste_kegelverschil",
+      resultaatKegels.grootste
+    );
+
+    const winKleinste=bonusWinnaars(
+      deelnemers,
+      "kleinste_kegelverschil",
+      resultaatKegels.kleinste
+    );
+
+    const lijstGrootste=deelnemers.filter(d=>winGrootste.has(d.id));
+    const lijstKleinste=deelnemers.filter(d=>winKleinste.has(d.id));
+
+    document.getElementById("winnaarGrootste").textContent =
+      lijstGrootste.length
+      ? `🏆 ${lijstGrootste.map(naamWeergave).join(" · ")} → +15 punten`
+      : "Nog geen winnaar";
+
+    document.getElementById("winnaarKleinste").textContent =
+      lijstKleinste.length
+      ? `🏆 ${lijstKleinste.map(naamWeergave).join(" · ")} → +15 punten`
+      : "Nog geen winnaar";
+
+    const rows=deelnemers.map(d=>{
+      const vg=Number(d.grootste_kegelverschil);
+      const vk=Number(d.kleinste_kegelverschil);
+
+      const ag=afwijking(vg,resultaatKegels.grootste);
+      const ak=afwijking(vk,resultaatKegels.kleinste);
+
+      const bg=winGrootste.has(d.id);
+      const bk=winKleinste.has(d.id);
+
+      return {
+        ...d,
+        vg, vk, ag, ak,
+        bg, bk,
+        totaal:(bg?15:0)+(bk?15:0)
+      };
+    }).sort((a,b)=>{
+      if(b.totaal!==a.totaal) return b.totaal-a.totaal;
+      return (a.ag??Infinity)+(a.ak??Infinity) - ((b.ag??Infinity)+(b.ak??Infinity));
+    });
+
+    document.getElementById("body").innerHTML=rows.map(d=>`
+      <tr class="${d.totaal>0 ? "bonus" : ""}">
+        <td><b>${naamWeergave(d)}</b></td>
+        <td class="center number">${fmt(d.vg)}</td>
+        <td class="center">${d.ag===null ? "-" : fmt(d.ag)}</td>
+        <td class="center">
+          ${d.bg ? '<span class="badge green">+15</span>' : '<span class="badge gray">0</span>'}
+        </td>
+        <td class="center number">${fmt(d.vk)}</td>
+        <td class="center">${d.ak===null ? "-" : fmt(d.ak)}</td>
+        <td class="center">
+          ${d.bk ? '<span class="badge green">+15</span>' : '<span class="badge gray">0</span>'}
+        </td>
+        <td class="center number"><b>${d.totaal}</b></td>
+      </tr>
+    `).join("");
+
+    status.textContent=`✅ ${deelnemers.length} deelnemers en ${scores.length} score-regels gecontroleerd.`;
+    status.style.color="#15803d";
+    resultaat.style.display="block";
+
+  }catch(error){
+    console.error(error);
+    status.className="status error";
+    status.textContent="❌ "+(error.message || "Er ging iets mis bij het laden.");
+  }
+}
+
+laadData();
+</script>
+</body>
+</html>

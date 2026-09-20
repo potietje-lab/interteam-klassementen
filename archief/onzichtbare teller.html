@@ -1,0 +1,75 @@
+```html
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Bezoekersteller</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+    body {
+        margin: 0;
+        background: transparent;
+        font-family: Arial, sans-serif;
+    }
+
+    /* Teller is niet zichtbaar */
+    .teller {
+        display: none;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="teller">
+    Bezoekersteller
+</div>
+
+<script>
+
+const SUPABASE_URL =
+    "https://wnsvbtskynkewxggmjem.supabase.co";
+
+const SUPABASE_KEY =
+    "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+
+const supabaseClient =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+async function registreerBezoek() {
+
+    const { data, error } =
+        await supabaseClient.rpc(
+            "registreer_bezoek"
+        );
+
+    if (error) {
+        console.error(
+            "Fout bij registreren bezoek:",
+            error
+        );
+        return;
+    }
+
+    console.log(
+        "Bezoek geregistreerd:",
+        data
+    );
+}
+
+
+registreerBezoek();
+
+</script>
+
+</body>
+</html>
+```

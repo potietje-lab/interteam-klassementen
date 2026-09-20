@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact - Roll & Bowl</title>
+
+<style>
+:root {
+    --bg:#f4f4f4;
+    --card:#fff;
+    --text:#222;
+    --input:#fff;
+    --border:#d0d0d0;
+    --button:#222;
+    --button-text:#fff;
+    --accent:#2196f3;
+}
+
+body.dark {
+    --bg:#121212;
+    --card:#1e1e1e;
+    --text:#f1f1f1;
+    --input:#2a2a2a;
+    --border:#555;
+    --button:#f1f1f1;
+    --button-text:#121212;
+    --accent:#64b5f6;
+}
+
+* {
+    box-sizing:border-box;
+}
+
+body {
+    margin:0;
+    font-family:Arial,Helvetica,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    transition:.3s;
+}
+
+.topbar {
+    display:flex;
+    justify-content:flex-end;
+    padding:15px 20px;
+}
+
+.theme-btn {
+    border:1px solid var(--border);
+    background:var(--card);
+    color:var(--text);
+    padding:9px 14px;
+    border-radius:20px;
+    cursor:pointer;
+    font-size:14px;
+}
+
+.container {
+    max-width:650px;
+    margin:20px auto 50px;
+    padding:0 20px;
+}
+
+.card {
+    background:var(--card);
+    border-radius:18px;
+    padding:30px;
+    box-shadow:0 5px 20px rgba(0,0,0,.10);
+}
+
+h1 {
+    text-align:center;
+    margin:0 0 10px;
+    font-size:30px;
+}
+
+.intro {
+    text-align:center;
+    margin-bottom:28px;
+    line-height:1.5;
+    opacity:.85;
+}
+
+label {
+    display:block;
+    margin-bottom:7px;
+    font-weight:bold;
+}
+
+.required {
+    color:#e53935;
+}
+
+input,
+textarea {
+    width:100%;
+    padding:13px;
+    margin-bottom:20px;
+    border:1px solid var(--border);
+    border-radius:9px;
+    background:var(--input);
+    color:var(--text);
+    font-size:16px;
+    font-family:inherit;
+}
+
+input:focus,
+textarea:focus {
+    outline:2px solid var(--accent);
+    border-color:var(--accent);
+}
+
+textarea {
+    min-height:170px;
+    resize:vertical;
+}
+
+.send-btn {
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:10px;
+    background:var(--button);
+    color:var(--button-text);
+    font-size:17px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+.send-btn:hover {
+    opacity:.85;
+}
+
+.success {
+    display:none;
+    margin-top:20px;
+    padding:15px;
+    border-radius:10px;
+    background:#dff3e4;
+    color:#176b2c;
+    text-align:center;
+    font-weight:bold;
+}
+
+.error {
+    display:none;
+    margin-top:20px;
+    padding:15px;
+    border-radius:10px;
+    background:#f8d7da;
+    color:#842029;
+    text-align:center;
+    font-weight:bold;
+}
+
+.privacy {
+    text-align:center;
+    font-size:12px;
+    opacity:.65;
+    margin-top:20px;
+}
+
+@media(max-width:600px) {
+    .container {
+        margin-top:5px;
+    }
+
+    .card {
+        padding:22px;
+    }
+
+    h1 {
+        font-size:26px;
+    }
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="topbar">
+    <button class="theme-btn" onclick="toggleTheme()" id="themeButton">
+        🌙 Donker
+    </button>
+</div>
+
+<div class="container">
+
+<div class="card">
+
+<h1>📧 Contact</h1>
+
+<div class="intro">
+Heb je een vraag, opmerking of suggestie voor mij?
+Vul hieronder je gegevens in en stuur mij een bericht.
+</div>
+
+<form
+    id="contactForm"
+    action="https://formspree.io/f/maeygewb"
+    method="POST"
+>
+
+<label for="voornaam">
+Voornaam <span class="required">*</span>
+</label>
+
+<input
+type="text"
+id="voornaam"
+name="voornaam"
+placeholder="Je voornaam"
+required
+
+>
+
+<label for="familienaam">
+Familienaam <span class="required">*</span>
+</label>
+
+<input
+type="text"
+id="familienaam"
+name="familienaam"
+placeholder="Je familienaam"
+required
+
+>
+
+<label for="email">
+E-mailadres <span class="required">*</span>
+</label>
+
+<input
+type="email"
+id="email"
+name="email"
+placeholder="[jouw@email.be](mailto:jouw@email.be)"
+required
+
+>
+
+<label for="bericht">
+Bericht <span class="required">*</span>
+</label>
+
+<textarea
+    id="bericht"
+    name="bericht"
+    placeholder="Typ hier je bericht..."
+    required
+></textarea>
+
+<input
+type="hidden"
+name="_subject"
+value="Nieuw contactbericht via Roll & Bowl"
+
+>
+
+<button type="submit" class="send-btn" id="sendButton">
+📤 Bericht versturen
+</button>
+
+</form>
+
+<div class="success" id="successMessage">
+✅ Bedankt! Je bericht is succesvol verzonden.
+</div>
+
+<div class="error" id="errorMessage">
+❌ Er ging iets mis bij het verzenden. Probeer het opnieuw.
+</div>
+
+<div class="privacy">
+* Alle velden zijn verplicht.
+</div>
+
+</div>
+</div>
+
+<script>
+
+function toggleTheme() {
+
+    document.body.classList.toggle("dark");
+
+    const button = document.getElementById("themeButton");
+
+    if (document.body.classList.contains("dark")) {
+        button.innerHTML = "☀️ Licht";
+        localStorage.setItem("rollbowlTheme","dark");
+    } else {
+        button.innerHTML = "🌙 Donker";
+        localStorage.setItem("rollbowlTheme","light");
+    }
+}
+
+function loadTheme() {
+
+    if (localStorage.getItem("rollbowlTheme") === "dark") {
+        document.body.classList.add("dark");
+        document.getElementById("themeButton").innerHTML = "☀️ Licht";
+    }
+}
+
+loadTheme();
+
+const form = document.getElementById("contactForm");
+const successMessage = document.getElementById("successMessage");
+const errorMessage = document.getElementById("errorMessage");
+const sendButton = document.getElementById("sendButton");
+
+form.addEventListener("submit", async function(event) {
+
+    event.preventDefault();
+
+    sendButton.disabled = true;
+    sendButton.innerHTML = "⏳ Versturen...";
+
+    successMessage.style.display = "none";
+    errorMessage.style.display = "none";
+
+    try {
+
+        const response = await fetch(form.action, {
+            method: "POST",
+            body: new FormData(form),
+            headers: {
+                "Accept": "application/json"
+            }
+        });
+
+        if (response.ok) {
+
+            form.style.display = "none";
+            successMessage.style.display = "block";
+
+        } else {
+
+            errorMessage.style.display = "block";
+            sendButton.disabled = false;
+            sendButton.innerHTML = "📤 Bericht versturen";
+        }
+
+    } catch (error) {
+
+        errorMessage.style.display = "block";
+        sendButton.disabled = false;
+        sendButton.innerHTML = "📤 Bericht versturen";
+    }
+
+});
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,463 @@
+```html
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Bowling update-taken</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #111;
+    color: #fff;
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    max-width: 950px;
+    margin: 0 auto;
+    padding: 25px 20px 40px;
+}
+
+h1 {
+    text-align: center;
+    margin: 0 0 8px;
+    font-size: 28px;
+}
+
+.subtitel {
+    text-align: center;
+    color: #999;
+    margin-bottom: 30px;
+}
+
+.taken {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.taak {
+    display: grid;
+    grid-template-columns: 45px 1fr 1fr 100px;
+    gap: 10px;
+    align-items: center;
+
+    background: #1d1d1d;
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 12px;
+}
+
+.nummer {
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    color: #aaa;
+}
+
+input {
+    width: 100%;
+    padding: 10px 12px;
+
+    background: #111;
+    color: white;
+
+    border: 1px solid #444;
+    border-radius: 7px;
+
+    font-size: 14px;
+}
+
+input:focus {
+    outline: none;
+    border-color: #777;
+}
+
+button {
+    padding: 10px 12px;
+
+    border: none;
+    border-radius: 7px;
+
+    background: #333;
+    color: white;
+
+    font-size: 14px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #444;
+}
+
+.open-knop {
+    background: #245c38;
+}
+
+.open-knop:hover {
+    background: #2e7548;
+}
+
+.bovenbalk {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.opslaan {
+    background: #245c38;
+}
+
+.wissen {
+    background: #7a2424;
+}
+
+.wissen:hover {
+    background: #9b2e2e;
+}
+
+.status {
+    text-align: center;
+    color: #aaa;
+    margin-top: 20px;
+    min-height: 20px;
+}
+
+.info {
+    background: #191919;
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 15px;
+    margin-top: 25px;
+    color: #999;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+@media (max-width: 700px) {
+
+    .taak {
+        grid-template-columns: 40px 1fr;
+    }
+
+    .taak input:nth-child(3) {
+        grid-column: 2;
+    }
+
+    .taak button {
+        grid-column: 2;
+    }
+
+}
+
+</style>
+</head>
+
+
+<body>
+
+<div class="container">
+
+    <h1>🎳 Bowling update-taken</h1>
+
+    <div class="subtitel">
+        Snelkoppelingen naar de pagina's die je regelmatig moet bijwerken
+    </div>
+
+
+    <div class="bovenbalk">
+
+        <button class="opslaan" onclick="opslaan()">
+            💾 Instellingen opslaan
+        </button>
+
+        <button class="wissen" onclick="allesWissen()">
+            🗑️ Alles wissen
+        </button>
+
+    </div>
+
+
+    <div class="taken" id="taken">
+    </div>
+
+
+    <div class="status" id="status"></div>
+
+
+    <div class="info">
+
+        <strong>Gebruik:</strong><br><br>
+
+        Vul per taak een titel en een HTML-bestandsnaam in.
+        Bijvoorbeeld:<br><br>
+
+        Titel: <strong>Klassement</strong><br>
+        HTML-bestand: <strong>rollbowl-klassement.html</strong><br><br>
+
+        Klik daarna op <strong>Openen</strong>.
+
+        <br><br>
+
+        De ingevoerde gegevens worden lokaal in je browser
+        bewaard.
+
+    </div>
+
+</div>
+
+
+<script>
+
+/* =========================================
+   10 TAKEN AANMAKEN
+   ========================================= */
+
+const aantalTaken = 10;
+
+const container =
+    document.getElementById("taken");
+
+
+for (let i = 1; i <= aantalTaken; i++) {
+
+    const taak =
+        document.createElement("div");
+
+    taak.className = "taak";
+
+    taak.innerHTML = `
+
+        <div class="nummer">
+            ${i}
+        </div>
+
+        <input
+            type="text"
+            id="titel${i}"
+            placeholder="Titel van taak ${i}"
+        >
+
+        <input
+            type="text"
+            id="bestand${i}"
+            placeholder="bijv. klassement.html"
+        >
+
+        <button
+            class="open-knop"
+            onclick="openBestand(${i})"
+        >
+            ▶ Openen
+        </button>
+
+    `;
+
+    container.appendChild(taak);
+}
+
+
+/* =========================================
+   OPSLAAN
+   ========================================= */
+
+function opslaan() {
+
+    const gegevens = [];
+
+    for (let i = 1; i <= aantalTaken; i++) {
+
+        const titel =
+            document.getElementById(
+                "titel" + i
+            ).value;
+
+        const bestand =
+            document.getElementById(
+                "bestand" + i
+            ).value;
+
+        gegevens.push({
+            titel: titel,
+            bestand: bestand
+        });
+    }
+
+
+    localStorage.setItem(
+        "bowlingUpdateTaken",
+        JSON.stringify(gegevens)
+    );
+
+
+    document.getElementById(
+        "status"
+    ).textContent =
+        "✅ Instellingen opgeslagen.";
+}
+
+
+/* =========================================
+   LADEN
+   ========================================= */
+
+function laden() {
+
+    const opgeslagen =
+        localStorage.getItem(
+            "bowlingUpdateTaken"
+        );
+
+    if (!opgeslagen) {
+        return;
+    }
+
+
+    try {
+
+        const gegevens =
+            JSON.parse(opgeslagen);
+
+
+        gegevens.forEach((taak, index) => {
+
+            const nummer =
+                index + 1;
+
+            const titel =
+                document.getElementById(
+                    "titel" + nummer
+                );
+
+            const bestand =
+                document.getElementById(
+                    "bestand" + nummer
+                );
+
+
+            if (titel) {
+                titel.value =
+                    taak.titel || "";
+            }
+
+            if (bestand) {
+                bestand.value =
+                    taak.bestand || "";
+            }
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Fout bij laden:",
+            error
+        );
+
+    }
+}
+
+
+/* =========================================
+   HTML-BESTAND OPENEN
+   ========================================= */
+
+function openBestand(nummer) {
+
+    const bestand =
+        document.getElementById(
+            "bestand" + nummer
+        ).value.trim();
+
+
+    if (!bestand) {
+
+        alert(
+            "Vul eerst de naam van het HTML-bestand in."
+        );
+
+        return;
+    }
+
+
+    /*
+       Alleen lokale bestandsnamen.
+       Bijvoorbeeld:
+       klassement.html
+       statistieken.html
+       interteam-invoer.html
+    */
+
+    const url =
+        bestand;
+
+
+    window.open(
+        url,
+        "_blank"
+    );
+}
+
+
+/* =========================================
+   ALLES WISSEN
+   ========================================= */
+
+function allesWissen() {
+
+    const bevestiging =
+        confirm(
+            "Weet je zeker dat je alle 10 taken wilt wissen?"
+        );
+
+
+    if (!bevestiging) {
+        return;
+    }
+
+
+    localStorage.removeItem(
+        "bowlingUpdateTaken"
+    );
+
+
+    for (let i = 1; i <= aantalTaken; i++) {
+
+        document.getElementById(
+            "titel" + i
+        ).value = "";
+
+        document.getElementById(
+            "bestand" + i
+        ).value = "";
+    }
+
+
+    document.getElementById(
+        "status"
+    ).textContent =
+        "🗑️ Alle taken gewist.";
+}
+
+
+/* =========================================
+   START
+   ========================================= */
+
+laden();
+
+</script>
+
+</body>
+</html>
+```

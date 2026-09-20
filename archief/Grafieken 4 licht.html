@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rollbowl - 3 grafieken</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 12px;
+    font-family: Arial, sans-serif;
+    background: transparent;
+    color: #222;
+}
+
+.grafieken {
+    width: 100%;
+    max-width: 1000px;
+    margin: auto;
+}
+
+.grafiek-blok {
+    background: white;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.10);
+}
+
+h2 {
+    text-align: center;
+    font-size: 20px;
+    margin: 0 0 12px;
+}
+
+.grafiek-container {
+    position: relative;
+    width: 100%;
+    height: 360px;
+}
+
+@media (max-width: 700px) {
+    body { padding: 6px; }
+    .grafiek-blok { padding: 10px; }
+    h2 { font-size: 18px; }
+    .grafiek-container { height: 300px; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="grafieken">
+
+    <!-- 1. GEMIDDELDE PER SPELER -->
+    <div class="grafiek-blok">
+        <h2>📊 Gemiddelde per speler</h2>
+
+        <div id="ploegGemiddeldeLabel" style="text-align:center;font-size:20px;font-weight:bold;margin:8px 0 18px;">
+            <span style="display:inline-block;width:22px;height:22px;border-radius:50%;background:#d94b67;vertical-align:-4px;margin-right:10px;"></span>
+            Ploeggemiddelde: ...
+        </div>
+
+        <div class="grafiek-container">
+            <canvas id="gemiddeldeGrafiek"></canvas>
+        </div>
+    </div>
+
+    <!-- 2. PLOEG -->
+    <div class="grafiek-blok">
+        <h2>📊 Evolutie ploeggemiddelde</h2>
+
+        <div class="grafiek-container">
+            <canvas id="ploegGrafiek"></canvas>
+        </div>
+    </div>
+
+    <!-- 3. RNB -->
+    <div class="grafiek-blok">
+        <h2>🏆 Evolutie RNB Geenens Construct-Vapor</h2>
+
+        <div class="grafiek-container">
+            <canvas id="rnbChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 4. RNB KEGELS -->
+    <div class="grafiek-blok">
+        <h2>🎳 Evolutie kegels RNB Geenens Construct-Vapor</h2>
+
+        <div class="grafiek-container">
+            <canvas id="rnbKegelsChart"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<script>
+const SUPABASE_URL = "https://wnsvbtskynkewxggmjem.supabase.co";
+const SUPABASE_KEY = "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const SPEELDAGEN = [
+    "2026-09-04","2026-09-11","2026-09-18","2026-09-25",
+    "2026-10-02","2026-10-09","2026-10-16","2026-11-20",
+    "2026-11-27","2026-12-04","2026-12-11","2027-01-15",
+    "2027-01-22","2027-01-29","2027-02-19","2027-02-26",
+    "2027-03-19","2027-03-26","2027-04-16","2027-04-23",
+    "2027-05-07","2027-05-14"
+];
+
+function datumNL(datum) {
+    const d = datum.split("-");
+    return d[2] + "/" + d[1];
+}
+
+/* =========================================================
+   1. GEMIDDELDE PER SPELER
+   ========================================================= */
+
+let gemiddeldeSpelerChart = null;
+
+async function laadGemiddeldePerSpeler() {
+
+    const { data, error } = await db
+        .from("bowling_scores")
+        .select("speler, game1, game2, game3")
+        .order("speler", { ascending: true });
+
+    if (error) {
+        console.error("Fout gemiddelde per speler:", error);
+        return;
+    }
+
+    const spelers = {};
+
+    (data || []).forEach(r => {
+
+        if (!r.speler) return;
+
+        if (!spelers[r.speler]) {
+            spelers[r.speler] = {
+                totaal: 0,
+                games: 0
+            };
+        }
+
+        [r.game1, r.game2, r.game3].forEach(game => {
+
+            if (
+                game !== null &&
+                game !== "" &&
+                game !== undefined &&
+                Number(game) > 0
+            ) {
+                spelers[r.speler].totaal += Number(game);
+                spelers[r.speler].games++;
+            }
+        });
+    });
+
+    const resultaten = Object.entries(spelers)
+        .filter(([naam, v]) => v.games > 0)
+        .map(([naam, v]) => ({
+            speler: naam,
+            gemiddelde: v.totaal / v.games
+        }))
+        .sort((a,b) => b.gemiddelde - a.gemiddelde);
+
+    if (!resultaten.length) return;
+
+    const totaalKegels = resultaten.reduce((som, r) => {
+
+        const speler = spelers[r.speler];
+        return som + speler.totaal;
+
+    }, 0);
+
+    const totaalGames = resultaten.reduce((som, r) => {
+
+        const speler = spelers[r.speler];
+        return som + speler.games;
+
+    }, 0);
+
+    const ploegGemiddelde = totaalKegels / totaalGames;
+
+    document.getElementById("ploegGemiddeldeLabel").innerHTML =
+        '<span style="display:inline-block;width:22px;height:22px;border-radius:50%;background:#d94b67;vertical-align:-4px;margin-right:10px;"></span>' +
+        'Ploeggemiddelde: ' + ploegGemiddelde.toFixed(2);
+
+    const labels = resultaten.map(r => r.speler);
+    const waarden = resultaten.map(r => Number(r.gemiddelde.toFixed(2)));
+
+    // Groen boven het ploeggemiddelde, oranje eronder.
+    const balkKleuren = resultaten.map(r =>
+        r.gemiddelde >= ploegGemiddelde ? "#4d8f62" : "#eda43a"
+    );
+
+    const canvas = document.getElementById("gemiddeldeGrafiek");
+
+    if (gemiddeldeSpelerChart) {
+        gemiddeldeSpelerChart.destroy();
+    }
+
+    gemiddeldeSpelerChart = new Chart(canvas, {
+        type: "bar",
+
+        data: {
+            labels: labels,
+
+            datasets: [
+                {
+                    label: "Gemiddelde",
+                    data: waarden,
+                    backgroundColor: balkKleuren,
+                    borderWidth: 0
+                },
+                {
+                    type: "line",
+                    label: "Ploeggemiddelde",
+                    data: labels.map(() => Number(ploegGemiddelde.toFixed(2))),
+                    borderColor: "#b93434",
+                    borderWidth: 2,
+                    borderDash: [8, 6],
+                    pointRadius: 0,
+                    pointHoverRadius: 0,
+                    fill: false
+                }
+            ]
+        },
+
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+
+            interaction: {
+                mode: "index",
+                intersect: false
+            },
+
+            plugins: {
+                legend: {
+                    display: true,
+                    position: "top"
+                },
+
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ": " +
+                                Number(context.raw).toFixed(2);
+                        }
+                    }
+                }
+            },
+
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    title: {
+                        display: true,
+                        text: "Gemiddelde pins"
+                    }
+                },
+
+                x: {
+                    title: {
+                        display: true,
+                        text: "Speler"
+                    }
+                }
+            }
+        },
+
+        plugins: [{
+            id: "waardenBovenBalken",
+
+            afterDatasetsDraw: function(chart) {
+
+                const ctx = chart.ctx;
+                const meta = chart.getDatasetMeta(0);
+
+                ctx.save();
+                ctx.font = "bold 13px Arial";
+                ctx.textAlign = "center";
+                ctx.fillStyle = "#555";
+
+                meta.data.forEach((bar, index) => {
+                    const value = waarden[index];
+                    ctx.fillText(value.toFixed(2), bar.x, bar.y - 8);
+                });
+
+                ctx.restore();
+            }
+        }]
+    });
+}
+
+/* =========================================================
+   2. PLOEGGEMIDDELDE
+   Exacte berekening uit de oorspronkelijke grafiek:
+   totaal aantal werkelijk ingevulde games per speeldag.
+   ========================================================= */
+
+async function laadPloegGrafiek() {
+
+    const { data, error } = await db
+        .from("bowling_scores")
+        .select("speeldatum, speler, game1, game2, game3, totaal")
+        .order("speeldatum", { ascending: true });
+
+    if (error) {
+        console.error("Fout ploegscores:", error);
+        return;
+    }
+
+    const resultaten = [];
+
+    SPEELDAGEN.forEach(datum => {
+
+        const scoresVanDag = (data || []).filter(
+            r => r.speeldatum === datum
+        );
+
+        if (!scoresVanDag.length) return;
+
+        let totaalKegels = 0;
+        let aantalGames = 0;
+
+        scoresVanDag.forEach(score => {
+
+            const games = [score.game1, score.game2, score.game3];
+
+            games.forEach(game => {
+
+                if (
+                    game !== null &&
+                    game !== "" &&
+                    game !== undefined
+                ) {
+                    totaalKegels += Number(game) || 0;
+                    aantalGames++;
+                }
+            });
+        });
+
+        if (!aantalGames) return;
+
+        resultaten.push({
+            datum: datum,
+            totaal: totaalKegels,
+            games: aantalGames,
+            gemiddelde: totaalKegels / aantalGames
+        });
+    });
+
+    const labels = resultaten.map(r => datumNL(r.datum));
+
+    const dagGemiddelden = resultaten.map(r =>
+        Number(r.gemiddelde.toFixed(1))
+    );
+
+    let totaalAlleGames = 0;
+    let aantalAlleGames = 0;
+
+    const cumulatieveGemiddelden = [];
+
+    resultaten.forEach(r => {
+
+        totaalAlleGames += r.totaal;
+        aantalAlleGames += r.games;
+
+        cumulatieveGemiddelden.push(
+            Number((totaalAlleGames / aantalAlleGames).toFixed(1))
+        );
+    });
+
+    const canvas = document.getElementById("ploegGrafiek");
+
+    new Chart(canvas, {
+        type: "line",
+
+        data: {
+            labels: labels,
+
+            datasets: [
+                {
+                    label: "Gemiddelde per speeldag",
+                    data: dagGemiddelden,
+                    tension: 0.25,
+                    borderWidth: 3,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                },
+                {
+                    label: "Cumulatief ploeggemiddelde",
+                    data: cumulatieveGemiddelden,
+                    tension: 0,
+                    borderWidth: 3,
+                    borderDash: [8, 6],
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }
+            ]
+        },
+
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+
+            interaction: {
+                mode: "index",
+                intersect: false
+            },
+
+            plugins: {
+                legend: {
+                    display: true,
+                    position: "top"
+                },
+
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label +
+                                ": " +
+                                context.parsed.y.toFixed(1);
+                        }
+                    }
+                }
+            },
+
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    title: {
+                        display: true,
+                        text: "Gemiddelde kegels"
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value.toFixed(0);
+                        }
+                    }
+                },
+
+                x: {
+                    title: {
+                        display: true,
+                        text: "Speeldatum"
+                    }
+                }
+            }
+        }
+    });
+}
+
+/* =========================================================
+   3. RNB GRAFIEK
+   ========================================================= */
+
+let rnbChartObject = null;
+
+async function laadRNBGrafiek() {
+
+    const { data, error } = await db
+        .from("interteam_scores")
+        .select("speeldatum, ploeg, kegels, punten")
+        .order("speeldatum", { ascending: true });
+
+    if (error) {
+        console.error("Fout interteam scores:", error);
+        return;
+    }
+
+    const RNB = "RNB Geenens Construct-Vapor";
+
+    const gegevens = (data || [])
+        .filter(score =>
+            String(score.ploeg || "")
+                .replace(/\s+/g, " ")
+                .trim()
+                .toLowerCase() === RNB.toLowerCase()
+        )
+        .sort((a,b) =>
+            a.speeldatum.localeCompare(b.speeldatum)
+        );
+
+    const labels = gegevens.map(score =>
+        datumNL(score.speeldatum)
+    );
+
+    const punten = gegevens.map(score =>
+        Number(score.punten)
+    );
+
+    const canvas = document.getElementById("rnbChart");
+
+    rnbChartObject = new Chart(canvas, {
+        type: "line",
+
+        data: {
+            labels: labels,
+
+            datasets: [{
+                label: "Punten",
+                data: punten,
+                borderWidth: 3,
+                pointRadius: 6,
+                pointHoverRadius: 8,
+                tension: 0.2,
+                fill: false
+            }]
+        },
+
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    suggestedMax: 31,
+                    title: {
+                        display: true,
+                        text: "Punten"
+                    }
+                },
+
+                x: {
+                    title: {
+                        display: true,
+                        text: "Speeldatum"
+                    }
+                }
+            },
+
+            plugins: {
+                legend: {
+                    display: true
+                },
+
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return "Punten: " + context.raw;
+                        }
+                    }
+                }
+            }
+        },
+
+        plugins: [{
+            id: "puntenOpGrafiek",
+
+            afterDatasetsDraw: function(chart) {
+
+                const ctx = chart.ctx;
+                const dataset = chart.getDatasetMeta(0);
+
+                dataset.data.forEach((point, index) => {
+
+                    const value = punten[index];
+
+                    ctx.save();
+                    ctx.font = "bold 13px Arial";
+                    ctx.textAlign = "center";
+                    ctx.fillText(value, point.x, point.y - 12);
+                    ctx.restore();
+                });
+            }
+        }]
+    });
+}
+
+/* =========================================================
+   4. EVOLUTIE KEGELS RNB
+   ========================================================= */
+
+async function laadRNBKegelsGrafiek() {
+
+    const { data, error } = await db
+        .from("interteam_scores")
+        .select("speeldatum, ploeg, kegels")
+        .order("speeldatum", { ascending: true });
+
+    if (error) {
+        console.error("Fout RNB kegels:", error);
+        return;
+    }
+
+    const RNB = "RNB Geenens Construct-Vapor";
+
+    const gegevens = (data || [])
+        .filter(score =>
+            String(score.ploeg || "")
+                .replace(/\s+/g, " ")
+                .trim()
+                .toLowerCase() === RNB.toLowerCase()
+        )
+        .sort((a,b) =>
+            a.speeldatum.localeCompare(b.speeldatum)
+        );
+
+    const labels = gegevens.map(score =>
+        datumNL(score.speeldatum)
+    );
+
+    const kegels = gegevens.map(score =>
+        Number(score.kegels) || 0
+    );
+
+    // Gemiddelde van de kegels over de gespeelde speeldagen.
+    const gemiddeldeKegels = kegels.length
+        ? kegels.reduce((som, waarde) => som + waarde, 0) / kegels.length
+        : 0;
+
+    const gemiddeldeAfgerond = Number(gemiddeldeKegels.toFixed(1));
+
+    const canvas = document.getElementById("rnbKegelsChart");
+
+    new Chart(canvas, {
+        type: "line",
+
+        data: {
+            labels: labels,
+
+            datasets: [
+                {
+                    label: "Kegels",
+                    data: kegels,
+                    borderWidth: 3,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    tension: 0.2,
+                    fill: false
+                },
+
+            ]
+        },
+
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    title: {
+                        display: true,
+                        text: "Kegels"
+                    }
+                },
+
+                x: {
+                    title: {
+                        display: true,
+                        text: "Speeldatum"
+                    }
+                }
+            },
+
+            plugins: {
+                legend: {
+                    display: true
+                },
+
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ": " +
+                                Number(context.raw).toLocaleString("nl-BE");
+                        },
+
+                        afterBody: function(tooltipItems) {
+                            if (!tooltipItems.length) return "";
+
+                            const kegelsVanSpeeldag =
+                                Number(tooltipItems[0].raw) || 0;
+
+                            const gemiddelde = kegelsVanSpeeldag / 15;
+
+                            return "Gemiddelde: " +
+                                gemiddelde.toFixed(1);
+                        }
+                    }
+                }
+            }
+        },
+
+        plugins: [{
+            id: "kegelsEnGemiddeldeOpGrafiek",
+
+            afterDatasetsDraw: function(chart) {
+
+                const ctx = chart.ctx;
+
+                // Waarden boven de kegels.
+                const dataset = chart.getDatasetMeta(0);
+
+                dataset.data.forEach((point, index) => {
+
+                    const value = kegels[index];
+
+                    ctx.save();
+                    ctx.font = "bold 13px Arial";
+                    ctx.textAlign = "center";
+                    ctx.fillStyle = "#555";
+                    ctx.fillText(
+                        value.toLocaleString("nl-BE"),
+                        point.x,
+                        point.y - 12
+                    );
+                    ctx.restore();
+                });
+
+                // Het gemiddelde per speeldag is kegels / 15
+                // en wordt in de tooltip getoond.
+
+            }
+        }]
+    });
+}
+
+/* =========================================================
+   START
+   ========================================================= */
+
+laadGemiddeldePerSpeler();
+laadPloegGrafiek();
+laadRNBGrafiek();
+laadRNBKegelsGrafiek();
+
+</script>
+
+</body>
+</html>

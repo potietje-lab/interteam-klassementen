@@ -1,0 +1,289 @@
+<div style="
+  font-family: Arial, sans-serif;
+  text-align: center;
+  padding: 20px;
+  background: #111;
+  color: white;
+  border-radius: 15px;
+">
+
+  <div style="
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 8px;
+  ">
+    🎳 Nog eventjes wachten !
+  </div>
+
+  <div id="nextMatch" style="
+    font-size: 16px;
+    margin-bottom: 25px;
+    color: #ddd;
+  ">
+    Volgende speeldag: ...
+  </div>
+
+  <div id="countdown" style="
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+    flex-wrap: wrap;
+  ">
+
+    <!-- DAGEN -->
+    <div style="text-align:center;">
+      <div style="
+        width:100px;
+        height:100px;
+        background:radial-gradient(circle at 30% 25%, #ff6666, #d00000 55%, #700000);
+        border-radius:50%;
+        position:relative;
+        box-shadow:0 5px 12px rgba(0,0,0,0.7);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+      ">
+        <div style="
+          position:absolute;
+          top:18px;
+          right:24px;
+          width:10px;
+          height:10px;
+          background:#300000;
+          border-radius:50%;
+          box-shadow:15px 4px 0 #300000, 7px 15px 0 #300000;
+        "></div>
+
+        <div id="days" style="
+          font-size:28px;
+          font-weight:bold;
+          color:white;
+          z-index:2;
+          text-shadow:2px 2px 4px #000;
+        ">0</div>
+      </div>
+
+      <div style="margin-top:10px;font-size:12px;font-weight:bold;">
+        DAGEN
+      </div>
+    </div>
+
+
+    <!-- UREN -->
+    <div style="text-align:center;">
+      <div style="
+        width:100px;
+        height:100px;
+        background:radial-gradient(circle at 30% 25%, #66aaff, #0066cc 55%, #003366);
+        border-radius:50%;
+        position:relative;
+        box-shadow:0 5px 12px rgba(0,0,0,0.7);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+      ">
+        <div style="
+          position:absolute;
+          top:18px;
+          right:24px;
+          width:10px;
+          height:10px;
+          background:#001a33;
+          border-radius:50%;
+          box-shadow:15px 4px 0 #001a33, 7px 15px 0 #001a33;
+        "></div>
+
+        <div id="hours" style="
+          font-size:28px;
+          font-weight:bold;
+          color:white;
+          z-index:2;
+          text-shadow:2px 2px 4px #000;
+        ">0</div>
+      </div>
+
+      <div style="margin-top:10px;font-size:12px;font-weight:bold;">
+        UREN
+      </div>
+    </div>
+
+
+    <!-- MINUTEN -->
+    <div style="text-align:center;">
+      <div style="
+        width:100px;
+        height:100px;
+        background:radial-gradient(circle at 30% 25%, #fff45c, #f0c800 55%, #9b7d00);
+        border-radius:50%;
+        position:relative;
+        box-shadow:0 5px 12px rgba(0,0,0,0.7);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+      ">
+        <div style="
+          position:absolute;
+          top:18px;
+          right:24px;
+          width:10px;
+          height:10px;
+          background:#5c4b00;
+          border-radius:50%;
+          box-shadow:15px 4px 0 #5c4b00, 7px 15px 0 #5c4b00;
+        "></div>
+
+        <div id="minutes" style="
+          font-size:28px;
+          font-weight:bold;
+          color:#222;
+          z-index:2;
+          text-shadow:1px 1px 2px #fff;
+        ">0</div>
+      </div>
+
+      <div style="margin-top:10px;font-size:12px;font-weight:bold;">
+        MINUTEN
+      </div>
+    </div>
+
+
+    <!-- SECONDEN -->
+    <div style="text-align:center;">
+      <div style="
+        width:100px;
+        height:100px;
+        background:radial-gradient(circle at 30% 25%, #66e066, #00a000 55%, #005500);
+        border-radius:50%;
+        position:relative;
+        box-shadow:0 5px 12px rgba(0,0,0,0.7);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+      ">
+        <div style="
+          position:absolute;
+          top:18px;
+          right:24px;
+          width:10px;
+          height:10px;
+          background:#003300;
+          border-radius:50%;
+          box-shadow:15px 4px 0 #003300, 7px 15px 0 #003300;
+        "></div>
+
+        <div id="seconds" style="
+          font-size:28px;
+          font-weight:bold;
+          color:white;
+          z-index:2;
+          text-shadow:2px 2px 4px #000;
+        ">0</div>
+      </div>
+
+      <div style="margin-top:10px;font-size:12px;font-weight:bold;">
+        SECONDEN
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+
+/* SPEELDATUMS */
+const matchDates = [
+  "2026-09-04T20:00:00",
+  "2026-09-11T20:00:00",
+  "2026-09-18T20:00:00",
+  "2026-09-25T20:00:00",
+  "2026-10-02T20:00:00",
+  "2026-10-09T20:00:00",
+  "2026-10-16T20:00:00",
+  "2026-11-20T20:00:00",
+  "2026-11-27T20:00:00",
+  "2026-12-04T20:00:00",
+  "2026-12-11T20:00:00",
+  "2027-01-15T20:00:00",
+  "2027-01-22T20:00:00",
+  "2027-01-29T20:00:00",
+  "2027-02-19T20:00:00",
+  "2027-02-26T20:00:00",
+  "2027-03-19T20:00:00",
+  "2027-03-26T20:00:00",
+  "2027-04-16T20:00:00",
+  "2027-04-23T20:00:00",
+  "2027-05-07T20:00:00",
+  "2027-05-14T20:00:00"
+];
+
+function getNextMatch() {
+  const now = new Date();
+
+  for (let i = 0; i < matchDates.length; i++) {
+    const matchDate = new Date(matchDates[i]);
+
+    if (matchDate > now) {
+      return matchDate;
+    }
+  }
+
+  return null;
+}
+
+function formatDate(date) {
+  return date.toLocaleDateString("nl-BE", {
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  });
+}
+
+function updateCountdown() {
+
+  const now = new Date();
+  const targetDate = getNextMatch();
+
+  if (!targetDate) {
+
+    document.getElementById("countdown").innerHTML =
+      "<div style='font-size:24px;font-weight:bold;'>🎳 HET SEIZOEN IS AFGELOPEN!</div>";
+
+    document.getElementById("nextMatch").innerHTML = "";
+
+    return;
+  }
+
+  document.getElementById("nextMatch").innerHTML =
+    "Volgende speeldag: <strong>" +
+    formatDate(targetDate) +
+    "</strong>";
+
+  const difference = targetDate - now;
+
+  const days = Math.floor(
+    difference / (1000 * 60 * 60 * 24)
+  );
+
+  const hours = Math.floor(
+    (difference / (1000 * 60 * 60)) % 24
+  );
+
+  const minutes = Math.floor(
+    (difference / (1000 * 60)) % 60
+  );
+
+  const seconds = Math.floor(
+    (difference / 1000) % 60
+  );
+
+  document.getElementById("days").innerHTML = days;
+  document.getElementById("hours").innerHTML = hours;
+  document.getElementById("minutes").innerHTML = minutes;
+  document.getElementById("seconds").innerHTML = seconds;
+}
+
+updateCountdown();
+
+setInterval(updateCountdown, 1000);
+
+</script>

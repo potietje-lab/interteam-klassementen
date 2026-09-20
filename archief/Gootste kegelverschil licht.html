@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grootste verschil in kegels per speeldatum</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#1f2937}.container{width:100%;max-width:1100px;margin:25px auto;padding:20px}.card{background:#fff;border-radius:16px;padding:24px;box-shadow:0 4px 16px rgba(0,0,0,.08)}h1{text-align:center;margin:0 0 8px;font-size:28px}.subtitle{text-align:center;color:#667085;margin-bottom:25px}#status{text-align:center;padding:10px;margin-bottom:15px;border-radius:8px;background:#eef2ff}.chart-wrap{position:relative;height:520px;width:100%}.info{margin-top:20px;padding:15px;background:#f8fafc;border-radius:10px;text-align:center;font-size:16px}.table-wrap{margin-top:25px;overflow-x:auto}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:center}th{background:#f1f5f9}td:nth-child(2),td:nth-child(3){text-align:left}.biggest{font-weight:bold}@media(max-width:700px){.container{padding:10px;margin:10px auto}.card{padding:15px}h1{font-size:22px}.chart-wrap{height:400px}th,td{padding:7px 5px;font-size:13px}}
+</style></head>
+<body><div class="container"><div class="card">
+<h1>🎳 Grootste verschil in kegels</h1>
+<div class="subtitle">Verschil tussen de ploeg met de meeste en de minste kegels per speeldatum</div>
+<div id="status">⏳ Gegevens worden geladen...</div>
+<div class="chart-wrap"><canvas id="verschilChart"></canvas></div>
+<div class="info" id="info">De grafiek toont automatisch de gespeelde speeldagen.</div>
+<div class="table-wrap"><table><thead><tr><th>Speeldatum</th><th>Meeste kegels</th><th>Minste kegels</th><th>Verschil</th></tr></thead><tbody id="tabelBody"></tbody></table></div>
+</div></div>
+<script>
+const SUPABASE_URL="https://wnsvbtskynkewxggmjem.supabase.co";
+const SUPABASE_KEY="sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);let chart=null;
+function datumNL(d){return new Date(d+"T00:00:00").toLocaleDateString("nl-BE",{day:"2-digit",month:"2-digit",year:"numeric"})}
+async function laadGegevens(){const status=document.getElementById("status");try{const{data,error}=await supabaseClient.from("interteam_scores").select("speeldatum, ploeg, kegels").order("speeldatum",{ascending:true});if(error)throw error;if(!data||!data.length){status.textContent="ℹ️ Er zijn nog geen kegels ingevoerd.";return}const perDatum={};data.forEach(r=>{const k=Number(r.kegels);if(!r.speeldatum||!Number.isFinite(k))return;(perDatum[r.speeldatum]??=[]).push({ploeg:r.ploeg,kegels:k})});const resultaten=Object.keys(perDatum).sort().map(d=>{const p=perDatum[d].sort((a,b)=>b.kegels-a.kegels);if(p.length<2)return null;const hi=p[0],lo=p[p.length-1];return{datum:d,hoogstePloeg:hi.ploeg,hoogsteKegels:hi.kegels,laagstePloeg:lo.ploeg,laagsteKegels:lo.kegels,verschil:hi.kegels-lo.kegels}}).filter(Boolean);if(!resultaten.length){status.textContent="ℹ️ Nog onvoldoende gegevens om verschillen te berekenen.";return}status.textContent="✅ "+resultaten.length+" speeldatum(s) geladen.";tekenGrafiek(resultaten);toonTabel(resultaten);toonGrootste(resultaten)}catch(e){console.error(e);status.textContent="❌ Fout bij laden: "+(e.message||e)}}
+function tekenGrafiek(r){const ctx=document.getElementById("verschilChart");if(chart)chart.destroy();chart=new Chart(ctx,{type:"line",data:{labels:r.map(x=>datumNL(x.datum)),datasets:[{label:"Grootste verschil in kegels",data:r.map(x=>x.verschil),tension:.25,fill:false,pointRadius:5,pointHoverRadius:8}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{tooltip:{callbacks:{title:i=>datumNL(r[i[0].dataIndex].datum),label:c=>" Verschil: "+c.parsed.y+" kegels",afterLabel:c=>{const x=r[c.dataIndex];return["Meeste: "+x.hoogstePloeg+" ("+x.hoogsteKegels+")","Minste: "+x.laagstePloeg+" ("+x.laagsteKegels+")"]}}}},scales:{y:{beginAtZero:true,title:{display:true,text:"Verschil in kegels"}},x:{title:{display:true,text:"Speeldatum"}}}}})}
+function toonTabel(r){document.getElementById("tabelBody").innerHTML=r.map(x=>`<tr><td>${datumNL(x.datum)}</td><td>${escapeHtml(x.hoogstePloeg)} — ${x.hoogsteKegels}</td><td>${escapeHtml(x.laagstePloeg)} — ${x.laagsteKegels}</td><td class="biggest">${x.verschil}</td></tr>`).join("")}
+function toonGrootste(r){const x=[...r].sort((a,b)=>b.verschil-a.verschil)[0];document.getElementById("info").innerHTML="🏆 <b>Grootste verschil tot nu toe:</b> "+x.verschil+" kegels — "+datumNL(x.datum)+"<br>"+escapeHtml(x.hoogstePloeg)+" ("+x.hoogsteKegels+") tegenover "+escapeHtml(x.laagstePloeg)+" ("+x.laagsteKegels+")"}
+function escapeHtml(t){const d=document.createElement("div");d.textContent=t??"";return d.innerHTML}laadGegevens();
+</script></body></html>

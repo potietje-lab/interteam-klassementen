@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roll & Bowl - Beheer Pronostiek</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#f4f7fb,#e9eef5);color:#1f2937}
+.container{width:100%;max-width:1200px;margin:25px auto;padding:15px}
+.card{background:#fff;border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.10);padding:25px}
+h1{text-align:center;margin:0 0 8px;font-size:30px}
+.subtitle{text-align:center;color:#667085;margin-bottom:25px}
+.status{padding:12px;border-radius:10px;text-align:center;margin-bottom:18px;font-weight:bold}
+.loading{background:#eef2ff;color:#3730a3}
+.error{background:#fee2e2;color:#b91c1c}
+.ok{background:#dcfce7;color:#166534}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+button{border:0;border-radius:10px;padding:11px 16px;font-size:15px;font-weight:bold;cursor:pointer;background:#1f2937;color:white}
+button:hover{opacity:.9}
+.search{flex:1;min-width:220px;padding:11px;border:1px solid #cbd5e1;border-radius:10px;font-size:15px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:850px}
+th,td{padding:11px 9px;border-bottom:1px solid #e5e7eb;text-align:left}
+th{background:#f3f4f6;font-size:14px}
+tr:hover{background:#f8fafc}
+.num{text-align:center}
+.small{color:#667085;font-size:13px}
+.details{background:#f8fafc;padding:14px;border-radius:12px;margin-top:8px}
+.details table{min-width:0}
+.details th,.details td{padding:7px}
+.hidden{display:none}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#e5e7eb;font-size:12px;font-weight:bold}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="card">
+<h1>🔐 Roll & Bowl - Beheer Pronostiek</h1>
+<div class="subtitle">Overzicht van alle ingediende pronostieken</div>
+
+<div id="status" class="status loading">⏳ Gegevens laden...</div>
+
+<div class="controls">
+<input id="search" class="search" type="text" placeholder="🔎 Zoek op naam of nickname...">
+<button onclick="laadGegevens()">🔄 Vernieuwen</button>
+</div>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Naam</th>
+<th>Nickname</th>
+<th class="num">Grootste<br>verschil</th>
+<th class="num">Kleinste<br>verschil</th>
+<th class="num">Aantal</th>
+<th>Actie</th>
+</tr>
+</thead>
+<tbody id="deelnemersTabel"></tbody>
+</table>
+</div>
+</div>
+</div>
+
+<script>
+const SUPABASE_URL="https://wnsvbtskynkewxggmjem.supabase.co";
+const SUPABASE_KEY="sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let deelnemers=[];
+let voorspellingen=[];
+
+function status(tekst,klasse){
+  const el=document.getElementById("status");
+  el.className="status "+klasse;
+  el.textContent=tekst;
+}
+
+async function laadGegevens(){
+  status("⏳ Gegevens laden...","loading");
+
+  try{
+    const [d,p]=await Promise.all([
+      supabaseClient
+        .from("pronostiek_deelnemers")
+        .select("id,naam,nickname,grootste_kegelverschil,kleinste_kegelverschil")
+        .order("naam"),
+      supabaseClient
+        .from("pronostiek_voorspellingen")
+        .select("id,deelnemer_id,ploeg,voorspelde_plaats")
+        .order("voorspelde_plaats")
+    ]);
+
+    if(d.error) throw d.error;
+    if(p.error) throw p.error;
+
+    deelnemers=d.data||[];
+    voorspellingen=p.data||[];
+
+    toonTabel();
+    status("✅ "+deelnemers.length+" deelnemer(s) geladen.","ok");
+
+  }catch(error){
+    console.error(error);
+    status("❌ Fout bij laden: "+(error.message||error),"error");
+  }
+}
+
+function toonTabel(){
+  const tbody=document.getElementById("deelnemersTabel");
+  const zoek=document.getElementById("search").value.trim().toLowerCase();
+  tbody.innerHTML="";
+
+  const gefilterd=deelnemers.filter(d=>
+    (d.naam||"").toLowerCase().includes(zoek) ||
+    (d.nickname||"").toLowerCase().includes(zoek)
+  );
+
+  if(!gefilterd.length){
+    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:25px">Geen deelnemers gevonden.</td></tr>';
+    return;
+  }
+
+  gefilterd.forEach(d=>{
+    const preds=voorspellingen
+      .filter(p=>Number(p.deelnemer_id)===Number(d.id))
+      .sort((a,b)=>Number(a.voorspelde_plaats)-Number(b.voorspelde_plaats));
+
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td><b>${escapeHtml(d.naam||"")}</b></td>
+      <td>${escapeHtml(d.nickname||"")}</td>
+      <td class="num">${d.grootste_kegelverschil ?? "-"}</td>
+      <td class="num">${d.kleinste_kegelverschil ?? "-"}</td>
+      <td class="num"><span class="badge">${preds.length} / 12</span></td>
+      <td><button onclick="toonDetails(${Number(d.id)})">👁 Bekijk</button></td>
+    `;
+    tbody.appendChild(tr);
+
+    const detail=document.createElement("tr");
+    detail.id="detail-"+d.id;
+    detail.className="hidden";
+    detail.innerHTML=`
+      <td colspan="6">
+        <div class="details">
+          <b>🎳 Voorspelling van ${escapeHtml(d.naam||"")}</b>
+          <span class="small"> — ${escapeHtml(d.nickname||"")}</span>
+          <table>
+            <thead><tr><th class="num">Plaats</th><th>Ploeg</th></tr></thead>
+            <tbody>
+              ${preds.map(p=>`
+                <tr>
+                  <td class="num"><b>${p.voorspelde_plaats}</b></td>
+                  <td>${escapeHtml(p.ploeg||"")}</td>
+                </tr>`).join("")}
+            </tbody>
+          </table>
+          ${preds.length===0 ? '<div class="small">Geen voorspellingen gevonden.</div>' : ''}
+        </div>
+      </td>
+    `;
+    tbody.appendChild(detail);
+  });
+}
+
+function toonDetails(id){
+  const row=document.getElementById("detail-"+id);
+  if(row) row.classList.toggle("hidden");
+}
+
+function escapeHtml(value){
+  return String(value)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
+document.getElementById("search").addEventListener("input",toonTabel);
+laadGegevens();
+</script>
+</body>
+</html>

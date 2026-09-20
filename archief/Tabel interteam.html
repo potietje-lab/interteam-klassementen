@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interteam – Kegels & Punten</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#111827;
+  color:#f3f4f6;
+}
+.container{
+  max-width:1400px;
+  margin:0 auto;
+  padding:20px;
+}
+h1{
+  text-align:center;
+  margin:5px 0 8px;
+  font-size:28px;
+}
+.sub{
+  text-align:center;
+  color:#9ca3af;
+  margin-bottom:20px;
+}
+.table-wrap{
+  width:100%;
+  overflow-x:auto;
+  background:#1f2937;
+  border-radius:14px;
+  padding:10px;
+  box-shadow:0 4px 20px rgba(0,0,0,.25);
+}
+table{
+  border-collapse:separate;
+  border-spacing:0;
+  width:max-content;
+  min-width:100%;
+}
+th,td{
+  border-right:1px solid #374151;
+  border-bottom:1px solid #374151;
+  text-align:center;
+}
+thead th{
+  background:#273449;
+}
+.date-head{
+  position:sticky;
+  left:0;
+  z-index:3;
+  min-width:105px;
+  width:105px;
+}
+.team-head{
+  min-width:62px;
+  width:62px;
+  height:190px;
+  vertical-align:bottom;
+  padding:8px 5px;
+}
+.team-name{
+  writing-mode:vertical-rl;
+  transform:rotate(180deg);
+  white-space:nowrap;
+  font-weight:bold;
+  font-size:14px;
+  margin:auto;
+}
+tbody td{
+  min-width:62px;
+  height:58px;
+  padding:7px 4px;
+  background:#172131;
+}
+.date-cell{
+  position:sticky;
+  left:0;
+  z-index:2;
+  background:#273449 !important;
+  font-weight:bold;
+  min-width:105px;
+}
+.pins{
+  display:block;
+  font-weight:bold;
+  font-size:15px;
+}
+.points{
+  display:block;
+  font-size:13px;
+  margin-top:3px;
+  color:#9ca3af;
+}
+.best-pins .pins{
+  color:#22c55e;
+}
+.best-points .points{
+  color:#22c55e;
+  font-weight:bold;
+}
+.empty{
+  color:#6b7280;
+}
+.message{
+  text-align:center;
+  padding:30px;
+  color:#9ca3af;
+}
+.error{
+  color:#f87171;
+}
+.legend{
+  text-align:center;
+  margin-top:14px;
+  color:#9ca3af;
+  font-size:13px;
+}
+.legend span{
+  color:#22c55e;
+  font-weight:bold;
+}
+@media(max-width:700px){
+  .container{padding:10px}
+  h1{font-size:22px}
+  .team-head{height:160px}
+  .team-name{font-size:12px}
+  .date-head,.date-cell{min-width:88px;width:88px}
+  tbody td,.team-head{min-width:58px;width:58px}
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🎳 Interteam – Kegels & Punten</h1>
+  <div class="sub">Kegels en punten per ploeg en per speeldatum</div>
+
+  <div id="message" class="message">Gegevens laden...</div>
+
+  <div id="tableWrap" class="table-wrap" style="display:none">
+    <table id="statsTable">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="legend" class="legend" style="display:none">
+    <span>Groen</span> = hoogste aantal kegels en/of punten van die speeldatum
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://wnsvbtskynkewxggmjem.supabase.co";
+const SUPABASE_KEY = "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const message = document.getElementById("message");
+const tableWrap = document.getElementById("tableWrap");
+const table = document.getElementById("statsTable");
+const legend = document.getElementById("legend");
+
+function findField(row, candidates){
+  const keys = Object.keys(row);
+  return keys.find(k => candidates.includes(k.toLowerCase().trim()));
+}
+
+function value(row, candidates){
+  const field = findField(row, candidates);
+  return field ? row[field] : null;
+}
+
+function numberValue(v){
+  if(v === null || v === undefined || v === "") return null;
+  const n = Number(String(v).replace(",", "."));
+  return Number.isFinite(n) ? n : null;
+}
+
+function dateValue(v){
+  if(!v) return null;
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function dateKey(v){
+  const d = dateValue(v);
+  if(!d) return String(v);
+  return d.toISOString().slice(0,10);
+}
+
+function formatDate(v){
+  const d = dateValue(v);
+  if(!d) return v || "";
+  return String(d.getDate()).padStart(2,"0") + "/" +
+         String(d.getMonth()+1).padStart(2,"0") + "/" +
+         d.getFullYear();
+}
+
+function formatNumber(n){
+  if(n === null) return "—";
+  return Number.isInteger(n) ? String(n) : n.toFixed(1);
+}
+
+async function laadGegevens(){
+  const { data, error } = await db
+    .from("interteam_scores")
+    .select("*");
+
+  if(error){
+    message.innerHTML =
+      '<div class="error">Fout bij het laden van de gegevens:<br>' +
+      error.message + '</div>';
+    return;
+  }
+
+  if(!data || !data.length){
+    message.textContent = "Geen interteamgegevens gevonden.";
+    return;
+  }
+
+  const dateCandidates = ["speeldatum","datum","date"];
+  const teamCandidates = ["ploeg","team","ploegnaam","teamnaam"];
+  const pinsCandidates = ["kegels","pins","totaal_kegels"];
+  const pointsCandidates = ["punten","points","point","team_punten","wedstrijdpunten"];
+
+  const dateField = findField(data[0], dateCandidates);
+  const teamField = findField(data[0], teamCandidates);
+  const pinsField = findField(data[0], pinsCandidates);
+  const pointsField = findField(data[0], pointsCandidates);
+
+  if(!dateField || !teamField || !pinsField){
+    message.innerHTML =
+      '<div class="error">De benodigde kolommen konden niet automatisch worden gevonden.<br><br>' +
+      'Verwacht: speeldatum, ploeg en kegels.</div>';
+    return;
+  }
+
+  // Unieke ploegen en speeldatums verzamelen.
+  const teams = [...new Set(data.map(r => value(r,teamCandidates)).filter(Boolean))]
+    .sort((a,b) => String(a).localeCompare(String(b),'nl'));
+
+  const datesMap = new Map();
+  data.forEach(r => {
+    const d = value(r,dateCandidates);
+    if(d !== null && d !== undefined && d !== ""){
+      datesMap.set(dateKey(d), d);
+    }
+  });
+
+  const dates = [...datesMap.entries()]
+    .sort((a,b) => {
+      const da = dateValue(a[1]), db = dateValue(b[1]);
+      return (da ? da.getTime() : 0) - (db ? db.getTime() : 0);
+    });
+
+  // Gegevens per datum + ploeg.
+  const records = new Map();
+
+  data.forEach(r => {
+    const d = value(r,dateCandidates);
+    const t = value(r,teamCandidates);
+    if(!d || !t) return;
+
+    const key = dateKey(d) + "||" + String(t);
+    records.set(key,{
+      kegels:numberValue(value(r,pinsCandidates)),
+      punten:numberValue(value(r,pointsCandidates))
+    });
+  });
+
+  // Tabelhoofd.
+  table.querySelector("thead").innerHTML = "";
+  const headRow = document.createElement("tr");
+
+  const dateTh = document.createElement("th");
+  dateTh.className = "date-head";
+  dateTh.textContent = "Speeldatum";
+  headRow.appendChild(dateTh);
+
+  teams.forEach(team => {
+    const th = document.createElement("th");
+    th.className = "team-head";
+
+    const div = document.createElement("div");
+    div.className = "team-name";
+    div.textContent = team;
+
+    th.appendChild(div);
+    headRow.appendChild(th);
+  });
+
+  table.querySelector("thead").appendChild(headRow);
+
+  // Tabelinhoud.
+  const tbody = table.querySelector("tbody");
+  tbody.innerHTML = "";
+
+  dates.forEach(([key, originalDate]) => {
+    const row = document.createElement("tr");
+
+    const dateTd = document.createElement("td");
+    dateTd.className = "date-cell";
+    dateTd.textContent = formatDate(originalDate);
+    row.appendChild(dateTd);
+
+    const dayRecords = teams.map(team =>
+      records.get(key + "||" + String(team)) || {kegels:null,punten:null}
+    );
+
+    const pinValues = dayRecords.map(r => r.kegels).filter(v => v !== null);
+    const pointValues = dayRecords.map(r => r.punten).filter(v => v !== null);
+
+    const maxPins = pinValues.length ? Math.max(...pinValues) : null;
+    const maxPoints = pointValues.length ? Math.max(...pointValues) : null;
+
+    dayRecords.forEach(rec => {
+      const td = document.createElement("td");
+
+      if(rec.kegels === null && rec.punten === null){
+        td.innerHTML = '<span class="empty">—</span>';
+      } else {
+        if(rec.kegels !== null){
+          const pins = document.createElement("span");
+          pins.className = "pins";
+          pins.textContent = formatNumber(rec.kegels);
+
+          if(maxPins !== null && rec.kegels === maxPins){
+            td.classList.add("best-pins");
+          }
+
+          td.appendChild(pins);
+        }
+
+        if(rec.punten !== null){
+          const points = document.createElement("span");
+          points.className = "points";
+          points.textContent = "(" + formatNumber(rec.punten) + ")";
+
+          if(maxPoints !== null && rec.punten === maxPoints){
+            td.classList.add("best-points");
+          }
+
+          td.appendChild(points);
+        } else if(pointsField){
+          const points = document.createElement("span");
+          points.className = "points";
+          points.textContent = "(—)";
+          td.appendChild(points);
+        }
+      }
+
+      row.appendChild(td);
+    });
+
+    tbody.appendChild(row);
+  });
+
+  message.style.display = "none";
+  tableWrap.style.display = "block";
+  legend.style.display = "block";
+}
+
+laadGegevens();
+</script>
+
+</body>
+</html>

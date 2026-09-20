@@ -1,0 +1,708 @@
+
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Rollbowl - Ploeggemiddelde</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 15px;
+    font-family: Arial, sans-serif;
+    background: transparent;
+}
+
+.container {
+    width: 100%;
+    max-width: 900px;
+    margin: auto;
+}
+
+h1 {
+    text-align: center;
+    margin: 5px 0 20px 0;
+    font-size: 26px;
+}
+
+.chart-box {
+    position: relative;
+    width: 100%;
+    height: 430px;
+    background: white;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.10);
+}
+
+.current-average {
+    margin-top: 15px;
+    padding: 15px;
+    background: white;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 20px;
+    font-weight: bold;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.10);
+}
+
+.stats {
+    margin-top: 15px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.stat {
+    background: white;
+    border-radius: 12px;
+    padding: 18px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.10);
+}
+
+.stat-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.stat-value {
+    font-size: 25px;
+    font-weight: bold;
+}
+
+.stat-average {
+    margin-top: 6px;
+    font-size: 17px;
+}
+
+.best {
+    border-top: 5px solid #2e8b57;
+}
+
+.minimum {
+    border-top: 5px solid #e67e22;
+}
+
+.message {
+    text-align: center;
+    margin-top: 20px;
+    padding: 10px;
+    font-weight: bold;
+}
+
+@media (max-width: 600px) {
+
+    body {
+        padding: 8px;
+    }
+
+    h1 {
+        font-size: 22px;
+    }
+
+    .chart-box {
+        height: 350px;
+        padding: 8px;
+    }
+
+    .stats {
+        grid-template-columns: 1fr;
+    }
+
+    .current-average {
+        font-size: 18px;
+    }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🎳 Evolutie ploeggemiddelde</h1>
+
+    <div class="chart-box">
+        <canvas id="ploegGrafiek"></canvas>
+    </div>
+
+    <div id="huidigGemiddelde" class="current-average">
+        Gegevens worden geladen...
+    </div>
+
+    <div class="stats">
+
+        <div class="stat best">
+
+            <div class="stat-title">
+                🏆 Beste totaal kegels
+            </div>
+
+            <div id="besteTotaal" class="stat-value">
+                -
+            </div>
+
+            <div id="besteGemiddelde" class="stat-average">
+                Gemiddelde: -
+            </div>
+
+        </div>
+
+
+        <div class="stat minimum">
+
+            <div class="stat-title">
+                📉 Minimum totaal kegels
+            </div>
+
+            <div id="minimumTotaal" class="stat-value">
+                -
+            </div>
+
+            <div id="minimumGemiddelde" class="stat-average">
+                Gemiddelde: -
+            </div>
+
+        </div>
+
+    </div>
+
+    <div id="melding" class="message"></div>
+
+</div>
+
+
+<script>
+
+// ==================================================
+// SUPABASE
+// ==================================================
+
+const SUPABASE_URL =
+    "https://wnsvbtskynkewxggmjem.supabase.co";
+
+const SUPABASE_KEY =
+    "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+
+const supabaseClient =
+    supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+// ==================================================
+// SPEELDATUMS
+// ==================================================
+
+const speeldagen = [
+
+    "2026-09-04",
+    "2026-09-11",
+    "2026-09-18",
+    "2026-09-25",
+    "2026-10-02",
+    "2026-10-09",
+    "2026-10-16",
+    "2026-11-20",
+    "2026-11-27",
+    "2026-12-04",
+    "2026-12-11",
+    "2027-01-15",
+    "2027-01-22",
+    "2027-01-29",
+    "2027-02-19",
+    "2027-02-26",
+    "2027-03-19",
+    "2027-03-26",
+    "2027-04-16",
+    "2027-04-23",
+    "2027-05-07",
+    "2027-05-14"
+
+];
+
+
+// ==================================================
+// DATUM WEERGEVEN
+// ==================================================
+
+function toonDatum(datum) {
+
+    const delen = datum.split("-");
+
+    return delen[2] + "/" +
+           delen[1];
+
+}
+
+
+// ==================================================
+// DATA LADEN
+// ==================================================
+
+async function laadPloegScores() {
+
+    const { data, error } =
+        await supabaseClient
+        .from("bowling_scores")
+        .select(
+            "speeldatum, speler, game1, game2, game3, totaal"
+        )
+        .order(
+            "speeldatum",
+            { ascending: true }
+        );
+
+
+    if (error) {
+
+        console.error(error);
+
+        document.getElementById(
+            "melding"
+        ).innerText =
+            "❌ Fout bij laden van de scores: " +
+            error.message;
+
+        return;
+    }
+
+
+    verwerkScores(data || []);
+}
+
+
+// ==================================================
+// SCORES VERWERKEN
+// ==================================================
+
+function verwerkScores(data) {
+
+    const resultaten = [];
+
+
+    speeldagen.forEach(datum => {
+
+        const scoresVanDag =
+            data.filter(
+                score =>
+                    score.speeldatum === datum
+            );
+
+
+        if (
+            scoresVanDag.length === 0
+        ) {
+            return;
+        }
+
+
+        let totaalKegels = 0;
+        let aantalGames = 0;
+
+
+        scoresVanDag.forEach(score => {
+
+            const game1 =
+                Number(score.game1) || 0;
+
+            const game2 =
+                Number(score.game2) || 0;
+
+            const game3 =
+                Number(score.game3) || 0;
+
+
+            // Alleen werkelijk ingevulde games tellen
+            if (score.game1 !== null &&
+                score.game1 !== "" &&
+                score.game1 !== undefined) {
+
+                totaalKegels += game1;
+                aantalGames++;
+
+            }
+
+
+            if (score.game2 !== null &&
+                score.game2 !== "" &&
+                score.game2 !== undefined) {
+
+                totaalKegels += game2;
+                aantalGames++;
+
+            }
+
+
+            if (score.game3 !== null &&
+                score.game3 !== "" &&
+                score.game3 !== undefined) {
+
+                totaalKegels += game3;
+                aantalGames++;
+
+            }
+
+        });
+
+
+        if (aantalGames === 0) {
+            return;
+        }
+
+
+        const gemiddelde =
+            totaalKegels / aantalGames;
+
+
+        resultaten.push({
+
+            datum: datum,
+
+            totaal: totaalKegels,
+
+            games: aantalGames,
+
+            gemiddelde: gemiddelde
+
+        });
+
+    });
+
+
+    if (resultaten.length === 0) {
+
+        document.getElementById(
+            "melding"
+        ).innerText =
+            "Nog geen scores beschikbaar.";
+
+        return;
+    }
+
+
+    maakGrafiek(resultaten);
+
+    toonStatistieken(resultaten);
+
+}
+
+
+// ==================================================
+// GRAFIEK MAKEN
+// ==================================================
+
+function maakGrafiek(resultaten) {
+
+    const labels =
+        resultaten.map(
+            r => toonDatum(r.datum)
+        );
+
+
+    const dagGemiddelden =
+        resultaten.map(
+            r => Number(
+                r.gemiddelde.toFixed(1)
+            )
+        );
+
+
+    // ==================================================
+    // CUMULATIEF GEMIDDELDE
+    // ==================================================
+
+    let totaalAlleGames = 0;
+    let aantalAlleGames = 0;
+
+    const cumulatieveGemiddelden = [];
+
+
+    resultaten.forEach(r => {
+
+        totaalAlleGames += r.totaal;
+
+        aantalAlleGames += r.games;
+
+
+        const cumulatief =
+            totaalAlleGames /
+            aantalAlleGames;
+
+
+        cumulatieveGemiddelden.push(
+            Number(
+                cumulatief.toFixed(1)
+            )
+        );
+
+    });
+
+
+    const ctx =
+        document
+        .getElementById(
+            "ploegGrafiek"
+        )
+        .getContext("2d");
+
+
+    new Chart(
+        ctx,
+        {
+
+            type: "line",
+
+            data: {
+
+                labels: labels,
+
+                datasets: [
+
+                    {
+
+                        label:
+                            "Gemiddelde per speeldag",
+
+                        data:
+                            dagGemiddelden,
+
+                        tension: 0.25,
+
+                        borderWidth: 3,
+
+                        pointRadius: 5,
+
+                        pointHoverRadius: 7
+
+                    },
+
+                    {
+
+                        label:
+                            "Cumulatief ploeggemiddelde",
+
+                        data:
+                            cumulatieveGemiddelden,
+
+                        tension: 0,
+
+                        borderWidth: 3,
+
+                        borderDash: [8, 6],
+
+                        pointRadius: 4,
+
+                        pointHoverRadius: 6
+
+                    }
+
+                ]
+
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false,
+
+                interaction: {
+
+                    mode: "index",
+
+                    intersect: false
+
+                },
+
+                plugins: {
+
+                    legend: {
+
+                        display: true,
+
+                        position: "top"
+
+                    },
+
+                    tooltip: {
+
+                        callbacks: {
+
+                            label:
+                                function(context) {
+
+                                    return (
+                                        context.dataset.label +
+                                        ": " +
+                                        context.parsed.y.toFixed(1)
+                                    );
+
+                                }
+
+                        }
+
+                    }
+
+                },
+
+                scales: {
+
+                    y: {
+
+                        beginAtZero: false,
+
+                        title: {
+
+                            display: true,
+
+                            text:
+                                "Gemiddelde kegels"
+
+                        },
+
+                        ticks: {
+
+                            callback:
+                                function(value) {
+
+                                    return value.toFixed(0);
+
+                                }
+
+                        }
+
+                    },
+
+                    x: {
+
+                        title: {
+
+                            display: true,
+
+                            text:
+                                "Speeldatum"
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    );
+
+
+// ==================================================
+// HUIDIG PLOEGGEMIDDELDE
+// ==================================================
+
+    const laatste =
+        cumulatieveGemiddelden[
+            cumulatieveGemiddelden.length - 1
+        ];
+
+
+    document.getElementById(
+        "huidigGemiddelde"
+    ).innerHTML =
+        "📊 Huidig ploeggemiddelde: <strong>" +
+        laatste.toFixed(1) +
+        "</strong>";
+
+}
+
+
+// ==================================================
+// STATISTIEKEN
+// ==================================================
+
+function toonStatistieken(resultaten) {
+
+    let beste = resultaten[0];
+
+    let minimum = resultaten[0];
+
+
+    resultaten.forEach(r => {
+
+        if (r.totaal > beste.totaal) {
+            beste = r;
+        }
+
+        if (r.totaal < minimum.totaal) {
+            minimum = r;
+        }
+
+    });
+
+
+    const besteGemiddelde =
+        beste.totaal / beste.games;
+
+
+    const minimumGemiddelde =
+        minimum.totaal / minimum.games;
+
+
+    document.getElementById(
+        "besteTotaal"
+    ).innerHTML =
+        beste.totaal +
+        " kegels";
+
+
+    document.getElementById(
+        "besteGemiddelde"
+    ).innerHTML =
+        "Gemiddelde: <strong>" +
+        besteGemiddelde.toFixed(1) +
+        "</strong>";
+
+
+    document.getElementById(
+        "minimumTotaal"
+    ).innerHTML =
+        minimum.totaal +
+        " kegels";
+
+
+    document.getElementById(
+        "minimumGemiddelde"
+    ).innerHTML =
+        "Gemiddelde: <strong>" +
+        minimumGemiddelde.toFixed(1) +
+        "</strong>";
+
+}
+
+
+// ==================================================
+// START
+// ==================================================
+
+laadPloegScores();
+
+</script>
+
+</body>
+</html>
+```

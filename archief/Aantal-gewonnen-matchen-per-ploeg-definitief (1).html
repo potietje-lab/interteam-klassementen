@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aantal gewonnen matchen per ploeg</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root{--bg:#f3f3f3;--card:#fff;--text:#222;--muted:#666;--border:#ddd}
+body.dark{--bg:#171717;--card:#242424;--text:#fff;--muted:#ccc;--border:#505050}
+*{box-sizing:border-box}
+body{margin:0;padding:20px;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
+.container{max-width:1100px;margin:auto}
+.topbar{display:flex;justify-content:flex-end;margin-bottom:15px}
+button{border:1px solid var(--border);border-radius:9px;padding:10px 15px;background:var(--card);color:var(--text);cursor:pointer;font-size:15px}
+h1{text-align:center;margin:10px 0 8px}
+.info{text-align:center;color:var(--muted);margin-bottom:22px}
+.card{background:var(--card);border-radius:14px;padding:20px;box-shadow:0 3px 12px rgba(0,0,0,.12)}
+#melding{text-align:center;color:var(--muted);padding:15px}
+.grafiek{position:relative;height:560px}
+@media(max-width:700px){body{padding:10px}.grafiek{height:650px}}
+
+.legenda{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin:0 0 18px;color:var(--muted);font-size:14px}
+.legenda span{display:flex;align-items:center;gap:6px}
+.legenda i{display:inline-block;width:14px;height:14px;border-radius:50%}
+.legenda .groen{background:#198754}.legenda .blauw{background:#1976d2}.legenda .rood{background:#d32f2f}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="topbar"><button id="themeBtn">☀️ Lichte modus</button></div>
+<h1>🎳 Aantal gewonnen matchen per ploeg</h1>
+<div class="info">Een match telt als gewonnen wanneer een ploeg meer punten behaalt dan de tegenstander.</div>
+
+<div class="legenda">
+  <span><i class="groen"></i> Alle gespeelde matchen gewonnen</span>
+  <span><i class="blauw"></i> Minstens één match gewonnen</span>
+  <span><i class="rood"></i> Nog geen match gewonnen</span>
+</div>
+
+<div class="card">
+<div id="melding">Gegevens worden geladen...</div>
+<div class="grafiek"><canvas id="grafiek"></canvas></div>
+</div>
+</div>
+
+<script>
+const SUPABASE_URL="https://wnsvbtskynkewxggmjem.supabase.co";
+const SUPABASE_KEY="sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+const THEME_KEY="rollbowl-gewonnen-matchen-thema";
+const RNB="RNB Geenens Construct-Vapor";
+
+const PLOEGEN=[
+"BC Ajuin","BC Ledeganck 2 Burtline","DCG Yok Tha","FLP ALLCORE IT",
+"LAT Esento","Oilsjt 2 Yok Tha","FLP Argenta Hamme",
+"RNB Geenens Construct-Vapor","Royal Ghent 3",
+"Stene - Pleisterwerken Delrue JP","TSZ Bieshoop","Wuitens"
+];
+
+let chart=null;
+
+function applyTheme(theme){
+ document.body.classList.toggle("dark",theme==="donker");
+ document.getElementById("themeBtn").textContent=theme==="donker"?"☀️ Lichte modus":"🌙 Donkere modus";
+ if(chart){
+  const c=theme==="donker"?"#fff":"#222",g=theme==="donker"?"#444":"#ddd";
+  chart.options.scales.x.ticks.color=c;
+  chart.options.scales.y.ticks.color=c;
+  chart.options.scales.x.title.color=c;
+  chart.options.scales.x.grid.color=g;
+  chart.options.scales.y.grid.color=g;
+  chart.update();
+ }
+}
+
+let theme=localStorage.getItem(THEME_KEY)||"donker";
+applyTheme(theme);
+
+document.getElementById("themeBtn").addEventListener("click",()=>{
+ theme=document.body.classList.contains("dark")?"licht":"donker";
+ localStorage.setItem(THEME_KEY,theme);
+ applyTheme(theme);
+});
+
+async function laad(){
+ const melding=document.getElementById("melding");
+ try{
+  const headers={apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY};
+
+  const [sRes,wRes]=await Promise.all([
+   fetch(SUPABASE_URL+"/rest/v1/interteam_scores?select=speeldatum,ploeg,punten&order=speeldatum.asc",{headers}),
+   fetch(SUPABASE_URL+"/rest/v1/wedstrijden?select=geplande_datum,werkelijke_datum,thuisploeg,uitploeg&order=geplande_datum.asc",{headers})
+  ]);
+
+  if(!sRes.ok) throw new Error("Scores konden niet worden geladen.");
+  if(!wRes.ok) throw new Error("Wedstrijden konden niet worden geladen.");
+
+  const scores=await sRes.json();
+  const wedstrijden=await wRes.json();
+  const perDatum={};
+
+  scores.forEach(r=>{
+   if(!PLOEGEN.includes(r.ploeg)) return;
+   if(!perDatum[r.speeldatum]) perDatum[r.speeldatum]={};
+   perDatum[r.speeldatum][r.ploeg]=Number(r.punten)||0;
+  });
+
+  const gewonnen={}, gespeeld={}, resultaten={};
+  PLOEGEN.forEach(p=>{
+   gewonnen[p]=0;
+   gespeeld[p]=0;
+   resultaten[p]=[];
+  });
+
+  wedstrijden.forEach(w=>{
+   const datum=w.werkelijke_datum||w.geplande_datum;
+   const d=perDatum[datum];
+   if(!d || d[w.thuisploeg]===undefined || d[w.uitploeg]===undefined) return;
+
+   const a=d[w.thuisploeg], b=d[w.uitploeg];
+
+   if(a>b){
+    gewonnen[w.thuisploeg]++;
+    resultaten[w.thuisploeg].push({datum,gewonnen:true});
+    resultaten[w.uitploeg].push({datum,gewonnen:false});
+   }else if(b>a){
+    gewonnen[w.uitploeg]++;
+    resultaten[w.uitploeg].push({datum,gewonnen:true});
+    resultaten[w.thuisploeg].push({datum,gewonnen:false});
+   }else{
+    // Gelijkspel: geen gewonnen match, maar wel gespeeld.
+    resultaten[w.thuisploeg].push({datum,gewonnen:false});
+    resultaten[w.uitploeg].push({datum,gewonnen:false});
+   }
+
+   gespeeld[w.thuisploeg]++;
+   gespeeld[w.uitploeg]++;
+  });
+
+  const reeks={};
+
+  PLOEGEN.forEach(ploeg=>{
+   const wedstrijdenTeam=[...resultaten[ploeg]].sort((a,b)=>a.datum.localeCompare(b.datum));
+   let huidig=0, maximum=0;
+
+   wedstrijdenTeam.forEach(r=>{
+    if(r.gewonnen){
+      huidig++;
+      if(huidig>maximum) maximum=huidig;
+    }else{
+      huidig=0;
+    }
+   });
+
+   reeks[ploeg]=maximum;
+  });
+
+  const data=PLOEGEN.map(p=>({
+   ploeg:p,
+   aantal:gewonnen[p],
+   gespeeld:gespeeld[p],
+   reeks:reeks[p]
+  })).sort((a,b)=>
+   b.aantal-a.aantal ||
+   b.reeks-a.reeks ||
+   a.ploeg.localeCompare(b.ploeg,"nl")
+  );
+
+  const totaalGespeeld = wedstrijden.filter(w=>{
+    const datum=w.werkelijke_datum||w.geplande_datum;
+    const d=perDatum[datum];
+    return d && d[w.thuisploeg]!==undefined && d[w.uitploeg]!==undefined;
+  }).length;
+
+  melding.textContent="Gespeelde matchen: "+totaalGespeeld+
+    "  •  Maximaal gewonnen matchen na elkaar wordt onder de grafiek vermeld.";
+
+  toonReeksen(data);
+  teken(data);
+
+ }catch(e){
+  console.error(e);
+  melding.textContent="⚠️ "+e.message;
+ }
+}
+
+function toonReeksen(data){
+ const oud=document.getElementById("reeksen");
+ if(oud) oud.remove();
+
+ const card=document.querySelector(".card");
+ const section=document.createElement("div");
+ section.id="reeksen";
+ section.style.marginTop="22px";
+
+ let tabel=`<h2 style="text-align:center;margin:10px 0 15px;">📈 Langste winstreeks</h2>
+ <table style="width:100%;border-collapse:collapse;">
+ <thead><tr>
+ <th style="text-align:left;padding:9px;border-bottom:1px solid var(--border);color:var(--muted);">Ploeg</th>
+ <th style="text-align:center;padding:9px;border-bottom:1px solid var(--border);color:var(--muted);">Gewonnen</th>
+ <th style="text-align:center;padding:9px;border-bottom:1px solid var(--border);color:var(--muted);">Max. na elkaar</th>
+ </tr></thead><tbody>`;
+
+ data.forEach(x=>{
+  const rood = x.aantal === 0;
+  const kleur = rood ? "#d32f2f" : "inherit";
+  const gewicht = rood ? "bold" : "normal";
+
+  tabel+=`<tr>
+   <td style="padding:9px;border-bottom:1px solid var(--border);color:${kleur};font-weight:${gewicht};">${x.ploeg}</td>
+   <td style="padding:9px;text-align:center;border-bottom:1px solid var(--border);color:${kleur};font-weight:${gewicht};">${x.aantal}</td>
+   <td style="padding:9px;text-align:center;border-bottom:1px solid var(--border);font-weight:bold;color:${kleur};">${x.reeks}</td>
+  </tr>`;
+ });
+
+ tabel+="</tbody></table>";
+ section.innerHTML=tabel;
+ card.appendChild(section);
+}
+
+function teken(data){
+ const dark=document.body.classList.contains("dark");
+ const ctx=document.getElementById("grafiek");
+ if(chart) chart.destroy();
+
+ chart=new Chart(ctx,{
+  type:"bar",
+  data:{
+   labels:data.map(x=>x.ploeg),
+   datasets:[{
+    label:"Gewonnen matchen",
+    data:data.map(x=>x.aantal),
+    backgroundColor:data.map(x=>{
+      if(x.gespeeld===0) return "#d32f2f";
+      if(x.aantal===x.gespeeld) return "#198754";
+      if(x.aantal===0) return "#d32f2f";
+      return "#1976d2";
+    }),
+    borderWidth:1,
+    borderRadius:20,
+    borderSkipped:false
+   }]
+  },
+  options:{
+   indexAxis:"y",
+   responsive:true,
+   maintainAspectRatio:false,
+   plugins:{
+    legend:{display:false},
+    tooltip:{callbacks:{
+      label:c=>{
+       const x=data[c.dataIndex];
+       return " "+x.aantal+" gewonnen van "+x.gespeeld+" gespeelde matchen";
+      },
+      afterLabel:c=>{
+       const x=data[c.dataIndex];
+       return "Langste winstreeks: "+x.reeks;
+      }
+    }}
+   },
+   scales:{
+    x:{
+     beginAtZero:true,
+     ticks:{stepSize:1,color:dark?"#fff":"#222"},
+     title:{display:true,text:"Aantal gewonnen matchen",color:dark?"#fff":"#222"},
+     grid:{color:dark?"#444":"#ddd"}
+    },
+    y:{ticks:{color:dark?"#fff":"#222"},grid:{color:dark?"#444":"#ddd"}}
+   }
+  }
+ });
+}
+
+laad();
+</script>
+</body>
+</html>

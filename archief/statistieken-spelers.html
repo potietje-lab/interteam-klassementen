@@ -1,0 +1,961 @@
+☺
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Individuele statistieken</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f8;
+        margin: 0;
+        padding: 20px;
+        color: #222;
+    }
+
+    .container {
+        max-width: 1000px;
+        margin: auto;
+    }
+
+    h1 {
+        text-align: center;
+        margin-bottom: 5px;
+    }
+
+    .subtitle {
+        text-align: center;
+        color: #666;
+        margin-bottom: 25px;
+    }
+
+    .select-box {
+        text-align: center;
+        margin-bottom: 25px;
+    }
+
+    select {
+        padding: 12px 15px;
+        font-size: 17px;
+        border-radius: 8px;
+        border: 1px solid #bbb;
+        min-width: 280px;
+        background: white;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+    }
+
+    .stat {
+        background: white;
+        border-radius: 12px;
+        padding: 18px;
+        box-shadow: 0 2px 7px rgba(0,0,0,0.08);
+    }
+
+    .stat-title {
+        font-size: 15px;
+        color: #666;
+        margin-bottom: 7px;
+    }
+
+    .stat-value {
+        font-size: 25px;
+        font-weight: bold;
+    }
+
+    .grafiek {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 25px;
+        box-shadow: 0 2px 7px rgba(0,0,0,0.08);
+    }
+
+    .grafiek h2 {
+        text-align: center;
+        margin-top: 0;
+    }
+
+    .grafiek-container {
+        position: relative;
+        height: 350px;
+    }
+
+    /* ========================================================
+       GESPEELDE GAMES
+       ======================================================== */
+
+    .games-section {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 25px;
+        box-shadow: 0 2px 7px rgba(0,0,0,0.08);
+    }
+
+    .games-section h2 {
+        text-align: center;
+        margin-top: 0;
+        margin-bottom: 18px;
+    }
+
+    .games-table-wrapper {
+        overflow-x: auto;
+    }
+
+    .games-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 600px;
+    }
+
+    .games-table th {
+        background: #f0f2f4;
+        padding: 10px 8px;
+        text-align: center;
+        font-size: 14px;
+    }
+
+    .games-table td {
+        padding: 10px 8px;
+        text-align: center;
+        border-bottom: 1px solid #e5e5e5;
+        font-size: 15px;
+    }
+
+    .games-table td:first-child {
+        text-align: left;
+        font-weight: bold;
+    }
+
+    .game-200 {
+        color: green;
+        font-weight: bold;
+    }
+
+    .serie-600 {
+        color: red;
+        font-weight: bold;
+    }
+
+    .serie {
+        font-weight: bold;
+    }
+
+    .gemiddelde {
+        font-weight: bold;
+    }
+
+    .geen-data {
+        text-align: center;
+        color: #777;
+        padding: 20px;
+    }
+
+    .loading,
+    .error {
+        text-align: center;
+        padding: 25px;
+    }
+
+    .error {
+        color: red;
+    }
+
+    @media (max-width: 700px) {
+
+        body {
+            padding: 10px;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        select {
+            width: 100%;
+            min-width: 0;
+        }
+
+        .grafiek-container {
+            height: 280px;
+        }
+    }
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🎳 Individuele statistieken</h1>
+
+    <div class="subtitle">
+        Statistieken van onze spelers
+    </div>
+
+    <div class="select-box">
+        <select id="spelerSelect">
+            <option>Gegevens laden...</option>
+        </select>
+    </div>
+
+    <div id="inhoud">
+
+        <div class="loading">
+            Gegevens laden...
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+/* ============================================================
+   SUPABASE
+   ============================================================ */
+
+const SUPABASE_URL =
+    "https://wnsvbtskynkewxggmjem.supabase.co";
+
+const SUPABASE_KEY =
+    "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+
+const supabaseClient =
+    supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+/* ============================================================
+   DATA
+   ============================================================ */
+
+let alleScores = [];
+let chart = null;
+
+
+/* ============================================================
+   DATUM
+   ============================================================ */
+
+function datumNL(datum) {
+
+    const d =
+        new Date(datum + "T00:00:00");
+
+    return d.toLocaleDateString("nl-BE", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+    });
+}
+
+
+/* ============================================================
+   DATA LADEN
+   ============================================================ */
+
+async function laadData() {
+
+    const { data, error } =
+        await supabaseClient
+            .from("bowling_scores")
+            .select("*")
+            .order("speeldatum", {
+                ascending: true
+            })
+            .order("speler", {
+                ascending: true
+            });
+
+    if (error) {
+
+        console.error(error);
+
+        document.getElementById("inhoud").innerHTML =
+            `<div class="error">
+                Fout bij het laden van de gegevens.<br>
+                ${error.message}
+            </div>`;
+
+        return;
+    }
+
+    alleScores = data || [];
+
+    if (!alleScores.length) {
+
+        document.getElementById("inhoud").innerHTML =
+            `<div class="loading">
+                Er zijn nog geen individuele scores beschikbaar.
+            </div>`;
+
+        return;
+    }
+
+    vulSpelers();
+
+    toonSpeler();
+}
+
+
+/* ============================================================
+   SPELERS DROPDOWN
+   ============================================================ */
+
+function vulSpelers() {
+
+    const select =
+        document.getElementById("spelerSelect");
+
+    const spelers =
+        [...new Set(
+            alleScores
+                .map(r => r.speler)
+                .filter(Boolean)
+        )].sort((a,b) =>
+            a.localeCompare(b, "nl")
+        );
+
+    select.innerHTML = "";
+
+    spelers.forEach(speler => {
+
+        const option =
+            document.createElement("option");
+
+        option.value = speler;
+        option.textContent = speler;
+
+        select.appendChild(option);
+    });
+
+    select.addEventListener(
+        "change",
+        toonSpeler
+    );
+}
+
+
+/* ============================================================
+   SPELER TONEN
+   ============================================================ */
+
+function toonSpeler() {
+
+    const speler =
+        document.getElementById(
+            "spelerSelect"
+        ).value;
+
+    const scores =
+        alleScores.filter(
+            r => r.speler === speler
+        );
+
+    if (!scores.length)
+        return;
+
+
+    /* ========================================================
+       BASISSTATISTIEKEN
+       ======================================================== */
+
+    let aantalGames = 0;
+    let aantalKegels = 0;
+    let hoogsteGame = 0;
+    let aantal200 = 0;
+
+    scores.forEach(r => {
+
+        const games = [
+            Number(r.game1) || 0,
+            Number(r.game2) || 0,
+            Number(r.game3) || 0
+        ];
+
+        games.forEach(game => {
+
+            if (game > 0) {
+
+                aantalGames++;
+                aantalKegels += game;
+
+                if (game > hoogsteGame)
+                    hoogsteGame = game;
+
+                if (game >= 200)
+                    aantal200++;
+            }
+
+        });
+
+    });
+
+
+    const gemiddelde =
+        aantalGames
+            ? aantalKegels / aantalGames
+            : 0;
+
+
+    /* ========================================================
+       TOPSERIE
+       ======================================================== */
+
+    let topserie = 0;
+    let topserieDatum = "";
+
+    scores.forEach(r => {
+
+        const serie =
+            (Number(r.game1) || 0) +
+            (Number(r.game2) || 0) +
+            (Number(r.game3) || 0);
+
+        if (serie > topserie) {
+
+            topserie = serie;
+            topserieDatum = r.speeldatum;
+
+        }
+
+    });
+
+
+    /* ========================================================
+       BESTE SPELER PER WEDSTRIJD
+       ======================================================== */
+
+    const datums =
+        [...new Set(
+            alleScores
+                .map(r => r.speeldatum)
+        )];
+
+
+    let besteSpelerAantal = 0;
+
+    datums.forEach(datum => {
+
+        const spelersDieDag =
+            alleScores.filter(
+                r => r.speeldatum === datum
+            );
+
+        const series =
+            spelersDieDag.map(r => {
+
+                const serie =
+                    (Number(r.game1) || 0) +
+                    (Number(r.game2) || 0) +
+                    (Number(r.game3) || 0);
+
+                return {
+                    speler: r.speler,
+                    serie
+                };
+
+            }).filter(r => r.serie > 0);
+
+
+        if (!series.length)
+            return;
+
+
+        const hoogsteSerie =
+            Math.max(
+                ...series.map(r => r.serie)
+            );
+
+
+        const besteSpelers =
+            series.filter(
+                r => r.serie === hoogsteSerie
+            );
+
+
+        if (
+            besteSpelers.some(
+                r => r.speler === speler
+            )
+        ) {
+
+            besteSpelerAantal++;
+
+        }
+
+    });
+
+
+    /* ========================================================
+       HTML
+       ======================================================== */
+
+    document.getElementById("inhoud").innerHTML = `
+
+        <div class="stats-grid">
+
+            <div class="stat">
+                <div class="stat-title">
+                    🎳 Aantal games
+                </div>
+                <div class="stat-value">
+                    ${aantalGames}
+                </div>
+            </div>
+
+
+            <div class="stat">
+                <div class="stat-title">
+                    🟠 Aantal kegels
+                </div>
+                <div class="stat-value">
+                    ${aantalKegels}
+                </div>
+            </div>
+
+
+            <div class="stat">
+                <div class="stat-title">
+                    📊 Gemiddelde
+                </div>
+                <div class="stat-value">
+                    ${gemiddelde.toFixed(1)}
+                </div>
+            </div>
+
+
+            <div class="stat">
+                <div class="stat-title">
+                    🔥 Topserie
+                </div>
+
+                <div class="stat-value">
+                    ${topserie}
+                </div>
+
+                <div style="
+                    color:#666;
+                    margin-top:5px;
+                    font-size:14px;
+                ">
+                    ${topserieDatum
+                        ? datumNL(topserieDatum)
+                        : ""}
+                </div>
+            </div>
+
+
+            <div class="stat">
+                <div class="stat-title">
+                    🏆 Top game
+                </div>
+
+                <div class="stat-value ${
+                    hoogsteGame >= 200
+                        ? "game-200"
+                        : ""
+                }">
+                    ${hoogsteGame}
+                </div>
+            </div>
+
+
+            <div class="stat">
+                <div class="stat-title">
+                    💯 Games van 200+
+                </div>
+
+                <div class="stat-value">
+                    ${aantal200}
+                </div>
+            </div>
+
+
+            <div class="stat">
+                <div class="stat-title">
+                    👑 Beste speler per wedstrijd
+                </div>
+
+                <div class="stat-value">
+                    ${besteSpelerAantal}×
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="grafiek">
+
+            <h2>
+                📈 Gemiddelde per speeldag
+            </h2>
+
+            <div class="grafiek-container">
+                <canvas id="gemiddeldeGrafiek"></canvas>
+            </div>
+
+        </div>
+
+
+        <div class="games-section">
+
+            <h2>
+                🎳 Gespeelde games
+            </h2>
+
+            <div class="games-table-wrapper">
+
+                <table class="games-table">
+
+                    <thead>
+                        <tr>
+                            <th>Speeldatum</th>
+                            <th>Game 1</th>
+                            <th>Game 2</th>
+                            <th>Game 3</th>
+                            <th>Serie</th>
+                            <th>Gemiddelde</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="gamesBody"></tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+    `;
+
+
+    maakGrafiek(scores);
+    maakGamesTabel(scores);
+}
+
+
+/* ============================================================
+   GRAFIEK GEMIDDELDE PER SPEELDAG
+   ============================================================ */
+
+function maakGrafiek(scores) {
+
+    const canvas =
+        document.getElementById(
+            "gemiddeldeGrafiek"
+        );
+
+    if (!canvas)
+        return;
+
+
+    if (chart)
+        chart.destroy();
+
+
+    const perDatum = {};
+
+
+    scores.forEach(r => {
+
+        const games = [
+            Number(r.game1) || 0,
+            Number(r.game2) || 0,
+            Number(r.game3) || 0
+        ].filter(g => g > 0);
+
+
+        if (!games.length)
+            return;
+
+
+        const totaal =
+            games.reduce(
+                (som, waarde) =>
+                    som + waarde,
+                0
+            );
+
+
+        perDatum[r.speeldatum] =
+            totaal / games.length;
+
+    });
+
+
+    const datums =
+        Object.keys(perDatum)
+            .sort();
+
+
+    const labels =
+        datums.map(datum =>
+            datumNL(datum)
+        );
+
+
+    const gemiddelden =
+        datums.map(datum =>
+            Number(
+                perDatum[datum].toFixed(1)
+            )
+        );
+
+
+    chart =
+        new Chart(canvas, {
+
+            type: "line",
+
+            data: {
+
+                labels: labels,
+
+                datasets: [{
+
+                    label: "Gemiddelde",
+
+                    data: gemiddelden,
+
+                    tension: 0.25,
+
+                    pointRadius: 4,
+
+                    pointHoverRadius: 6,
+
+                    borderWidth: 2
+
+                }]
+
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false,
+
+                plugins: {
+
+                    legend: {
+                        display: true
+                    },
+
+                    tooltip: {
+
+                        callbacks: {
+
+                            label: function(context) {
+
+                                return "Gemiddelde: " +
+                                    context.parsed.y.toFixed(1);
+
+                            }
+
+                        }
+
+                    }
+
+                },
+
+                scales: {
+
+                    y: {
+
+                        beginAtZero: false,
+
+                        title: {
+
+                            display: true,
+
+                            text: "Gemiddelde"
+
+                        }
+
+                    },
+
+                    x: {
+
+                        title: {
+
+                            display: true,
+
+                            text: "Speeldatum"
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        });
+
+}
+
+
+/* ============================================================
+   GESPEELDE GAMES TABEL
+   ============================================================ */
+
+function maakGamesTabel(scores) {
+
+    const body =
+        document.getElementById(
+            "gamesBody"
+        );
+
+    if (!body)
+        return;
+
+
+    body.innerHTML = "";
+
+
+    const gesorteerd =
+        [...scores].sort(
+            (a,b) =>
+                a.speeldatum.localeCompare(
+                    b.speeldatum
+                )
+        );
+
+
+    gesorteerd.forEach(r => {
+
+        const game1 =
+            Number(r.game1) || 0;
+
+        const game2 =
+            Number(r.game2) || 0;
+
+        const game3 =
+            Number(r.game3) || 0;
+
+
+        const games = [
+            game1,
+            game2,
+            game3
+        ].filter(g => g > 0);
+
+
+        if (!games.length)
+            return;
+
+
+        const serie =
+            games.reduce(
+                (som, waarde) =>
+                    som + waarde,
+                0
+            );
+
+
+        const gemiddelde =
+            serie / games.length;
+
+
+        const game1Class =
+            game1 >= 200
+                ? "game-200"
+                : "";
+
+        const game2Class =
+            game2 >= 200
+                ? "game-200"
+                : "";
+
+        const game3Class =
+            game3 >= 200
+                ? "game-200"
+                : "";
+
+        const serieClass =
+            serie >= 600
+                ? "serie-600"
+                : "serie";
+
+
+        const row =
+            document.createElement("tr");
+
+
+        row.innerHTML = `
+
+            <td>
+                ${datumNL(r.speeldatum)}
+            </td>
+
+            <td class="${game1Class}">
+                ${game1 > 0 ? game1 : "-"}
+            </td>
+
+            <td class="${game2Class}">
+                ${game2 > 0 ? game2 : "-"}
+            </td>
+
+            <td class="${game3Class}">
+                ${game3 > 0 ? game3 : "-"}
+            </td>
+
+            <td class="${serieClass}">
+                ${serie}
+            </td>
+
+            <td class="gemiddelde">
+                ${gemiddelde.toFixed(1)}
+            </td>
+
+        `;
+
+
+        body.appendChild(row);
+
+    });
+
+
+    if (!body.children.length) {
+
+        body.innerHTML = `
+            <tr>
+                <td colspan="6"
+                    class="geen-data">
+                    Nog geen gespeelde games.
+                </td>
+            </tr>
+        `;
+
+    }
+
+}
+
+
+/* ============================================================
+   START
+   ============================================================ */
+
+laadData();
+
+</script>
+
+</body>
+</html>
+```
