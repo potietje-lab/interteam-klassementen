@@ -213,6 +213,32 @@ tr:last-child td{
 .saved-table th:last-child{
   text-align:center;
 }
+
+.wis-knop{
+  border:1px solid #c62828;
+  background:#c62828;
+  color:#fff;
+  border-radius:7px;
+  padding:6px 9px;
+  cursor:pointer;
+  font-size:13px;
+  margin-left:8px;
+}
+
+ .wis-knop:hover{
+  background:#a51f1f;
+}
+
+.info-versie-knop{
+  margin-top:12px;
+  width:100%;
+  background:#245c38;
+  color:#fff;
+  border-color:#245c38;
+}
+.info-versie-knop:hover{
+  background:#2e7548;
+}
 .topserie-value{
   font-weight:bold;
   margin-left:8px;
@@ -253,6 +279,7 @@ tr:last-child td{
     <button id="saveTopserieBtn">💾 Opslaan</button>
   </div>
   <div id="topserieStatus"></div>
+  <button id="infoVersieBtn" class="info-versie-knop">📄 Info-versie maken</button>
 </div>
 <div id="lijst"></div>
 
@@ -470,7 +497,10 @@ function toonTopseries(gegevens){
     tabel += `<tr>
       <td>${escapeHtml(naam)}</td>
       <td>${escapeHtml(spelerInfo[naam] || "")}</td>
-      <td><strong>${escapeHtml(gegevens[naam])}</strong></td>
+      <td>
+        <strong>${escapeHtml(gegevens[naam])}</strong>
+        <button class="wis-knop" onclick="wisTopserie('${escapeHtml(naam)}')">🗑️ Wis</button>
+      </td>
     </tr>`;
   });
 
@@ -507,6 +537,22 @@ function voegTopserieToe(){
   input.value = "";
 }
 
+function wisTopserie(naam){
+  const gegevens = laadGegevens();
+
+  if(gegevens[naam] === undefined) return;
+
+  if(!confirm("Topserie van " + naam + " wissen?")) return;
+
+  delete gegevens[naam];
+  localStorage.setItem(TOPSERIE_KEY, JSON.stringify(gegevens));
+
+  toonTopseries(gegevens);
+
+  const status = document.getElementById("topserieStatus");
+  status.textContent = "🗑️ Topserie van " + naam + " is gewist.";
+}
+
 function opslaanTopseries(){
   const gegevens = laadGegevens();
   localStorage.setItem(TOPSERIE_KEY, JSON.stringify(gegevens));
@@ -518,6 +564,139 @@ function opslaanTopseries(){
   const btn = document.getElementById("saveTopserieBtn");
   btn.textContent = "✅ Opgeslagen";
   setTimeout(()=>btn.textContent="💾 Opslaan",1500);
+}
+
+function maakInfoVersie(){
+  const gegevens = laadGegevens();
+  const datum = new Date().toLocaleDateString("nl-BE");
+
+  let teamsHtml = "";
+
+  spelers.forEach(([ploeg,lijst])=>{
+    const gesorteerd=[...lijst].sort((a,b)=>{
+      const verschil=volgorde[a[0]]-volgorde[b[0]];
+      if(verschil!==0) return verschil;
+      return a[1].localeCompare(b[1],"nl");
+    });
+
+    const rnb = ploeg === "RNB Geenens Construct-Vapor";
+    teamsHtml += `
+      <section class="team${rnb ? " rnb" : ""}">
+        <h2>${escapeHtml(ploeg)}</h2>
+        <table>
+          <thead><tr><th>Categorie</th><th>Naam</th><th>Topserie</th></tr></thead>
+          <tbody>
+            ${gesorteerd.map(([cat,naam])=>`
+              <tr>
+                <td>${escapeHtml(cat)}</td>
+                <td>${escapeHtml(naam)}</td>
+                <td>${gegevens[naam] !== undefined ? escapeHtml(gegevens[naam]) : "—"}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </section>`;
+  });
+
+  const infoHtml = `<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topseries interteamspelers</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:20px;font-family:Arial,sans-serif;background:#f3f3f3;color:#222}
+.container{max-width:850px;margin:auto}
+h1{text-align:center;margin:10px 0 5px}
+.datum{text-align:center;color:#666;margin-bottom:25px}
+.team{background:#fff;border-radius:14px;margin-bottom:20px;overflow:hidden;box-shadow:0 3px 12px rgba(0,0,0,.12)}
+.team h2{margin:0;padding:14px 18px;background:#222;color:#fff;font-size:20px}
+.team.rnb h2{background:#ffd700;color:#000}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px 15px;border-bottom:1px solid #ddd;text-align:left}
+th{font-size:13px;text-transform:uppercase;color:#666}
+td:last-child,th:last-child{text-align:center;font-weight:bold}
+tr:last-child td{border-bottom:none}
+.saved-section{
+  background:#fff;
+  border-radius:14px;
+  margin-top:25px;
+  padding:18px;
+  box-shadow:0 3px 12px rgba(0,0,0,.12);
+}
+.saved-section h2{
+  text-align:center;
+  margin:0 0 15px;
+}
+.saved-table{
+  width:100%;
+  border-collapse:collapse;
+}
+.saved-table th,.saved-table td{
+  padding:9px 12px;
+  border-bottom:1px solid #ddd;
+}
+.saved-table th{
+  text-align:left;
+  color:#666;
+  font-size:13px;
+  text-transform:uppercase;
+}
+.saved-table td:last-child,.saved-table th:last-child{
+  text-align:center;
+}
+@media(max-width:600px){body{padding:10px}.team h2{font-size:18px}th,td{padding:9px 10px}}
+@media print{body{background:#fff}.team{box-shadow:none;border:1px solid #bbb;break-inside:avoid}.team h2{background:#222!important;color:#fff!important}.team.rnb h2{background:#ffd700!important;color:#000!important}}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🎳 Topseries interteamspelers</h1>
+<div class="datum">Bijgewerkt op ${datum}</div>
+${teamsHtml}
+
+<section class="saved-section">
+  <h2>📋 Topseries</h2>
+  <table class="saved-table">
+    <thead>
+      <tr><th>Naam</th><th>Ploeg</th><th>Topserie</th></tr>
+    </thead>
+    <tbody>
+      ${Object.keys(gegevens)
+        .sort((a,b)=>{
+          const verschil = Number(gegevens[b]) - Number(gegevens[a]);
+          if(verschil !== 0) return verschil;
+          return a.localeCompare(b,"nl");
+        })
+        .map(naam=>{
+          const info = alleSpelers().find(s=>s.naam===naam);
+          return `<tr>
+            <td>${escapeHtml(naam)}</td>
+            <td>${escapeHtml(info ? info.ploeg : "")}</td>
+            <td><strong>${escapeHtml(gegevens[naam])}</strong></td>
+          </tr>`;
+        }).join("")}
+    </tbody>
+  </table>
+</section>
+
+</div>
+</body>
+</html>`;
+
+  const blob = new Blob([infoHtml], {type:"text/html;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "Topseries-interteamspelers-info.html";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+
+  document.getElementById("topserieStatus").textContent =
+    "✅ Info-versie gemaakt met de huidige topseries.";
 }
 
 function applyTheme(theme){
@@ -541,6 +720,7 @@ document.getElementById("themeBtn").addEventListener("click",()=>{
 
 document.getElementById("addTopserieBtn").addEventListener("click",voegTopserieToe);
 document.getElementById("saveTopserieBtn").addEventListener("click",opslaanTopseries);
+document.getElementById("infoVersieBtn").addEventListener("click",maakInfoVersie);
 
 bouwLijst();
 vulDropdown();
