@@ -832,11 +832,24 @@ function bepaalTopmatch(scores) {
             const puntenUit =
                 Number(scoreUit.punten) || 0;
 
-            const verschil =
-                Math.abs(
-                    puntenThuis -
-                    puntenUit
-                );
+            // Alleen wedstrijden die RNB heeft gewonnen.
+            // De TOPMATCH wordt bepaald door het grootste
+            // positieve kegelverschil van RNB.
+            const rnbIsThuis = thuis === RNB;
+            const rnbPunten = rnbIsThuis ? puntenThuis : puntenUit;
+            const tegenPunten = rnbIsThuis ? puntenUit : puntenThuis;
+            const rnbKegels = rnbIsThuis
+                ? Number(scoreThuis.kegels) || 0
+                : Number(scoreUit.kegels) || 0;
+            const tegenKegels = rnbIsThuis
+                ? Number(scoreUit.kegels) || 0
+                : Number(scoreThuis.kegels) || 0;
+
+            if (rnbPunten <= tegenPunten) {
+                return;
+            }
+
+            const verschil = rnbKegels - tegenKegels;
 
             if (
                 !beste ||
@@ -1599,7 +1612,7 @@ function toonTopstatistieken(
                 <div class="match-item">
 
                     <div class="match-label">
-                        Puntenverschil
+                        Kegelverschil
                     </div>
 
                     <div class="match-value">
