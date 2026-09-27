@@ -304,6 +304,74 @@ body.rb-dark .theme-toggle-rb {
     color:#ffffff !important;
     border-color:#6b7280 !important;
 }
+
+/* Navigatie cumulatief klassement */
+.klassement-navigatie { display:flex; align-items:center; justify-content:center; gap:18px; margin:0 0 20px; flex-wrap:wrap; }
+.klassement-navigatie button { padding:10px 18px; border:none; border-radius:8px; background:#222; color:white; font-size:15px; font-weight:bold; cursor:pointer; }
+.klassement-navigatie button:hover:not(:disabled) { background:#444; }
+.klassement-navigatie button:disabled { opacity:.4; cursor:default; }
+.klassement-datum { min-width:190px; text-align:center; font-weight:bold; font-size:17px; }
+body.rb-dark .klassement-navigatie button { background:#374151; color:#fff; border:1px solid #6b7280; }
+@media (max-width:700px) { .klassement-navigatie { gap:8px; } .klassement-navigatie button { padding:9px 12px; font-size:13px; } .klassement-datum { min-width:145px; font-size:14px; } }
+
+</style>
+
+
+<style>
+/* =========================
+   WEDSTRIJDKALENDER
+   ========================= */
+.wedstrijdkalender { margin-top: 10px; }
+.kalender-navigatie { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:15px; }
+.kalender-navigatie button { padding:9px 14px; border:none; border-radius:8px; background:#222; color:#fff; font-weight:bold; cursor:pointer; }
+.kalender-maand { font-size:19px; font-weight:bold; text-align:center; flex:1; }
+.kalender-grid { display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); border:1px solid #ddd; border-radius:10px; overflow:hidden; }
+.kalender-weekdag { background:#222; color:#fff; padding:9px 4px; text-align:center; font-weight:bold; font-size:13px; }
+.kalender-dag { min-height:105px; padding:7px; border-right:1px solid #ddd; border-top:1px solid #ddd; background:#fff; }
+.kalender-dag:nth-child(7n) { border-right:none; }
+.kalender-dag.leeg { background:#f5f5f5; }
+.kalender-dagnummer { font-weight:bold; margin-bottom:5px; }
+.kalender-dag.vandaag .kalender-dagnummer { display:inline-block; background:#222; color:#fff; border-radius:50%; min-width:27px; height:27px; line-height:27px; text-align:center; }
+.kalender-wedstrijd { display:block; width:100%; margin-top:4px; padding:6px 7px; border:1px solid #bbb; border-radius:7px; background:#f8f8f8; text-align:left; cursor:pointer; font-size:12px; line-height:1.25; }
+.kalender-wedstrijd:hover { background:#e9e9e9; }
+.kalender-thuis { font-weight:bold; }
+.kalender-uit { font-weight:bold; }
+.kalender-huis { margin-right:3px; }
+.kalender-modal { position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:9999; padding:20px; }
+.kalender-modal.open { display:flex; }
+.kalender-modal-inhoud { width:min(720px,100%); max-height:90vh; overflow-y:auto; background:#fff; color:#222; border-radius:14px; padding:22px; box-shadow:0 8px 30px rgba(0,0,0,.3); }
+.kalender-modal-kop { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:18px; }
+.kalender-modal-sluiten { border:none; background:#eee; border-radius:50%; width:34px; height:34px; cursor:pointer; font-size:18px; }
+.kalender-modal-wedstrijd { font-size:20px; font-weight:bold; text-align:center; padding:18px 5px 8px; }
+.kalender-modal-info { text-align:center; color:#666; }
+.kalender-resultaten { width:100%; min-width:0 !important; table-layout:fixed; border-collapse:collapse; margin-top:16px; font-size:15px; }
+.kalender-resultaten th, .kalender-resultaten td { padding:10px 8px; border-bottom:1px solid #ddd; text-align:center; }
+.kalender-resultaten th:first-child, .kalender-resultaten td:first-child { text-align:left; }
+.kalender-resultaten .winnaar-punten { color:#168a3a; font-weight:800; }
+.kalender-resultaten .geen-resultaat { text-align:center !important; color:#777; padding:18px 8px; }
+.kalender-winnaar-label { margin-top:14px; text-align:center; color:#168a3a; font-weight:800; }
+.kalender-topserie { margin-top:6px; font-size:13px; font-weight:normal; color:#168a3a; }
+.kalender-topserie strong { font-weight:800; }
+.kalender-gelijk { margin-top:14px; text-align:center; font-weight:800; }
+body.rb-dark .kalender-resultaten th, body.rb-dark .kalender-resultaten td { border-color:#4b5563; }
+body.rb-dark .kalender-resultaten .geen-resultaat { color:#cbd5e1; }
+body.rb-dark .kalender-winnaar-label { color:#4ade80; }
+body.rb-dark .kalender-navigatie button { background:#374151; border:1px solid #6b7280; }
+body.rb-dark .kalender-grid { border-color:#4b5563; }
+body.rb-dark .kalender-dag { background:#1f2937; border-color:#4b5563; }
+body.rb-dark .kalender-dag.leeg { background:#111827; }
+body.rb-dark .kalender-wedstrijd { background:#374151; border-color:#6b7280; color:#fff; }
+body.rb-dark .kalender-wedstrijd:hover { background:#4b5563; }
+body.rb-dark .kalender-modal-inhoud { background:#1f2937; color:#e5e7eb; }
+body.rb-dark .kalender-modal-sluiten { background:#374151; color:#fff; }
+body.rb-dark .kalender-modal-info { color:#cbd5e1; }
+@media (max-width:700px) {
+    .kalender-weekdag { font-size:11px; padding:7px 2px; }
+    .kalender-dag { min-height:82px; padding:4px; }
+    .kalender-wedstrijd { font-size:10px; padding:5px 4px; }
+    .kalender-maand { font-size:16px; }
+    .kalender-navigatie button { padding:8px 10px; font-size:12px; }
+}
 </style>
 
 </head>
@@ -337,6 +405,11 @@ body.rb-dark .theme-toggle-rb {
     🏆 Algemeen cumulatief klassement
 </h2>
 
+<div class="klassement-navigatie">
+    <button id="vorigeKlassementBtn" type="button" onclick="vorigKlassement()">◀ Vorige</button>
+    <div id="klassementDatum" class="klassement-datum"></div>
+    <button id="volgendeKlassementBtn" type="button" onclick="volgendKlassement()">Volgende ▶</button>
+</div>
 
 <div class="table-wrapper">
 
@@ -458,11 +531,26 @@ body.rb-dark .theme-toggle-rb {
     📈 Evolutie RNB Geenens Construct-Vapor
 </h2>
 
+<div class="chart-wrapper">
+<canvas id="rnbChart"></canvas>
+</div>
+
+</div>
+
+<div class="section">
+
+<h2>
+    📈 Evolutie ploeg naar keuze
+</h2>
+
+<div style="margin-bottom:18px;">
+    <select id="evolutiePloegSelect" onchange="tekenGekozenPloegGrafiek()">
+        <option value="">-- Kies een ploeg --</option>
+    </select>
+</div>
 
 <div class="chart-wrapper">
-
-<canvas id="rnbChart"></canvas>
-
+<canvas id="gekozenPloegChart"></canvas>
 </div>
 
 </div>
@@ -472,6 +560,25 @@ body.rb-dark .theme-toggle-rb {
 <!-- =================================================
      4. STATISTIEK RNB
      ================================================= -->
+
+<div class="section">
+
+<h2>
+    📊 Klassementverloop ploeg naar keuze
+</h2>
+
+<div style="margin-bottom:18px;">
+    <select id="klassementPloegSelect" onchange="tekenKlassementVerloopGrafiek()">
+        <option value="">-- Kies een ploeg --</option>
+    </select>
+</div>
+
+<div class="chart-wrapper">
+    <canvas id="klassementVerloopChart"></canvas>
+</div>
+
+</div>
+
 
 <div class="section">
 
@@ -518,6 +625,30 @@ body.rb-dark .theme-toggle-rb {
 
 </div>
 
+</div>
+
+
+<div class="section">
+
+<h2>
+    📅 Geplande wedstrijden
+</h2>
+
+<div id="wedstrijdKalender" class="wedstrijdkalender">
+    <div class="no-data">Wedstrijden worden geladen...</div>
+</div>
+
+</div>
+
+<div id="wedstrijdModal" class="kalender-modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="kalender-modal-inhoud">
+        <div class="kalender-modal-kop">
+            <strong>Wedstrijd</strong>
+            <button type="button" class="kalender-modal-sluiten" onclick="sluitWedstrijdModal()" aria-label="Sluiten">×</button>
+        </div>
+        <div id="wedstrijdModalWedstrijd" class="kalender-modal-wedstrijd"></div>
+        <div id="wedstrijdModalInfo" class="kalender-modal-info"></div>
+    </div>
 </div>
 
 
@@ -673,8 +804,14 @@ const RNB_TEGENPLOEGEN = {
 let alleScores = [];
 
 let speeldagenData = [];
+let wedstrijdenData = [];
+let bowlingScores = [];
+let rnbSpelersData = [];
+let kalenderMaand = null;
 
 let rnbChart = null;
+let gekozenPloegChart = null;
+let klassementVerloopChart = null;
 
 
 // =====================================================
@@ -759,7 +896,10 @@ async function laadData() {
 
     const [
         scoresResult,
-        speeldagenResult
+        speeldagenResult,
+        wedstrijdenResult,
+        bowlingResult,
+        playersResult
     ] = await Promise.all([
 
         supabaseClient
@@ -769,7 +909,23 @@ async function laadData() {
         supabaseClient
             .from("speeldagen")
             .select('speeldatum, nummer, "Klasm-url"')
-            .order("speeldatum", { ascending: true })
+            .order("speeldatum", { ascending: true }),
+
+        supabaseClient
+            .from("wedstrijden")
+            .select("geplande_datum, werkelijke_datum, thuisploeg, uitploeg, status")
+            .order("geplande_datum", { ascending: true }),
+
+        supabaseClient
+            .from("bowling_scores")
+            .select("speeldatum, speler, totaal, player_id")
+
+        ,
+
+        supabaseClient
+            .from("players")
+            .select("id, name, team")
+            .eq("team", RNB)
 
     ]);
 
@@ -815,8 +971,36 @@ async function laadData() {
     speeldagenData =
         speeldagenResult.data || [];
 
+    wedstrijdenData =
+        wedstrijdenResult && !wedstrijdenResult.error
+            ? (wedstrijdenResult.data || [])
+            : [];
+
+    bowlingScores =
+        bowlingResult && !bowlingResult.error
+            ? (bowlingResult.data || [])
+            : [];
+
+    rnbSpelersData =
+        playersResult && !playersResult.error
+            ? (playersResult.data || [])
+            : [];
+
+    if (bowlingResult && bowlingResult.error) {
+        console.error("Supabase fout bowling scores:", bowlingResult.error);
+    }
+
+    if (wedstrijdenResult && wedstrijdenResult.error) {
+        console.error("Supabase fout wedstrijden:", wedstrijdenResult.error);
+    }
+
+    if (playersResult && playersResult.error) {
+        console.error("Supabase fout spelers:", playersResult.error);
+    }
+
 
     laadDatumDropdown();
+    laadEvolutiePloegen();
 
     toonAlgemeenKlassement();
 
@@ -825,6 +1009,8 @@ async function laadData() {
     toonRNBStatistiek();
 
     tekenRNBGrafiek();
+    laadKlassementPloegen();
+    toonWedstrijdKalender();
 
 
     statusMelding(
@@ -975,245 +1161,106 @@ function maakCumulatiefKlassement(totDatum) {
 // 1. ALGEMEEN CUMULATIEF KLASSEMENT
 // =====================================================
 
-function toonAlgemeenKlassement() {
+let huidigKlassementIndex = -1;
 
-    const tbody =
-        document.getElementById(
-            "algemeenKlassement"
-        );
+function toonAlgemeenKlassement() {
+    const tbody = document.getElementById("algemeenKlassement");
+    const datumEl = document.getElementById("klassementDatum");
+    const vorigeBtn = document.getElementById("vorigeKlassementBtn");
+    const volgendeBtn = document.getElementById("volgendeKlassementBtn");
 
     tbody.innerHTML = "";
 
-    // Bepaal de laatst gespeelde datum.
-    const gespeeldeDatums = DATUMS.filter(
-        datum =>
-            alleScores.some(
-                score => score.speeldatum === datum
-            )
+    const gespeeldeDatums = DATUMS.filter(datum =>
+        alleScores.some(score => score.speeldatum === datum)
     );
 
-    if (gespeeldeDatums.length === 0) {
+    if (!gespeeldeDatums.length) {
+        huidigKlassementIndex = -1;
+        if (datumEl) datumEl.textContent = "Nog geen klassement";
+        if (vorigeBtn) vorigeBtn.disabled = true;
+        if (volgendeBtn) volgendeBtn.disabled = true;
         return;
     }
 
-    const huidigeDatum =
-        gespeeldeDatums[gespeeldeDatums.length - 1];
+    if (huidigKlassementIndex < 0 || huidigKlassementIndex >= gespeeldeDatums.length) {
+        huidigKlassementIndex = gespeeldeDatums.length - 1;
+    }
 
-    // Huidig cumulatief klassement.
-    const lijst =
-        maakCumulatiefKlassement(huidigeDatum);
+    const huidigeDatum = gespeeldeDatums[huidigKlassementIndex];
+    const vorigeDatum = huidigKlassementIndex > 0 ? gespeeldeDatums[huidigKlassementIndex - 1] : null;
+    const lijst = maakCumulatiefKlassement(huidigeDatum);
+    const vorigeLijst = vorigeDatum ? maakCumulatiefKlassement(vorigeDatum) : [];
 
-    // Vorig cumulatief klassement.
-    const vorigeDatum =
-        gespeeldeDatums.length >= 2
-            ? gespeeldeDatums[gespeeldeDatums.length - 2]
-            : null;
-
-    const vorigeLijst =
-        vorigeDatum
-            ? maakCumulatiefKlassement(vorigeDatum)
-            : [];
-
-    // Plaats van iedere ploeg in het vorige klassement bewaren.
     const vorigePlaatsen = {};
+    vorigeLijst.forEach((team,index) => { vorigePlaatsen[normaliseer(team.ploeg)] = index + 1; });
 
-    vorigeLijst.forEach(
-        (team, index) => {
-            vorigePlaatsen[
-                normaliseer(team.ploeg)
-            ] = index + 1;
-        }
-    );
-
-    // Apart klassement op basis van kegels.
-    const opKegels =
-        [...lijst].sort(
-            (a,b) => {
-
-                if (b.kegels !== a.kegels) {
-                    return b.kegels - a.kegels;
-                }
-
-                return a.ploeg.localeCompare(
-                    b.ploeg
-                );
-
-            }
-        );
-
+    const opKegels = [...lijst].sort((a,b) => {
+        if (b.kegels !== a.kegels) return b.kegels - a.kegels;
+        return a.ploeg.localeCompare(b.ploeg);
+    });
     const plaatsOpKegels = {};
+    opKegels.forEach((team,index) => { plaatsOpKegels[normaliseer(team.ploeg)] = index + 1; });
 
-    opKegels.forEach(
-        (team, index) => {
-
-            plaatsOpKegels[
-                normaliseer(team.ploeg)
-            ] = index + 1;
-
-        }
-    );
-
-    // Hoogste cumulatieve kegels.
-    const hoogsteKegels =
-        Math.max(
-            ...lijst.map(
-                team => Number(team.kegels) || 0
-            )
-        );
-
-    // Hoogste cumulatieve gemiddelde.
+    const hoogsteKegels = Math.max(...lijst.map(team => Number(team.kegels) || 0));
     let hoogsteGemiddelde = 0;
+    lijst.forEach(team => {
+        const aantalSpeeldagen = team.datums.size;
+        const gem = aantalSpeeldagen > 0 ? team.kegels / (aantalSpeeldagen * AANTAL_SPELERS) : 0;
+        if (gem > hoogsteGemiddelde) hoogsteGemiddelde = gem;
+    });
 
-    lijst.forEach(
-        team => {
+    lijst.forEach((team,index) => {
+        const tr = document.createElement("tr");
+        if (normaliseer(team.ploeg) === normaliseer(RNB)) tr.classList.add("rnb-row");
 
-            const aantalSpeeldagen =
-                team.datums.size;
+        const aantalSpeeldagen = team.datums.size;
+        const gem = aantalSpeeldagen > 0 ? team.kegels / (aantalSpeeldagen * AANTAL_SPELERS) : 0;
+        const kegelsHoogste = Number(team.kegels) === hoogsteKegels;
+        const gemiddeldeHoogste = Math.abs(gem - hoogsteGemiddelde) < 0.000001;
+        const positieKegels = plaatsOpKegels[normaliseer(team.ploeg)];
+        const huidigePlaats = index + 1;
+        const vorigePlaats = vorigePlaatsen[normaliseer(team.ploeg)];
 
-            const gem =
-                aantalSpeeldagen > 0
-                    ? team.kegels /
-                      (
-                          aantalSpeeldagen *
-                          AANTAL_SPELERS
-                      )
-                    : 0;
-
-            if (gem > hoogsteGemiddelde) {
-                hoogsteGemiddelde = gem;
-            }
-
+        let verschilHtml = "—";
+        if (vorigePlaats !== undefined) {
+            const verschil = vorigePlaats - huidigePlaats;
+            if (verschil > 0) verschilHtml = `<span style="color:#188038;font-weight:bold;font-size:17px;">↑ ${verschil}</span>`;
+            else if (verschil < 0) verschilHtml = `<span style="color:#d93025;font-weight:bold;font-size:17px;">↓ ${Math.abs(verschil)}</span>`;
+            else verschilHtml = `<span style="color:#777;font-weight:bold;">—</span>`;
         }
+
+        tr.innerHTML = `
+            <td class="position">${huidigePlaats}</td>
+            <td class="team-name">${escapeHtml(team.ploeg)}</td>
+            <td>${team.punten}</td>
+            <td class="${kegelsHoogste ? "hoogste-stat" : ""}">${team.kegels}</td>
+            <td class="${gemiddeldeHoogste ? "hoogste-stat" : ""}">${gem.toFixed(2)}</td>
+            <td class="position">${positieKegels}</td>
+            <td>${verschilHtml}</td>`;
+        tbody.appendChild(tr);
+    });
+
+    if (datumEl) datumEl.textContent = `Na speeldag ${huidigKlassementIndex + 1} — ${datumTekst(huidigeDatum)}`;
+    if (vorigeBtn) vorigeBtn.disabled = huidigKlassementIndex <= 0;
+    if (volgendeBtn) volgendeBtn.disabled = huidigKlassementIndex >= gespeeldeDatums.length - 1;
+}
+
+function vorigKlassement() {
+    if (huidigKlassementIndex > 0) {
+        huidigKlassementIndex--;
+        toonAlgemeenKlassement();
+    }
+}
+
+function volgendKlassement() {
+    const gespeeldeDatums = DATUMS.filter(datum =>
+        alleScores.some(score => score.speeldatum === datum)
     );
-
-    lijst.forEach(
-        (team, index) => {
-
-            const tr =
-                document.createElement(
-                    "tr"
-                );
-
-            if (
-                normaliseer(team.ploeg) ===
-                normaliseer(RNB)
-            ) {
-
-                tr.classList.add(
-                    "rnb-row"
-                );
-
-            }
-
-            const aantalSpeeldagen =
-                team.datums.size;
-
-            const gem =
-                aantalSpeeldagen > 0
-                    ? team.kegels /
-                      (
-                          aantalSpeeldagen *
-                          AANTAL_SPELERS
-                      )
-                    : 0;
-
-            const kegelsHoogste =
-                Number(team.kegels) ===
-                hoogsteKegels;
-
-            const gemiddeldeHoogste =
-                Math.abs(
-                    gem - hoogsteGemiddelde
-                ) < 0.000001;
-
-            const positieKegels =
-                plaatsOpKegels[
-                    normaliseer(team.ploeg)
-                ];
-
-            // =============================================
-            // VERSCHIL T.O.V. VORIG ALGEMEEN KLASSEMENT
-            // =============================================
-
-            const huidigePlaats =
-                index + 1;
-
-            const vorigePlaats =
-                vorigePlaatsen[
-                    normaliseer(team.ploeg)
-                ];
-
-            let verschilHtml = "—";
-
-            if (vorigePlaats !== undefined) {
-
-                const verschil =
-                    vorigePlaats - huidigePlaats;
-
-                if (verschil > 0) {
-
-                    verschilHtml =
-                        `<span style="color:#188038;font-weight:bold;font-size:17px;">
-                            ↑ ${verschil}
-                        </span>`;
-
-                } else if (verschil < 0) {
-
-                    verschilHtml =
-                        `<span style="color:#d93025;font-weight:bold;font-size:17px;">
-                            ↓ ${Math.abs(verschil)}
-                        </span>`;
-
-                } else {
-
-                    verschilHtml =
-                        `<span style="color:#777;font-weight:bold;">
-                            —
-                        </span>`;
-
-                }
-
-            }
-
-            tr.innerHTML = `
-
-                <td class="position">
-                    ${huidigePlaats}
-                </td>
-
-                <td class="team-name">
-                    ${escapeHtml(team.ploeg)}
-                </td>
-
-                <td>
-                    ${team.punten}
-                </td>
-
-                <td class="${kegelsHoogste ? "hoogste-stat" : ""}">
-                    ${team.kegels}
-                </td>
-
-                <td class="${gemiddeldeHoogste ? "hoogste-stat" : ""}">
-                    ${gem.toFixed(2)}
-                </td>
-
-                <td class="position">
-                    ${positieKegels}
-                </td>
-
-                <td>
-                    ${verschilHtml}
-                </td>
-
-            `;
-
-            tbody.appendChild(
-                tr
-            );
-
-        }
-    );
-
+    if (huidigKlassementIndex < gespeeldeDatums.length - 1) {
+        huidigKlassementIndex++;
+        toonAlgemeenKlassement();
+    }
 }
 
 // =====================================================
@@ -1845,8 +1892,553 @@ function tekenRNBGrafiek() {
     if (typeof pasGrafiekThemaAan === "function") {
         pasGrafiekThemaAan();
     }
+    if (typeof pasGekozenGrafiekThemaAan === "function") {
+        pasGekozenGrafiekThemaAan();
+    }
 
 }
+
+
+// =====================================================
+// EVOLUTIE GRAFIEK PLOEG NAAR KEUZE
+// =====================================================
+
+function laadEvolutiePloegen() {
+
+    const select = document.getElementById("evolutiePloegSelect");
+    if (!select) return;
+
+    const ploegen = [...new Set(alleScores.map(score => score.ploeg))]
+        .sort((a,b) => a.localeCompare(b));
+
+    select.innerHTML = '<option value="">-- Kies een ploeg --</option>';
+
+    ploegen.forEach(ploeg => {
+        const option = document.createElement("option");
+        option.value = ploeg;
+        option.textContent = ploeg;
+        select.appendChild(option);
+    });
+}
+
+function tekenGekozenPloegGrafiek() {
+
+    const select = document.getElementById("evolutiePloegSelect");
+    const canvas = document.getElementById("gekozenPloegChart");
+    if (!select || !canvas) return;
+
+    const ploeg = select.value;
+
+    if (gekozenPloegChart) {
+        gekozenPloegChart.destroy();
+        gekozenPloegChart = null;
+    }
+
+    if (!ploeg) return;
+
+    const gegevens = DATUMS.map(datum => {
+        const score = alleScores.find(s =>
+            s.speeldatum === datum &&
+            normaliseer(s.ploeg) === normaliseer(ploeg)
+        );
+        return score ? Number(score.punten) : null;
+    });
+
+    gekozenPloegChart = new Chart(canvas, {
+        type: "line",
+        data: {
+            labels: DATUMS.map(datum => datumTekst(datum)),
+            datasets: [{
+                label: "Punten",
+                data: gegevens,
+                borderWidth: 3,
+                pointRadius: 6,
+                pointHoverRadius: 8,
+                tension: 0.2,
+                fill: false,
+                spanGaps: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    suggestedMax: 31,
+                    title: { display: true, text: "Punten" }
+                },
+                x: {
+                    offset: false,
+                    ticks: { autoSkip: false, padding: 0, maxRotation: 45, minRotation: 45 },
+                    title: { display: true, text: "Speeldatum" }
+                }
+            },
+            plugins: {
+                legend: { display: true },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            if (context.raw === null) return "Nog niet gespeeld";
+                            return "Punten: " + context.raw;
+                        }
+                    }
+                }
+            }
+        },
+        plugins: [{
+            id: "gekozenPuntenOpGrafiek",
+            afterDatasetsDraw: function(chart) {
+                const ctx = chart.ctx;
+                const dataset = chart.getDatasetMeta(0);
+                dataset.data.forEach((point, index) => {
+                    const value = gegevens[index];
+                    if (value === null) return;
+                    ctx.save();
+                    ctx.font = "bold 13px Arial";
+                    ctx.textAlign = "center";
+                    ctx.fillStyle = document.body.classList.contains("rb-dark") ? "#ffffff" : "#222222";
+                    ctx.fillText(value, point.x, point.y - 12);
+                    ctx.restore();
+                });
+            }
+        }]
+    });
+
+    pasGekozenGrafiekThemaAan();
+}
+
+function pasGekozenGrafiekThemaAan() {
+    if (!gekozenPloegChart) return;
+    const donker = document.body.classList.contains("rb-dark");
+    const tekst = donker ? "#e5e7eb" : "#222222";
+    const grid = donker ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.10)";
+    ["x", "y"].forEach(as => {
+        const schaal = gekozenPloegChart.options.scales[as];
+        schaal.ticks = {...(schaal.ticks || {}), color: tekst};
+        schaal.grid = {...(schaal.grid || {}), color: grid};
+        if (schaal.title) schaal.title.color = tekst;
+    });
+    gekozenPloegChart.options.plugins.legend.labels = {
+        ...(gekozenPloegChart.options.plugins.legend.labels || {}), color: tekst
+    };
+    gekozenPloegChart.update();
+}
+
+// =====================================================
+// KLASSEMENTVERLOOP PLOEG NAAR KEUZE
+// =====================================================
+
+function laadKlassementPloegen() {
+    const select = document.getElementById("klassementPloegSelect");
+    if (!select) return;
+
+    const ploegen = [...new Set(alleScores.map(score => score.ploeg))]
+        .sort((a,b) => a.localeCompare(b));
+
+    select.innerHTML = '<option value="">-- Kies een ploeg --</option>';
+
+    ploegen.forEach(ploeg => {
+        const option = document.createElement("option");
+        option.value = ploeg;
+        option.textContent = ploeg;
+        select.appendChild(option);
+    });
+}
+
+function tekenKlassementVerloopGrafiek() {
+    const select = document.getElementById("klassementPloegSelect");
+    const canvas = document.getElementById("klassementVerloopChart");
+    if (!select || !canvas) return;
+
+    const ploeg = select.value;
+
+    if (klassementVerloopChart) {
+        klassementVerloopChart.destroy();
+        klassementVerloopChart = null;
+    }
+
+    if (!ploeg) return;
+
+    // Bepaal de laatste speeldatum waarvoor er effectief scores zijn.
+    // De grafiek stopt daar en loopt dus niet verder over toekomstige wedstrijden.
+    const gespeeldeDatums = DATUMS.filter(datum =>
+        alleScores.some(score => score.speeldatum === datum)
+    );
+
+    if (!gespeeldeDatums.length) return;
+
+    const laatsteDatum = gespeeldeDatums[gespeeldeDatums.length - 1];
+    const datumsVoorGrafiek = DATUMS.filter(datum => datum <= laatsteDatum);
+
+    const plaatsen = [];
+
+    datumsVoorGrafiek.forEach(datum => {
+        const cumulatief = maakCumulatiefKlassement(datum);
+        const team = cumulatief.find(t => normaliseer(t.ploeg) === normaliseer(ploeg));
+
+        plaatsen.push(team ? cumulatief.indexOf(team) + 1 : null);
+    });
+
+    klassementVerloopChart = new Chart(canvas, {
+        type: "line",
+        data: {
+            labels: datumsVoorGrafiek.map(datum => datumTekst(datum)),
+            datasets: [{
+                label: "Plaats",
+                data: plaatsen,
+                borderWidth: 3,
+                pointRadius: 6,
+                pointHoverRadius: 8,
+                tension: 0.2,
+                fill: false,
+                spanGaps: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    reverse: true,
+                    min: 1,
+                    max: 12,
+                    ticks: { stepSize: 1 },
+                    title: { display: true, text: "Plaats in klassement" }
+                },
+                x: {
+                    ticks: { autoSkip: false, maxRotation: 45, minRotation: 45 },
+                    title: { display: true, text: "Speeldatum" }
+                }
+            },
+            plugins: {
+                legend: { display: true },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const i = context.dataIndex;
+                            if (plaatsen[i] === null) return "Nog niet gespeeld";
+                            return "Plaats: " + plaatsen[i];
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    pasKlassementVerloopThemaAan();
+}
+
+function pasKlassementVerloopThemaAan() {
+    if (!klassementVerloopChart) return;
+    const donker = document.body.classList.contains("rb-dark");
+    const tekst = donker ? "#e5e7eb" : "#222222";
+    const grid = donker ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.10)";
+
+    ["x", "y"].forEach(as => {
+        const schaal = klassementVerloopChart.options.scales[as];
+        schaal.ticks = {...(schaal.ticks || {}), color: tekst};
+        schaal.grid = {...(schaal.grid || {}), color: grid};
+        if (schaal.title) schaal.title.color = tekst;
+    });
+
+    klassementVerloopChart.options.plugins.legend.labels = {
+        ...(klassementVerloopChart.options.plugins.legend.labels || {}),
+        color: tekst
+    };
+    klassementVerloopChart.update();
+}
+
+
+// =====================================================
+// WEDSTRIJDKALENDER
+// =====================================================
+
+function toonWedstrijdKalender() {
+
+    const kalender = document.getElementById("wedstrijdKalender");
+    if (!kalender) return;
+
+    const gepland = wedstrijdenData
+        .filter(w => String(w.status || "gepland").toLowerCase().trim() === "gepland" && w.geplande_datum)
+        .sort((a,b) => String(a.geplande_datum).localeCompare(String(b.geplande_datum)));
+
+    if (gepland.length === 0) {
+        kalender.innerHTML = '<div class="no-data">Geen geplande wedstrijden beschikbaar.</div>';
+        return;
+    }
+
+    if (!kalenderMaand) {
+        const eerste = gepland[0].geplande_datum;
+        const laatste = gepland[gepland.length - 1].geplande_datum;
+        const vandaag = new Date();
+        const vandaagKey = vandaag.getFullYear() + "-" + String(vandaag.getMonth()+1).padStart(2,"0");
+        const eersteMaand = eerste.slice(0,7);
+        const laatsteMaand = laatste.slice(0,7);
+        kalenderMaand = vandaagKey >= eersteMaand && vandaagKey <= laatsteMaand ? vandaagKey : eersteMaand;
+    }
+
+    const [jaar, maand] = kalenderMaand.split("-").map(Number);
+    const eersteDag = new Date(Date.UTC(jaar, maand - 1, 1));
+    const aantalDagen = new Date(Date.UTC(jaar, maand, 0)).getUTCDate();
+    let startKolom = eersteDag.getUTCDay();
+    startKolom = startKolom === 0 ? 6 : startKolom - 1; // maandag = 0
+
+    const maandNaam = eersteDag.toLocaleDateString("nl-BE", {month:"long", year:"numeric", timeZone:"UTC"});
+    const maandTitel = maandNaam.charAt(0).toUpperCase() + maandNaam.slice(1);
+
+    const wedstrijdenPerDatum = {};
+    gepland.forEach(w => {
+        if (!wedstrijdenPerDatum[w.geplande_datum]) wedstrijdenPerDatum[w.geplande_datum] = [];
+        wedstrijdenPerDatum[w.geplande_datum].push(w);
+    });
+
+    const weekdagen = ["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"];
+    let html = `
+        <div class="kalender-navigatie">
+            <button type="button" onclick="veranderKalenderMaand(-1)">◀ Vorige</button>
+            <div class="kalender-maand">${escapeHtml(maandTitel)}</div>
+            <button type="button" onclick="veranderKalenderMaand(1)">Volgende ▶</button>
+        </div>
+        <div class="kalender-grid">
+            ${weekdagen.map(d => `<div class="kalender-weekdag">${d}</div>`).join("")}
+    `;
+
+    for (let i = 0; i < startKolom; i++) html += '<div class="kalender-dag leeg"></div>';
+
+    const vandaag = new Date();
+    const vandaagKey = vandaag.getFullYear() + "-" + String(vandaag.getMonth()+1).padStart(2,"0") + "-" + String(vandaag.getDate()).padStart(2,"0");
+
+    for (let dagNummer = 1; dagNummer <= aantalDagen; dagNummer++) {
+        const datum = `${jaar}-${String(maand).padStart(2,"0")}-${String(dagNummer).padStart(2,"0")}`;
+        const isVandaag = datum === vandaagKey;
+        html += `<div class="kalender-dag${isVandaag ? " vandaag" : ""}">`;
+        html += `<div class="kalender-dagnummer">${dagNummer}</div>`;
+
+        (wedstrijdenPerDatum[datum] || []).forEach((w, index) => {
+            const thuis = String(w.thuisploeg || "Onbekend");
+            const uit = String(w.uitploeg || "Onbekend");
+            const isThuis = normaliseer(thuis) === normaliseer(RNB);
+            const labelThuis = isThuis ? `<span class="kalender-huis" title="Huismatch">🏠</span>` : "";
+            const wedstrijdId = `kalender-wedstrijd-${datum}-${index}`;
+            html += `
+                <button type="button" class="kalender-wedstrijd" id="${escapeHtml(wedstrijdId)}" data-datum="${escapeHtml(datum)}" data-thuis="${escapeHtml(thuis)}" data-uit="${escapeHtml(uit)}">
+                    <div class="kalender-thuis">${labelThuis}${escapeHtml(thuis)}</div>
+                    <div>–</div>
+                    <div class="kalender-uit">${escapeHtml(uit)}</div>
+                </button>`;
+        });
+
+        html += `</div>`;
+    }
+
+    const totaal = startKolom + aantalDagen;
+    const eindLeeg = (7 - (totaal % 7)) % 7;
+    for (let i = 0; i < eindLeeg; i++) html += '<div class="kalender-dag leeg"></div>';
+    html += `</div>`;
+
+    kalender.innerHTML = html;
+
+    // Gebruik echte event listeners in plaats van inline onclick.
+    // Dit voorkomt problemen met teamnamen, aanhalingstekens en HTML-escaping.
+    kalender.querySelectorAll(".kalender-wedstrijd").forEach(knop => {
+        knop.addEventListener("click", function() {
+            openWedstrijdModal(
+                this.dataset.datum,
+                0,
+                this.dataset.thuis,
+                this.dataset.uit
+            );
+        });
+    });
+}
+
+function veranderKalenderMaand(richting) {
+    if (!kalenderMaand) return;
+    const [jaar, maand] = kalenderMaand.split("-").map(Number);
+    const d = new Date(Date.UTC(jaar, maand - 1 + richting, 1));
+    kalenderMaand = `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}`;
+    toonWedstrijdKalender();
+}
+
+function hoogsteTopserieRNBVoorDatum(datum) {
+    const rnbIds = new Set(
+        (rnbSpelersData || [])
+            .map(p => p.id)
+            .filter(id => id !== null && id !== undefined)
+    );
+
+    const rnbNamen = [
+        "Glenn Geenens",
+        "Mathias Vanderlinden",
+        "Arne Boone",
+        "Stephan Van Isacker",
+        "Gary Geenens"
+    ];
+
+    // Voeg de namen uit de players-tabel toe als extra koppeling.
+    (rnbSpelersData || []).forEach(p => {
+        if (p && p.name) rnbNamen.push(String(p.name));
+    });
+
+    const genormaliseerdeRnbNamen = rnbNamen
+        .map(normaliseer)
+        .filter(Boolean);
+
+    const gekozenDatum = String(datum || "").slice(0, 10);
+    let beste = null;
+
+    (bowlingScores || []).forEach(score => {
+        // Alleen scores van de wedstrijd/speeldatum die werd aangeklikt.
+        const scoreDatum = String(score.speeldatum || "").slice(0, 10);
+        if (scoreDatum !== gekozenDatum) return;
+
+        const scoreNaam = normaliseer(score.speler);
+
+        // We koppelen zowel via player_id als via de spelernaam.
+        const naamIsRNB = genormaliseerdeRnbNamen.some(naam =>
+            scoreNaam === naam ||
+            scoreNaam.includes(naam) ||
+            naam.includes(scoreNaam)
+        );
+
+        const isRNB =
+            (score.player_id !== null &&
+             score.player_id !== undefined &&
+             rnbIds.has(score.player_id)) ||
+            naamIsRNB;
+
+        if (!isRNB) return;
+
+        // De topserie staat rechtstreeks in bowling_scores.totaal.
+        const serie = Number(score.totaal);
+        if (!Number.isFinite(serie) || serie <= 0) return;
+
+        if (!beste || serie > beste.serie) {
+            beste = {
+                speler: score.speler,
+                serie,
+                datum: score.speeldatum
+            };
+        }
+    });
+
+    return beste;
+}
+
+
+function openWedstrijdModal(datum, index, thuis, uit) {
+    const modal = document.getElementById("wedstrijdModal");
+    const wedstrijd = document.getElementById("wedstrijdModalWedstrijd");
+    const info = document.getElementById("wedstrijdModalInfo");
+    if (!modal || !wedstrijd || !info) return;
+
+    const isThuis = normaliseer(thuis) === normaliseer(RNB);
+
+    wedstrijd.innerHTML = `
+        ${isThuis ? "🏠 " : ""}${escapeHtml(thuis)}
+        <br><span style="font-size:15px;color:#777;">tegen</span><br>
+        ${escapeHtml(uit)}
+    `;
+
+    const thuisResultaat = alleScores.find(score =>
+        score.speeldatum === datum &&
+        normaliseer(score.ploeg) === normaliseer(thuis)
+    );
+    const uitResultaat = alleScores.find(score =>
+        score.speeldatum === datum &&
+        normaliseer(score.ploeg) === normaliseer(uit)
+    );
+
+    const thuisPunten = thuisResultaat ? Number(thuisResultaat.punten) || 0 : null;
+    const uitPunten = uitResultaat ? Number(uitResultaat.punten) || 0 : null;
+    const thuisKegels = thuisResultaat ? Number(thuisResultaat.kegels) || 0 : null;
+    const uitKegels = uitResultaat ? Number(uitResultaat.kegels) || 0 : null;
+
+    let winnaar = null;
+    if (thuisPunten !== null && uitPunten !== null) {
+        if (thuisPunten > uitPunten) winnaar = "thuis";
+        if (uitPunten > thuisPunten) winnaar = "uit";
+    }
+
+    const rijKlasse = kant => winnaar === kant ? "winnaar-punten" : "";
+    const labelThuis = winnaar === "thuis" ? "🏆 " : "";
+    const labelUit = winnaar === "uit" ? "🏆 " : "";
+
+    let resultatenHtml = `
+        <div class="kalender-resultaat-datum">${datumTekst(datum)}</div>
+        <table class="kalender-resultaten">
+            <thead>
+                <tr>
+                    <th>Ploeg</th>
+                    <th>Punten</th>
+                    <th>Kegels</th>
+                    <th>Gemiddelde</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    const topserieRNB = hoogsteTopserieRNBVoorDatum(datum);
+    const topserieTekst = topserieRNB
+        ? `<div class="kalender-topserie">⭐ Hoogste topserie: <strong>${escapeHtml(topserieRNB.speler)}</strong> — ${topserieRNB.serie}</div>`
+        : `<div class="kalender-topserie">⭐ Nog geen topserie beschikbaar</div>`;
+
+    const thuisTopserie = normaliseer(thuis) === normaliseer(RNB) ? topserieTekst : "";
+    const uitTopserie = normaliseer(uit) === normaliseer(RNB) ? topserieTekst : "";
+
+    if (thuisResultaat || uitResultaat) {
+        resultatenHtml += `
+            <tr>
+                <td class="${rijKlasse("thuis")}">${labelThuis}${escapeHtml(thuis)}${thuisTopserie}</td>
+                <td class="${rijKlasse("thuis")}">${thuisPunten === null ? "—" : thuisPunten}</td>
+                <td>${thuisKegels === null ? "—" : thuisKegels}</td>
+                <td>${thuisKegels === null ? "—" : (thuisKegels / AANTAL_SPELERS).toFixed(2)}</td>
+            </tr>
+            <tr>
+                <td class="${rijKlasse("uit")}">${labelUit}${escapeHtml(uit)}${uitTopserie}</td>
+                <td class="${rijKlasse("uit")}">${uitPunten === null ? "—" : uitPunten}</td>
+                <td>${uitKegels === null ? "—" : uitKegels}</td>
+                <td>${uitKegels === null ? "—" : (uitKegels / AANTAL_SPELERS).toFixed(2)}</td>
+            </tr>
+        `;
+    } else {
+        resultatenHtml += `
+            <tr>
+                <td colspan="4" class="geen-resultaat">Nog geen resultaten beschikbaar voor deze wedstrijd.</td>
+            </tr>
+        `;
+    }
+
+    resultatenHtml += `</tbody></table>`;
+
+    if (winnaar) {
+        const winnaarNaam = winnaar === "thuis" ? thuis : uit;
+        resultatenHtml += `<div class="kalender-winnaar-label">🏆 Winnaar op punten: ${escapeHtml(winnaarNaam)}</div>`;
+    } else if (thuisPunten !== null && uitPunten !== null) {
+        resultatenHtml += `<div class="kalender-gelijk">Gelijkspel op punten</div>`;
+    }
+
+    info.innerHTML = resultatenHtml;
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
+}
+
+function sluitWedstrijdModal() {
+    const modal = document.getElementById("wedstrijdModal");
+    if (!modal) return;
+    modal.classList.remove("open");
+    modal.setAttribute("aria-hidden", "true");
+}
+
+document.addEventListener("click", function(e) {
+    const modal = document.getElementById("wedstrijdModal");
+    if (modal && e.target === modal) sluitWedstrijdModal();
+});
+
+document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape") sluitWedstrijdModal();
+});
 
 
 // =====================================================
@@ -1908,6 +2500,9 @@ function pasGrafiekThemaAan() {
     }
 
     rnbChart.update();
+    if (typeof pasKlassementVerloopThemaAan === "function") {
+        pasKlassementVerloopThemaAan();
+    }
 }
 </script>
 
