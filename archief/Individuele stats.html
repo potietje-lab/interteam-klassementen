@@ -752,6 +752,7 @@ function toonSpeler() {
                             <th>Game 3</th>
                             <th>Serie</th>
                             <th>Gemiddelde</th>
+                            <th>Vorm<br><small>(gem. laatste 2 matchen)</small></th>
                         </tr>
                     </thead>
 
@@ -945,9 +946,7 @@ function maakGamesTabel(scores) {
     if (!body)
         return;
 
-
     body.innerHTML = "";
-
 
     const gesorteerd =
         [...scores].sort(
@@ -957,8 +956,29 @@ function maakGamesTabel(scores) {
                 )
         );
 
+    // Gemiddelde per gespeelde match berekenen.
+    const matchGemiddelden = gesorteerd.map(r => {
 
-    gesorteerd.forEach(r => {
+        const games = [
+            Number(r.game1) || 0,
+            Number(r.game2) || 0,
+            Number(r.game3) || 0
+        ].filter(g => g > 0);
+
+        if (!games.length)
+            return null;
+
+        const totaal =
+            games.reduce(
+                (som, waarde) =>
+                    som + waarde,
+                0
+            );
+
+        return totaal / games.length;
+    });
+
+    gesorteerd.forEach((r, index) => {
 
         const game1 =
             Number(r.game1) || 0;
@@ -969,17 +989,14 @@ function maakGamesTabel(scores) {
         const game3 =
             Number(r.game3) || 0;
 
-
         const games = [
             game1,
             game2,
             game3
         ].filter(g => g > 0);
 
-
         if (!games.length)
             return;
-
 
         const serie =
             games.reduce(
@@ -988,10 +1005,23 @@ function maakGamesTabel(scores) {
                 0
             );
 
-
         const gemiddelde =
             serie / games.length;
 
+        // Vorm = gemiddelde van de huidige en vorige match.
+        let vorm = null;
+
+        if (
+            index > 0 &&
+            matchGemiddelden[index] !== null &&
+            matchGemiddelden[index - 1] !== null
+        ) {
+            vorm =
+                (
+                    matchGemiddelden[index] +
+                    matchGemiddelden[index - 1]
+                ) / 2;
+        }
 
         const game1Class =
             game1 >= 200
@@ -1013,10 +1043,8 @@ function maakGamesTabel(scores) {
                 ? "serie-600"
                 : "serie";
 
-
         const row =
             document.createElement("tr");
-
 
         row.innerHTML = `
 
@@ -1044,19 +1072,21 @@ function maakGamesTabel(scores) {
                 ${gemiddelde.toFixed(1)}
             </td>
 
-        `;
+            <td class="gemiddelde">
+                ${vorm !== null ? vorm.toFixed(1) : "-"}
+            </td>
 
+        `;
 
         body.appendChild(row);
 
     });
 
-
     if (!body.children.length) {
 
         body.innerHTML = `
             <tr>
-                <td colspan="6"
+                <td colspan="7"
                     class="geen-data">
                     Nog geen gespeelde games.
                 </td>
