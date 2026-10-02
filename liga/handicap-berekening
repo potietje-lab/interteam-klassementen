@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bowling handicap berekening</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#111827;color:#f3f4f6}
+.container{max-width:650px;margin:40px auto;padding:25px}
+.kaart{background:#1f2937;border-radius:18px;padding:30px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+h1{text-align:center;margin-top:0;margin-bottom:30px}
+label{display:block;margin-top:18px;margin-bottom:7px;font-weight:bold}
+input{width:100%;padding:13px;border:1px solid #4b5563;border-radius:10px;background:#111827;color:white;font-size:18px}
+button{width:100%;margin-top:25px;padding:14px;border:0;border-radius:10px;background:#2563eb;color:white;font-size:18px;font-weight:bold;cursor:pointer}
+.resultaat{margin-top:30px;background:#111827;border-radius:14px;padding:20px}
+.regel{display:flex;justify-content:space-between;gap:20px;padding:10px 0;border-bottom:1px solid #374151}
+.waarde{font-weight:bold}
+.handicap{margin-top:18px;padding:18px;border-radius:12px;background:#065f46;text-align:center}
+.handicap .getal{font-size:42px;font-weight:bold;margin-top:5px}
+.uitleg{margin-top:25px;padding:15px;border-radius:10px;background:#374151;line-height:1.6;font-size:15px}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="kaart">
+<h1>🎳 Bowling handicap berekening</h1>
+
+<label for="serie">Serie (3 games)</label>
+<input type="number" id="serie" min="0" step="1" placeholder="Bijvoorbeeld 150">
+
+<label for="basis">Basisgetal</label>
+<input type="number" id="basis" min="0" step="1" value="200">
+
+<label for="factor">Deelfactor (%)</label>
+<input type="number" id="factor" min="0" max="100" step="1" value="90">
+
+<button onclick="berekenHandicap()">Bereken handicap</button>
+
+<div class="resultaat" id="resultaat" style="display:none">
+<div class="regel"><span>Serie</span><span class="waarde" id="toonSerie"></span></div>
+<div class="regel"><span>Gemiddelde (serie ÷ 3)</span><span class="waarde" id="toonGemiddelde"></span></div>
+<div class="regel"><span>Basisgetal</span><span class="waarde" id="toonBasis"></span></div>
+<div class="regel"><span>Basisgetal − gemiddelde</span><span class="waarde" id="toonVerschil"></span></div>
+<div class="regel"><span>Percentage</span><span class="waarde" id="toonFactor"></span></div>
+<div class="regel"><span>Berekening vóór afronding</span><span class="waarde" id="toonBerekening"></span></div>
+<div class="handicap"><strong>HANDICAP</strong><div class="getal" id="toonHandicap"></div></div>
+</div>
+
+<div class="uitleg">
+<strong>Berekening:</strong><br>
+Gemiddelde = serie ÷ 3<br>
+Verschil = basisgetal − gemiddelde<br>
+Handicap = verschil × percentage<br>
+De handicap wordt altijd <strong>naar beneden afgerond</strong>.
+</div>
+</div>
+</div>
+
+<script>
+function berekenHandicap(){
+    const serie=Number(document.getElementById("serie").value);
+    const basis=Number(document.getElementById("basis").value);
+    const factor=Number(document.getElementById("factor").value);
+
+    if(!Number.isFinite(serie)||!Number.isFinite(basis)||!Number.isFinite(factor)||
+       serie<0||basis<0||factor<0||factor>100){
+        alert("Vul geldige waarden in.");
+        return;
+    }
+
+    const gemiddelde=serie/3;
+    const verschil=basis-gemiddelde;
+    const berekening=Math.max(0,verschil)*(factor/100);
+    const handicap=Math.floor(berekening);
+
+    document.getElementById("toonSerie").textContent=serie;
+    document.getElementById("toonGemiddelde").textContent=gemiddelde.toFixed(2);
+    document.getElementById("toonBasis").textContent=basis;
+    document.getElementById("toonVerschil").textContent=verschil.toFixed(2);
+    document.getElementById("toonFactor").textContent=factor+"%";
+    document.getElementById("toonBerekening").textContent=berekening.toFixed(2);
+    document.getElementById("toonHandicap").textContent=handicap;
+    document.getElementById("resultaat").style.display="block";
+}
+</script>
+</body>
+</html>
