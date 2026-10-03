@@ -1465,6 +1465,37 @@ function toonSpeeldag() {
 // 3. RNB STATISTIEK
 // =====================================================
 
+// Zoek de tegenploeg automatisch op in de Supabase-tabel "wedstrijden".
+// We vergelijken zowel de werkelijke datum als de geplande datum.
+// De bestaande lijst RNB_TEGENPLOEGEN blijft als terugvaloptie behouden.
+function bepaalRNBTegenploeg(speeldatum) {
+    const datum = String(speeldatum || "").slice(0, 10);
+    const rnbNaam = normaliseer(RNB);
+
+    const wedstrijd = wedstrijdenData.find(w => {
+        const datums = [w.werkelijke_datum, w.geplande_datum]
+            .filter(Boolean)
+            .map(d => String(d).slice(0, 10));
+
+        if (!datums.includes(datum)) return false;
+
+        return normaliseer(w.thuisploeg) === rnbNaam ||
+               normaliseer(w.uitploeg) === rnbNaam;
+    });
+
+    if (wedstrijd) {
+        const thuisIsRNB = normaliseer(wedstrijd.thuisploeg) === rnbNaam;
+        const tegenploeg = thuisIsRNB ? wedstrijd.uitploeg : wedstrijd.thuisploeg;
+        if (tegenploeg && String(tegenploeg).trim()) {
+            return String(tegenploeg).trim();
+        }
+    }
+
+    // Als er geen overeenkomst in "wedstrijden" is, gebruik dan de oude lijst.
+    return RNB_TEGENPLOEGEN[datum] || "Onbekend";
+}
+
+
 function toonRNBStatistiek() {
 
     const tbody =
@@ -1600,10 +1631,7 @@ function toonRNBStatistiek() {
 
 
             const tegenstander =
-                RNB_TEGENPLOEGEN[
-                    score.speeldatum
-                ] ||
-                "Onbekend";
+                bepaalRNBTegenploeg(score.speeldatum);
 
 
             /*
