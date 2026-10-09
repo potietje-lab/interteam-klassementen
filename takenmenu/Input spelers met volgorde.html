@@ -78,6 +78,25 @@ h2 {
     margin-top: 30px;
 }
 
+.postponed-notice {
+    display: none;
+    margin: 8px 0 18px;
+    padding: 12px 14px;
+    border: 1px solid #d97706;
+    border-left: 5px solid #d97706;
+    border-radius: 8px;
+    background: #fff7ed;
+    color: #9a3412;
+    font-weight: bold;
+    line-height: 1.45;
+}
+
+body.dark .postponed-notice {
+    background: #3b2818;
+    color: #fed7aa;
+    border-color: #d97706;
+}
+
 
 /* ================================================= */
 /* SELECTS EN INPUTS                                 */
@@ -335,7 +354,7 @@ th {
 
 
 <select id="speeldatum"
-        onchange="laadScores()">
+        onchange="verwerkDatumWijziging()">
 
     <option value="2026-09-04">
         04/09/2026
@@ -427,6 +446,7 @@ th {
 
 </select>
 
+<div id="uitgesteldBericht" class="postponed-notice" role="status"></div>
 
 
 <!-- ================================================= -->
@@ -1788,6 +1808,130 @@ function wisselThema() {
 }
 
 
+
+// ==================================================
+// SPEELDATUMS EN INHAALWEDSTRIJDEN LADEN
+// ==================================================
+
+let uitgesteldeDatumsPerInhaaldatum = new Map();
+let inhaaldatumsPerOorspronkelijkeDatum = new Map();
+
+function toonUitgesteldBericht() {
+    const datum = document.getElementById("speeldatum").value;
+    const bericht = document.getElementById("uitgesteldBericht");
+    const oorspronkelijkeDatums = uitgesteldeDatumsPerInhaaldatum.get(datum);
+    const nieuweDatums = inhaaldatumsPerOorspronkelijkeDatum.get(datum);
+
+    if (oorspronkelijkeDatums && oorspronkelijkeDatums.size > 0) {
+        const datumsTekst = Array.from(oorspronkelijkeDatums)
+            .sort()
+            .map(formatDatum)
+            .join(", ");
+        bericht.textContent = "⚠️ OPGELET: Dit is een inhaalwedstrijd. De oorspronkelijke wedstrijddatum was: " + datumsTekst + ".";
+        bericht.style.display = "block";
+    } else if (nieuweDatums && nieuweDatums.size > 0) {
+        const datumsTekst = Array.from(nieuweDatums)
+            .sort()
+            .map(formatDatum)
+            .join(", ");
+        bericht.textContent = "⚠️ OPGELET: De wedstrijd van deze oorspronkelijke datum is uitgesteld. De inhaalwedstrijd vindt plaats op: " + datumsTekst + ".";
+        bericht.style.display = "block";
+    } else {
+        bericht.textContent = "";
+        bericht.style.display = "none";
+    }
+}
+
+function verwerkDatumWijziging() {
+    toonUitgesteldBericht();
+    laadScores();
+}
+
+async function laadSpeeldatums() {
+    const select = document.getElementById("speeldatum");
+
+    // Bewaar de gewone speeldagen die al in de HTML staan.
+    const normaleDatums = Array.from(select.options)
+        .map(option => option.value)
+        .filter(Boolean);
+
+    // Haal eventuele inhaaldatums op uit Supabase.
+    const { data, error } = await supabaseClient
+        .from("wedstrijden")
+        .select("geplande_datum, werkelijke_datum");
+
+    if (error) {
+        console.error("Inhaaldatums konden niet worden geladen:", error);
+        return;
+    }
+
+    // Koppel elke inhaaldatum aan de oorspronkelijke (uitgestelde) datum.
+    uitgesteldeDatumsPerInhaaldatum = new Map();
+    inhaaldatumsPerOorspronkelijkeDatum = new Map();
+    (data || []).forEach(wedstrijd => {
+        if (
+            wedstrijd.werkelijke_datum &&
+            wedstrijd.geplande_datum &&
+            wedstrijd.werkelijke_datum !== wedstrijd.geplande_datum
+        ) {
+            if (!uitgesteldeDatumsPerInhaaldatum.has(wedstrijd.werkelijke_datum)) {
+                uitgesteldeDatumsPerInhaaldatum.set(wedstrijd.werkelijke_datum, new Set());
+            }
+            uitgesteldeDatumsPerInhaaldatum
+                .get(wedstrijd.werkelijke_datum)
+                .add(wedstrijd.geplande_datum);
+
+            if (!inhaaldatumsPerOorspronkelijkeDatum.has(wedstrijd.geplande_datum)) {
+                inhaaldatumsPerOorspronkelijkeDatum.set(wedstrijd.geplande_datum, new Set());
+            }
+            inhaaldatumsPerOorspronkelijkeDatum
+                .get(wedstrijd.geplande_datum)
+                .add(wedstrijd.werkelijke_datum);
+        }
+    });
+
+    const inhaalDatums = new Set(uitgesteldeDatumsPerInhaaldatum.keys());
+
+    // Combineer de gewone datums en inhaaldatums, verwijder dubbels
+    // en sorteer alles chronologisch.
+    const alleDatums = [...new Set([...normaleDatums, ...inhaalDatums])].sort();
+
+    select.replaceChildren();
+    alleDatums.forEach(datum => {
+        const option = document.createElement("option");
+        option.value = datum;
+
+        let label = formatDatum(datum);
+        if (inhaalDatums.has(datum)) {
+            const oorspronkelijkeDatums = Array.from(
+                uitgesteldeDatumsPerInhaaldatum.get(datum)
+            ).sort();
+            const datumsTekst = oorspronkelijkeDatums
+                .map(formatDatum)
+                .join(", ");
+            label += " — inhaalwedstrijd (uitgesteld van " + datumsTekst + ")";
+        }
+
+        option.textContent = label;
+        select.appendChild(option);
+    });
+
+    // Kies standaard de eerstvolgende datum vanaf vandaag.
+    const vandaag = new Date();
+    vandaag.setHours(0, 0, 0, 0);
+    const vandaagISO = [
+        vandaag.getFullYear(),
+        String(vandaag.getMonth() + 1).padStart(2, "0"),
+        String(vandaag.getDate()).padStart(2, "0")
+    ].join("-");
+
+    const volgendeDatum = alleDatums.find(datum => datum >= vandaagISO)
+        || alleDatums[alleDatums.length - 1];
+
+    if (volgendeDatum) select.value = volgendeDatum;
+    toonUitgesteldBericht();
+}
+
 // ==================================================
 // START
 // ==================================================
@@ -1801,6 +1945,8 @@ async function start() {
         "Spelers worden geladen..."
     );
 
+
+    await laadSpeeldatums();
 
     await laadSpelers();
 
