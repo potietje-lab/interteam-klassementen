@@ -730,83 +730,69 @@ function escapeHtml(tekst) {
 
 async function laadInhaalDatums() {
 
-    const select =
-        document.getElementById("speeldatum");
+    const select = document.getElementById("speeldatum");
 
-    const {
-        data,
-        error
-    } = await supabaseClient
+    const { data, error } = await supabaseClient
         .from("wedstrijden")
-        .select(
-            "geplande_datum, werkelijke_datum"
-        );
+        .select("geplande_datum, werkelijke_datum");
 
     if (error) {
-
         console.error(error);
-
-        return;
+        // Bij een fout blijven de normale datums beschikbaar.
     }
 
-    const bestaandeDatums =
-        new Set(
-            NORMALE_SPEELDAGEN
-        );
-
-    const inhaalDatums =
-        new Set();
-
-    (data || []).forEach(
-        wedstrijd => {
-
-            if (
-                wedstrijd.werkelijke_datum &&
-                wedstrijd.geplande_datum &&
-                wedstrijd.werkelijke_datum !==
-                wedstrijd.geplande_datum
-            ) {
-
-                inhaalDatums.add(
-                    wedstrijd.werkelijke_datum
-                );
+    // Bewaar per werkelijke inhaaldatum ook de oorspronkelijke geplande datum.
+    const oorspronkelijkeDatumsPerInhaaldatum = new Map();
+    (data || []).forEach(wedstrijd => {
+        if (
+            wedstrijd.werkelijke_datum &&
+            wedstrijd.geplande_datum &&
+            wedstrijd.werkelijke_datum !== wedstrijd.geplande_datum
+        ) {
+            if (!oorspronkelijkeDatumsPerInhaaldatum.has(wedstrijd.werkelijke_datum)) {
+                oorspronkelijkeDatumsPerInhaaldatum.set(wedstrijd.werkelijke_datum, new Set());
             }
+            oorspronkelijkeDatumsPerInhaaldatum
+                .get(wedstrijd.werkelijke_datum)
+                .add(wedstrijd.geplande_datum);
         }
-    );
+    });
 
-    Array.from(inhaalDatums)
-        .sort()
-        .forEach(
-            datum => {
+    const inhaalDatums = new Set(oorspronkelijkeDatumsPerInhaaldatum.keys());
 
-                if (
-                    bestaandeDatums.has(
-                        datum
-                    )
-                ) {
+    // Combineer normale speeldagen en inhaaldatums en sorteer alles chronologisch.
+    const alleDatums = new Set([...NORMALE_SPEELDAGEN, ...inhaalDatums]);
+    const gesorteerdeDatums = Array.from(alleDatums).sort();
+    select.replaceChildren();
 
-                    return;
-                }
+    gesorteerdeDatums.forEach(datum => {
+        const option = document.createElement("option");
+        option.value = datum;
+        let label = datumNaarTekst(datum);
+        if (inhaalDatums.has(datum)) {
+            const uitgesteldeDatums = Array.from(
+                oorspronkelijkeDatumsPerInhaaldatum.get(datum)
+            ).sort();
+            label += " — inhaalwedstrijd (uitgesteld van " +
+                uitgesteldeDatums.map(datumNaarTekst).join(", ") + ")";
+        }
+        option.textContent = label;
+        select.appendChild(option);
+    });
 
-                const option =
-                    document.createElement(
-                        "option"
-                    );
+    // Selecteer standaard de eerstvolgende speeldatum vanaf vandaag.
+    const vandaag = new Date();
+    vandaag.setHours(0, 0, 0, 0);
+    const vandaagISO = [
+        vandaag.getFullYear(),
+        String(vandaag.getMonth() + 1).padStart(2, "0"),
+        String(vandaag.getDate()).padStart(2, "0")
+    ].join("-");
+    const volgendeDatum = gesorteerdeDatums.find(datum => datum >= vandaagISO)
+        || gesorteerdeDatums[gesorteerdeDatums.length - 1];
 
-                option.value =
-                    datum;
-
-                option.textContent =
-                    datumNaarTekst(datum) +
-                    " — inhaalwedstrijd";
-
-                select.appendChild(
-                    option
-                );
-            }
-        );
+    if (volgendeDatum) select.value = volgendeDatum;
 }
-
 
 // =====================================================
 // WEDSTRIJDEN OPHALEN
