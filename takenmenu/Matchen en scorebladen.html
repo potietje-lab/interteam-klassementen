@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roll & Bowl - Alle gespeelde matchen</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;padding:20px;background:#111827;color:#e5e7eb}
+.container{max-width:900px;margin:auto;background:#1f2937;padding:25px;border-radius:18px;box-shadow:0 4px 18px rgba(0,0,0,.3)}
+h1{text-align:center;margin-top:0;font-size:28px;color:#f9fafb}.subtitel{text-align:center;margin-bottom:25px;color:#cbd5e1}
+.kaart{display:flex;align-items:center;gap:14px;padding:14px;margin:10px 0;border:1px solid #ddd;border-radius:12px;background:#fff}
+.rang{font-size:24px;font-weight:bold;min-width:32px;text-align:center}
+.gegevens{min-width:0;flex:1}.tegenstander{font-size:18px;font-weight:bold;margin-bottom:6px}
+.details{line-height:1.6}.scoreblad-link{display:inline-block;margin-top:8px;padding:7px 11px;border-radius:8px;background:#2563eb;color:#fff!important;text-decoration:none;font-weight:bold;font-size:14px}
+.scoreblad-link:hover{background:#1d4ed8}.scoreblad-link{border:0;cursor:pointer;font-family:inherit}.scoreblad-link:disabled{opacity:.7;cursor:wait}
+body.rb-dark .kaart{background:#1f2937!important;border-color:#4b5563!important;color:#e5e7eb!important}
+@media(max-width:600px){.kaart{align-items:flex-start;gap:8px}.details{font-size:13px}.scoreblad-link{font-size:13px}}
+.status{text-align:center;padding:15px;color:#666}table{width:100%;border-collapse:collapse}
+th,td{padding:13px 10px;border-bottom:1px solid #ddd;text-align:center}th{background:#f1f1f1}
+td:nth-child(2){text-align:left;font-weight:bold}.plaats{font-size:22px;width:60px}.kegels{font-weight:bold;font-size:18px}
+.fout{color:#b00020;text-align:center;padding:20px;font-weight:bold}
+.matchrij{display:grid;grid-template-columns:130px 1fr 1fr auto;gap:12px;align-items:center;padding:13px 14px;margin:8px 0;border:1px solid #4b5563;border-radius:10px;background:#111827;color:#e5e7eb}.matchdatum{font-weight:bold;white-space:nowrap}.matchploeg{font-weight:600}.matchpunten{display:block;font-size:14px;font-weight:normal;color:#93c5fd;margin-top:5px}.matchstatus{font-size:12px;color:#cbd5e1}.matchrij .scoreblad-link{margin-top:0;white-space:nowrap}
+@media(max-width:650px){.matchrij{grid-template-columns:1fr 1fr;gap:8px}.matchdatum{grid-column:1/-1}.matchrij .scoreblad-link{grid-column:1/-1;justify-self:start}}
+@media(max-width:600px){body{padding:8px}.container{padding:15px 8px}h1{font-size:22px}th,td{padding:10px 5px;font-size:14px}.plaats{font-size:18px}.kegels{font-size:16px}}
+
+.zoekbalk{display:block;width:100%;box-sizing:border-box;margin:14px 0;padding:12px 14px;border-radius:10px;border:1px solid #475569;background:#111827;color:#f8fafc;font-size:16px}
+.zoekbalk::placeholder{color:#9ca3af}
+.matchrij.rnb-match{background:#594900!important;border:1px solid #facc15!important;color:#fff3b0!important}
+.matchrij.rnb-match .matchploeg,.matchrij.rnb-match .matchdatum{color:#fff3b0!important}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+</head>
+<body>
+<div class="container">
+<h1>🎳 Alle gespeelde matchen</h1>
+<div class="subtitel">Overzicht op datum, met het bijbehorende scoreblad</div>
+<input id="zoekMatchen" class="zoekbalk" type="search" placeholder="Zoek op datum of een deel van een ploegnaam…" aria-label="Zoek matchen" autocomplete="off"><div id="status" class="status">Gespeelde matchen worden geladen...</div>
+<div id="lijst"></div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://wnsvbtskynkewxggmjem.supabase.co";
+const SUPABASE_KEY = "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+const RNB = "RNB Geenens Construct-Vapor";
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function norm(v){
+  return String(v ?? "")
+    .trim()
+    .replace(/\s+/g," ")
+    .toLowerCase();
+}
+
+function formatDatum(d){
+  if(!d) return "";
+  const p = d.split("-");
+  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d;
+}
+
+// Publieke PDF's staan in bucket PDF, map Scorebladen.
+// Bestandsnamen beginnen met DD-MM-YYYY_, gevolgd door match/ploeggegevens.
+// We zoeken de exacte objectnaam in Storage zodat er geen foutieve PDF-link ontstaat.
+let scorebladPerDatum = new Map();
+
+function datumPrefix(datum){
+  const match = String(datum || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return match ? `${match[3]}-${match[2]}-${match[1]}_` : "";
+}
+
+async function laadScorebladen(){
+  const { data, error } = await db.storage
+    .from("PDF")
+    .list("Scorebladen", { limit: 1000, sortBy: { column: "name", order: "asc" } });
+
+  if(error) {
+    console.warn("Scorebladen konden niet worden opgelijst:", error.message);
+    return;
+  }
+
+  scorebladPerDatum = new Map();
+  for(const bestand of (data || [])){
+    if(!bestand.name || bestand.name.startsWith(".")) continue;
+    const match = bestand.name.match(/^(\d{2}-\d{2}-\d{4})_/);
+    if(!match) continue;
+    const delen = match[1].split("-");
+    const isoDatum = `${delen[2]}-${delen[1]}-${delen[0]}`;
+    if(!scorebladPerDatum.has(isoDatum)){
+      const { data: publicData } = db.storage
+        .from("PDF")
+        .getPublicUrl(`Scorebladen/${bestand.name}`);
+      scorebladPerDatum.set(isoDatum, publicData?.publicUrl || "");
+    }
+  }
+}
+
+function scorebladUrl(datum){
+  return scorebladPerDatum.get(String(datum || "").slice(0,10)) || "";
+}
+
+// De knop blijft zichtbaar, ook wanneer Storage de bestandslijst niet vooraf toestaat.
+// Bij een klik zoeken we opnieuw naar een PDF waarvan de naam met DD-MM-YYYY_ begint.
+function normBestandsnaam(waarde){
+  return String(waarde || "")
+    .normalize("NFD").replace(/[\\u0300-\\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+async function openScoreblad(datum, ploeg1, ploeg2, knop){
+  const prefix = datumPrefix(datum);
+  if(!prefix){
+    alert("Voor deze wedstrijd is geen geldige speeldatum beschikbaar.");
+    return;
+  }
+  const origineleTekst = knop ? knop.textContent : "";
+  if(knop){ knop.disabled = true; knop.textContent = "PDF zoeken…"; }
+  try{
+    // Zoek zonder de Storage-parameter "search": die kan resultaten missen.
+    // Haal de map in pagina's op en vergelijk daarna de exacte datum-prefix.
+    let bestanden = [];
+    let offset = 0;
+    const paginaGrootte = 100;
+    while(true){
+      const { data, error } = await db.storage
+        .from("PDF")
+        .list("Scorebladen", {
+          limit: paginaGrootte,
+          offset,
+          sortBy: { column: "name", order: "asc" }
+        });
+      if(error){
+        console.error("Scoreblad zoeken mislukt:", error);
+        alert("Supabase laat de bestandenlijst niet lezen. Controleer de Storage-listrechten voor bucket PDF en map Scorebladen. Details: " + error.message);
+        return;
+      }
+      const pagina = data || [];
+      bestanden = bestanden.concat(pagina);
+      if(pagina.length < paginaGrootte) break;
+      offset += paginaGrootte;
+    }
+    const naam1 = normBestandsnaam(ploeg1);
+    const naam2 = normBestandsnaam(ploeg2);
+    const opDatum = bestanden.filter(item => item.name && item.name.startsWith(prefix));
+    const bevatPloeg = (bestandsnaam, ploeg) => {
+      if(!ploeg) return false;
+      const fileNorm = normBestandsnaam(bestandsnaam);
+      // Teamnamen kunnen in de PDF-naam aangevuld zijn met sponsornamen.
+      return fileNorm.includes(ploeg) ||
+        (ploeg.length > 8 && fileNorm.includes(ploeg.slice(0, Math.min(ploeg.length, 14))));
+    };
+    // Eerst de sterkste match: datum en beide ploegen.
+    let bestand = opDatum.find(item =>
+      bevatPloeg(item.name, naam1) && bevatPloeg(item.name, naam2)
+    );
+
+    // Als de namen in de database anders geschreven zijn dan in de PDF,
+    // probeer datum + één van de ploegen. Kies alleen als dit uniek is.
+    if(!bestand){
+      const matchesEenPloeg = opDatum.filter(item =>
+        bevatPloeg(item.name, naam1) || bevatPloeg(item.name, naam2)
+      );
+      if(matchesEenPloeg.length === 1) bestand = matchesEenPloeg[0];
+    }
+
+    // Als er maar één PDF voor die datum bestaat, is die ondubbelzinnig.
+    if(!bestand && opDatum.length === 1) bestand = opDatum[0];
+
+    const padScoreblad = bestand ? ("Scorebladen/" + bestand.name) : "";
+    if(!padScoreblad){
+      const namen = opDatum.map(item => item.name).join("\\n");
+      alert("Ik kan het juiste scoreblad voor " + prefix.slice(0,10) +
+        " niet eenduidig bepalen op basis van de ploegnamen. PDF's voor deze datum:\\n" +
+        (namen || "(geen bestanden gevonden)") +
+        "\\nStuur deze lijst door, dan pas ik de koppeling aan.");
+      return;
+    }
+    const { data: publicData } = db.storage.from("PDF").getPublicUrl(padScoreblad);
+    if(!publicData?.publicUrl){
+      alert("De publieke URL van het scoreblad kon niet worden gemaakt.");
+      return;
+    }
+    window.open(publicData.publicUrl, "_blank", "noopener,noreferrer");
+  }catch(err){
+    console.error(err);
+    alert("Er ging iets mis bij het zoeken naar het scoreblad: " + (err.message || err));
+  }finally{
+    if(knop){ knop.disabled = false; knop.textContent = origineleTekst || "📄 Scoreblad openen"; }
+  }
+}
+
+function escapeHtml(value){
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+}
+
+async function laadData(){
+  const status = document.getElementById("status");
+  const lijst = document.getElementById("lijst");
+  try{
+    const { data: wedstrijden, error } = await db
+      .from("wedstrijden")
+      .select("id, geplande_datum, werkelijke_datum, thuisploeg, uitploeg, status")
+      .order("geplande_datum", { ascending: true });
+    if(error) throw error;
+
+    // Haal ook de ploegenpunten op zodat ze onder elke ploegnaam kunnen verschijnen.
+    const { data: scores, error: scoreError } = await db
+      .from("interteam_scores")
+      .select("speeldatum, ploeg, punten");
+    if(scoreError) throw scoreError;
+
+    // Laad de lijst met beschikbare PDF-scorebladen voordat de matchen worden getoond.
+    await laadScorebladen();
+
+    // Een gespeelde match heeft status 'gespeeld' of een ingevulde werkelijke datum.
+    const gespeeld = (wedstrijden || []).filter(w => {
+      const st = norm(w.status);
+      return st === "gespeeld" || Boolean(w.werkelijke_datum);
+    }).map(w => ({
+      ...w,
+      datum: w.werkelijke_datum || w.geplande_datum
+    })).filter(w => w.datum && w.thuisploeg && w.uitploeg)
+      .sort((a,b) => String(a.datum).localeCompare(String(b.datum)) || Number(a.id)-Number(b.id));
+
+    if(!gespeeld.length){
+      status.textContent = "Geen gespeelde matchen gevonden.";
+      lijst.innerHTML = "";
+      return;
+    }
+
+    function zoekPloegScore(datum, ploegnaam){
+      const opDatum = (scores || []).filter(s => String(s.speeldatum || "").slice(0,10) === String(datum || "").slice(0,10));
+      const doel = norm(ploegnaam);
+      return opDatum.find(s => norm(s.ploeg) === doel) ||
+        opDatum.find(s => norm(s.ploeg).includes(doel) || doel.includes(norm(s.ploeg)));
+    }
+
+    status.textContent = `${gespeeld.length} gespeelde match(en), gesorteerd van oud naar nieuw.`;
+    lijst.innerHTML = `
+      <div class="matchrij" style="font-weight:bold;background:#374151;border-color:#4b5563;color:#f9fafb">
+        <div>Datum</div><div>Thuisploeg</div><div>Uitploeg</div><div>Scoreblad</div>
+      </div>` + gespeeld.map(w => {
+        const datum = w.werkelijke_datum || w.geplande_datum;
+        const thuisScore = zoekPloegScore(datum, w.thuisploeg);
+        const uitScore = zoekPloegScore(datum, w.uitploeg);
+        const puntenThuis = thuisScore ? `${Number(thuisScore.punten) || 0} punten` : "";
+        const puntenUit = uitScore ? `${Number(uitScore.punten) || 0} punten` : "";
+        const veiligThuis = String(w.thuisploeg).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+        const veiligUit = String(w.uitploeg).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+        return `
+        <div class="matchrij${(/RNB|Geenens Construct/i.test(w.thuisploeg || "") || /RNB|Geenens Construct/i.test(w.uitploeg || "")) ? " rnb-match" : ""}" data-zoek="${escapeHtml([formatDatum(w.datum), w.thuisploeg, w.uitploeg].join(" "))}">
+          <div class="matchdatum">${escapeHtml(formatDatum(w.datum))}</div>
+          <div class="matchploeg">${escapeHtml(w.thuisploeg)}<span class="matchpunten">${escapeHtml(puntenThuis)}</span></div>
+          <div class="matchploeg">${escapeHtml(w.uitploeg)}<span class="matchpunten">${escapeHtml(puntenUit)}</span></div>
+          ${scorebladUrl(datum) ? `<button type="button" class="scoreblad-link"
+            onclick="openScoreblad('${String(datum).slice(0,10)}', '${veiligThuis}', '${veiligUit}', this)">📄 PDF</button>` : ""}
+        </div>`;
+      }).join("");
+  }catch(error){
+    console.error(error);
+    status.textContent = "Er is een fout opgetreden bij het laden.";
+    lijst.innerHTML = `<div class="kaart fout"><strong>Fout bij het laden van de matchen.</strong><p>${escapeHtml(error.message || error)}</p></div>`;
+  }
+}
+
+const zoekveld = document.getElementById("zoekMatchen");
+if (zoekveld) zoekveld.addEventListener("input", () => {
+  const zoek = zoekveld.value.trim().toLocaleLowerCase();
+  document.querySelectorAll("#lijst .matchrij[data-zoek]").forEach(rij => {
+    const tekst = (rij.dataset.zoek || rij.textContent || "").toLocaleLowerCase();
+    rij.style.display = (!zoek || tekst.includes(zoek)) ? "" : "none";
+  });
+});
+laadData();
+</script>
+
+
+
+</body>
+</html>
