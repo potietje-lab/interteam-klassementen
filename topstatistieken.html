@@ -1,4 +1,4 @@
-☺
+
 <!DOCTYPE html>
 <html lang="nl">
 <head>
@@ -367,6 +367,21 @@ h1 {
 
 }
 
+
+.topmatch-pdf {
+    display: block;
+    width: fit-content;
+    margin: 18px auto 0;
+    padding: 11px 18px;
+    border-radius: 8px;
+    background: #fff3a3;
+    border: 2px solid #e0b800;
+    color: #222;
+    font-weight: bold;
+    text-decoration: none;
+}
+.topmatch-pdf:hover { background: #ffe45c; }
+.topmatch-pdf[hidden] { display: none !important; }
 </style>
 <style>
     .vergelijking {
@@ -496,6 +511,88 @@ const supabaseClient =
         SUPABASE_URL,
         SUPABASE_KEY
     );
+
+
+/* ============================================================
+   SCOREBLAD PDF BIJ TOPMATCH EVER
+   ============================================================ */
+function normaliseerBestandsnaam(waarde) {
+    return String(waarde || "")
+        .normalize("NFD")
+        .replace(/[\\u0300-\\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+}
+
+async function zoekScorebladTopmatch(topmatch) {
+    if (!topmatch || !topmatch.datum) return null;
+
+    const [yyyy, mm, dd] = topmatch.datum.substring(0, 10).split("-");
+    const prefix = `${dd}-${mm}-${yyyy}_`;
+
+    const response = await fetch(`${SUPABASE_URL}/storage/v1/object/list/PDF`, {
+        method: "POST",
+        headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            prefix: "Scorebladen",
+            limit: 1000,
+            offset: 0,
+            sortBy: { column: "name", order: "asc" }
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error("De scorebladen konden niet uit Supabase Storage worden opgehaald.");
+    }
+
+    const files = await response.json();
+    const pdfs = (Array.isArray(files) ? files : [])
+        .filter(file => file.name && file.name.toLowerCase().endsWith(".pdf"))
+        .filter(file => file.name.startsWith(prefix));
+
+    if (!pdfs.length) return null;
+
+    const thuis = normaliseerBestandsnaam(topmatch.thuis);
+    const uit = normaliseerBestandsnaam(topmatch.uit);
+    const beidePloegen = pdfs.filter(file => {
+        const naam = normaliseerBestandsnaam(file.name);
+        return naam.includes(thuis) && naam.includes(uit);
+    });
+
+    // Voorkeur: bestandsnaam bevat beide ploegen; anders alleen een
+    // unieke PDF voor deze speeldatum gebruiken.
+    const gekozen = beidePloegen.length === 1
+        ? beidePloegen[0]
+        : (pdfs.length === 1 ? pdfs[0] : null);
+
+    if (!gekozen) return null;
+
+    return `${SUPABASE_URL}/storage/v1/object/public/PDF/Scorebladen/${encodeURIComponent(gekozen.name)}`;
+}
+
+async function toonScorebladTopmatch(topmatch) {
+    const knop = document.getElementById("topmatchPdf");
+    if (!knop) return;
+
+    knop.hidden = true;
+    knop.removeAttribute("href");
+    if (!topmatch) return;
+
+    try {
+        const url = await zoekScorebladTopmatch(topmatch);
+        if (url) {
+            knop.href = url;
+            knop.hidden = false;
+            knop.title = `Open scoreblad van ${datumNL(topmatch.datum)}`;
+        }
+    } catch (error) {
+        console.warn("Scoreblad van TOPMATCH EVER niet beschikbaar:", error);
+    }
+}
 
 
 /* ============================================================
@@ -1525,7 +1622,7 @@ function toonTopstatistieken(
 
 
             <h2>
-                ⚔️ TOPMATCH EVER (grootste verschil in kegels)
+                ⚔️ Match met grootste kegelverschil
             </h2>
 
 
@@ -1625,6 +1722,10 @@ function toonTopstatistieken(
 
 
             </div>
+
+            <a id="topmatchPdf" class="topmatch-pdf" href="#" target="_blank" rel="noopener" hidden>
+                📄 Open scoreblad PDF van deze topmatch
+            </a>
 
         </div>
 
@@ -1744,6 +1845,9 @@ async function laadData() {
             topmatch,
             klassement
         );
+
+        // Zoek en toon de PDF-knop bij TOPMATCH EVER zodra de kaart bestaat.
+        await toonScorebladTopmatch(topmatch);
 
         // =====================================================
         // PLOEGEN VOOR DE VERGELIJKING
@@ -2169,4 +2273,4 @@ function maakVergelijkGrafiek(naam1, naam2) {
 
 </body>
 </html>
-```
+
