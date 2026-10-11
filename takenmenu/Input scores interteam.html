@@ -267,6 +267,150 @@ button {
 }
 
 
+
+/* OVERZICHT TOTAAL KEGELS PER SPEELDATUM */
+.kegels-overzicht {
+    margin-top: 32px;
+    padding-top: 8px;
+}
+.kegels-tabel-scroll {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #d7d7d7;
+    border-radius: 9px;
+    background: #fff;
+}
+table.kegels-tabel {
+    width: 100%;
+    min-width: 680px;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.kegels-tabel th,
+.kegels-tabel td {
+    padding: 9px 10px;
+    border: 1px solid #ddd;
+    text-align: center;
+    white-space: nowrap;
+}
+.kegels-tabel thead th {
+    background: #222;
+    color: #fff;
+    position: sticky;
+    top: 0;
+}
+.kegels-tabel th:first-child,
+.kegels-tabel td:first-child {
+    font-weight: bold;
+    background: #f1f3f5;
+    position: sticky;
+    left: 0;
+    z-index: 1;
+}
+.kegels-tabel thead th:first-child {
+    background: #222;
+    z-index: 2;
+}
+.kegels-tabel td.kegels-ingevuld {
+    font-weight: bold;
+}
+.kegels-tabel tr:nth-child(even) td:not(:first-child) {
+    background: #f8f9fa;
+}
+.kegels-leeg {
+    color: #999;
+}
+body.dark-mode .kegels-tabel-scroll {
+    background: #252525;
+    border-color: #444;
+}
+body.dark-mode .kegels-tabel th,
+body.dark-mode .kegels-tabel td {
+    border-color: #444;
+}
+body.dark-mode .kegels-tabel thead th,
+body.dark-mode .kegels-tabel thead th:first-child {
+    background: #111;
+    color: #eee;
+}
+body.dark-mode .kegels-tabel th:first-child,
+body.dark-mode .kegels-tabel td:first-child {
+    background: #303030;
+    color: #eee;
+}
+body.dark-mode .kegels-tabel tr:nth-child(even) td:not(:first-child) {
+    background: #292929;
+}
+
+
+/* CUMULATIEVE KEGELS PER PLOEG */
+.cumulatief-overzicht {
+    margin-top: 28px;
+    padding-top: 8px;
+}
+.cumulatief-tabel-scroll {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #d7d7d7;
+    border-radius: 9px;
+    background: #fff;
+}
+table.cumulatief-tabel {
+    width: 100%;
+    min-width: 680px;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.cumulatief-tabel th,
+.cumulatief-tabel td {
+    padding: 9px 10px;
+    border: 1px solid #ddd;
+    text-align: center;
+    white-space: nowrap;
+}
+.cumulatief-tabel thead th {
+    background: #222;
+    color: #fff;
+}
+.cumulatief-tabel th:first-child,
+.cumulatief-tabel td:first-child {
+    font-weight: bold;
+    text-align: left;
+    background: #f1f3f5;
+    position: sticky;
+    left: 0;
+    z-index: 1;
+}
+.cumulatief-tabel thead th:first-child {
+    background: #222;
+    color: #fff;
+    z-index: 2;
+}
+.cumulatief-tabel td.cumulatief-waarde {
+    font-weight: bold;
+}
+.cumulatief-tabel td.cumulatief-leeg {
+    color: #999;
+}
+body.dark-mode .cumulatief-tabel-scroll {
+    background: #252525;
+    border-color: #444;
+}
+body.dark-mode .cumulatief-tabel th,
+body.dark-mode .cumulatief-tabel td {
+    border-color: #444;
+}
+body.dark-mode .cumulatief-tabel thead th,
+body.dark-mode .cumulatief-tabel thead th:first-child {
+    background: #111;
+    color: #eee;
+}
+body.dark-mode .cumulatief-tabel th:first-child,
+body.dark-mode .cumulatief-tabel td:first-child {
+    background: #303030;
+    color: #eee;
+}
+
 /* MOBIEL */
 
 @media (max-width: 600px) {
@@ -554,6 +698,19 @@ Een inhaalwedstrijd verschijnt op zijn werkelijke speeldatum.
 
 </button>
 
+<section class="kegels-overzicht">
+    <h2>Overzicht gespeelde kegels per speeldatum</h2>
+    <p>De speeldatums staan verticaal en de ploegen horizontaal. Lege vakken betekenen dat er voor die ploeg en datum nog geen kegels zijn opgeslagen.</p>
+    <div id="kegelsOverzichtStatus" class="status info">Historische kegels worden geladen...</div>
+    <div id="kegelsOverzichtTabel"></div>
+</section>
+
+<section class="cumulatief-overzicht">
+    <h2>Cumulatieve kegels per ploeg</h2>
+    <p>Per ploeg zie je de kegels van match 1, daarna match 1 + 2, daarna match 1 + 2 + 3, enzovoort. Alleen opgeslagen kegels worden opgeteld; ontbrekende scores blijven leeg.</p>
+    <div id="cumulatiefOverzichtStatus" class="status info">Cumulatieve totalen worden geladen...</div>
+    <div id="cumulatiefOverzichtTabel"></div>
+</section>
 
 </div>
 
@@ -1635,6 +1792,8 @@ async function laadScores() {
             "warning"
         );
     }
+    await laadKegelsOverzicht();
+
 
 
     updateTotaal();
@@ -2011,6 +2170,158 @@ async function opslaan() {
 }
 
 
+
+// =====================================================
+// HISTORISCH OVERZICHT: KEGELS PER SPEELDATUM EN PLOEG
+// =====================================================
+
+async function laadKegelsOverzicht() {
+    const status = document.getElementById("kegelsOverzichtStatus");
+    const container = document.getElementById("kegelsOverzichtTabel");
+
+    statusMeldingOverzicht("Historische kegels worden geladen...", "info");
+
+    const { data, error } = await supabaseClient
+        .from("interteam_scores")
+        .select("speeldatum, ploeg, kegels")
+        .order("speeldatum", { ascending: true });
+
+    if (error) {
+        console.error("Fout bij laden van het kegels-overzicht:", error);
+        statusMeldingOverzicht("Kegels-overzicht kon niet worden geladen: " + error.message, "error");
+        container.innerHTML = "";
+        return;
+    }
+
+    const records = data || [];
+    if (records.length === 0) {
+        statusMeldingOverzicht("Er zijn nog geen kegelscores opgeslagen.", "warning");
+        container.innerHTML = "";
+        return;
+    }
+
+    const datums = [...new Set(records
+        .filter(r => r.speeldatum)
+        .map(r => r.speeldatum))].sort();
+
+    const ploegen = [...new Set(records
+        .filter(r => r.ploeg)
+        .map(r => r.ploeg))].sort((a, b) => a.localeCompare(b, "nl"));
+
+    const scores = new Map();
+    records.forEach(record => {
+        if (!record.speeldatum || !record.ploeg) return;
+        scores.set(record.speeldatum + "|" + normaliseerNaam(record.ploeg), record.kegels);
+    });
+
+    let tabel = '<div class="kegels-tabel-scroll"><table class="kegels-tabel"><thead><tr><th>Speeldatum</th>';
+    ploegen.forEach(ploeg => {
+        tabel += '<th>' + escapeHtml(ploeg) + '</th>';
+    });
+    tabel += '</tr></thead><tbody>';
+
+    datums.forEach(datum => {
+        tabel += '<tr><td>' + escapeHtml(datumNaarTekst(datum)) + '</td>';
+        ploegen.forEach(ploeg => {
+            const key = datum + "|" + normaliseerNaam(ploeg);
+            const waarde = scores.get(key);
+            if (waarde !== null && waarde !== undefined && waarde !== "") {
+                tabel += '<td class="kegels-ingevuld">' + escapeHtml(String(waarde)) + '</td>';
+            } else {
+                tabel += '<td class="kegels-leeg">—</td>';
+            }
+        });
+        tabel += '</tr>';
+    });
+
+    tabel += '</tbody></table></div>';
+    container.innerHTML = tabel;
+    statusMeldingOverzicht(datums.length + " speeldatums en " + ploegen.length + " ploegen in het overzicht.", "success");
+}
+
+
+async function laadCumulatieveKegels() {
+    const status = document.getElementById("cumulatiefOverzichtStatus");
+    const container = document.getElementById("cumulatiefOverzichtTabel");
+    statusMeldingCumulatief("Cumulatieve totalen worden geladen...", "info");
+
+    // Matchnummers worden bepaald op basis van de chronologisch gesorteerde speeldatums
+    // waarvoor in de scoretabel gegevens aanwezig zijn.
+    const { data, error } = await supabaseClient
+        .from("interteam_scores")
+        .select("speeldatum, ploeg, kegels")
+        .order("speeldatum", { ascending: true });
+
+    if (error) {
+        console.error("Fout bij laden van cumulatieve kegels:", error);
+        statusMeldingCumulatief("Cumulatieve totalen konden niet worden geladen: " + error.message, "error");
+        container.innerHTML = "";
+        return;
+    }
+
+    const records = (data || []).filter(r => r.speeldatum && r.ploeg);
+    if (records.length === 0) {
+        statusMeldingCumulatief("Er zijn nog geen kegelscores opgeslagen.", "warning");
+        container.innerHTML = "";
+        return;
+    }
+
+    const datums = [...new Set(records.map(r => r.speeldatum))].sort();
+    const ploegen = [...new Set(records.map(r => r.ploeg))]
+        .sort((a, b) => a.localeCompare(b, "nl"));
+
+    const scores = new Map();
+    records.forEach(r => {
+        const key = r.speeldatum + "|" + normaliseerNaam(r.ploeg);
+        const value = r.kegels;
+        scores.set(key, value === null || value === undefined || value === "" ? null : Number(value));
+    });
+
+    let tabel = '<div class="cumulatief-tabel-scroll"><table class="cumulatief-tabel"><thead><tr><th>Ploeg</th>';
+    datums.forEach((datum, index) => {
+        tabel += '<th>Match ' + (index + 1) + '<br><small>' + escapeHtml(datumNaarTekst(datum)) + '</small></th>';
+    });
+    tabel += '</tr></thead><tbody>';
+
+    ploegen.forEach(ploeg => {
+        tabel += '<tr><td>' + escapeHtml(ploeg) + '</td>';
+        let cumulatief = 0;
+        let heeftScore = false;
+        datums.forEach(datum => {
+            const value = scores.get(datum + "|" + normaliseerNaam(ploeg));
+            if (value !== null && value !== undefined && Number.isFinite(value)) {
+                cumulatief += value;
+                heeftScore = true;
+                tabel += '<td class="cumulatief-waarde">' + cumulatief.toLocaleString("nl-BE") + '</td>';
+            } else if (heeftScore) {
+                // Geen score op deze speeldag: cumulatief totaal blijft gelijk.
+                tabel += '<td class="cumulatief-waarde">' + cumulatief.toLocaleString("nl-BE") + '</td>';
+            } else {
+                tabel += '<td class="cumulatief-leeg">—</td>';
+            }
+        });
+        tabel += '</tr>';
+    });
+
+    tabel += '</tbody></table></div>';
+    container.innerHTML = tabel;
+    statusMeldingCumulatief(datums.length + " matchkolommen en " + ploegen.length + " ploegen in het cumulatieve overzicht.", "success");
+}
+
+function statusMeldingCumulatief(tekst, type) {
+    const element = document.getElementById("cumulatiefOverzichtStatus");
+    if (!element) return;
+    element.innerText = tekst;
+    element.className = "status " + type;
+}
+
+function statusMeldingOverzicht(tekst, type) {
+    const element = document.getElementById("kegelsOverzichtStatus");
+    if (!element) return;
+    element.innerText = tekst;
+    element.className = "status " + type;
+}
+
 // =====================================================
 // START
 // =====================================================
@@ -2020,6 +2331,9 @@ async function startPagina() {
     await laadInhaalDatums();
 
     await laadScores();
+    await laadKegelsOverzicht();
+    await laadCumulatieveKegels();
+    await laadCumulatieveKegels();
 }
 
 
