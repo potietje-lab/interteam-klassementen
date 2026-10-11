@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roll & Bowl – Controle klassement ploegen</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{color-scheme:light;--bg:#f4f6f9;--panel:#fff;--text:#182230;--line:#d7dee8;--accent:#1769aa;--muted:#637083}body.dark{color-scheme:dark;--bg:#121820;--panel:#1d2733;--text:#edf2f7;--line:#3b4858;--accent:#63b3ed;--muted:#b0bdcc}*{box-sizing:border-box}body{margin:0;padding:24px;background:var(--bg);color:var(--text);font:16px Arial,sans-serif}main{max-width:1100px;margin:auto}h1{margin:0 0 8px;font-size:28px}p{color:var(--muted)}.toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:22px 0;padding:16px;background:var(--panel);border:1px solid var(--line);border-radius:12px}label{font-weight:bold}select,button{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--text)}button{cursor:pointer}button.primary{background:var(--accent);color:white;border-color:var(--accent)}.table-wrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px}table{border-collapse:collapse;width:100%;min-width:650px}input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--accent)}th.check,td.check{text-align:center;width:60px}th,td{padding:13px 16px;border-bottom:1px solid var(--line);text-align:left}th{background:var(--panel);font-size:14px;text-transform:uppercase;letter-spacing:.04em}td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}tbody tr:last-child td{border-bottom:0}tbody tr:first-child td{font-weight:bold}tr.team-marked td{color:#e02020 !important;font-weight:bold}td.rank{width:70px;color:var(--muted)}#status{min-height:24px;margin:12px 2px;color:var(--muted)}.note{font-size:13px}.section-title{margin:30px 0 12px}.match-table table{min-width:760px}.match-table td.team{min-width:220px}.match-table td.dash{text-align:center;width:35px}
+/* Compacte, vaste kolombreedtes voor beide overzichten onderaan. */
+#kegelsPerMatch,#puntenPerMatch{table-layout:fixed;width:max-content;min-width:100%;font-size:12px;}
+#kegelsPerMatch th:first-child,#kegelsPerMatch td:first-child,
+#puntenPerMatch th:first-child,#puntenPerMatch td:first-child{width:145px;min-width:145px;max-width:145px;white-space:normal;overflow-wrap:anywhere;padding:7px 8px}
+#kegelsPerMatch th:not(:first-child),#kegelsPerMatch td:not(:first-child),
+#puntenPerMatch th:not(:first-child),#puntenPerMatch td:not(:first-child){width:78px;min-width:78px;max-width:78px;white-space:nowrap;padding:6px 4px}
+#kegelsPerMatch th:not(:first-child),#puntenPerMatch th:not(:first-child){font-size:10px;letter-spacing:0;text-transform:none;line-height:1.2;white-space:normal;overflow-wrap:anywhere}
+#kegelsPerMatch td:not(:first-child),#puntenPerMatch td:not(:first-child){text-align:right;font-size:11px;font-variant-numeric:tabular-nums}
+.empty{color:var(--muted);text-align:center} @media(max-width:600px){body{padding:12px}h1{font-size:23px}th,td{padding:10px}#kegelsPerMatch th:first-child,#kegelsPerMatch td:first-child,#puntenPerMatch th:first-child,#puntenPerMatch td:first-child{width:125px;min-width:125px;max-width:125px}#kegelsPerMatch th:not(:first-child),#kegelsPerMatch td:not(:first-child),#puntenPerMatch th:not(:first-child),#puntenPerMatch td:not(:first-child){width:68px;min-width:68px;max-width:68px;padding:5px 3px}#kegelsPerMatch td:not(:first-child),#puntenPerMatch td:not(:first-child){font-size:10px}}
+</style></head><body><main>
+<h1>Controle – Klassement per speeldatum</h1>
+<p>Controleer per gekozen datum de stand van alle ploegen. Zie je een fout, vink dan de ploeg aan. Noteer de voorgestelde correctie onderaan bij de gemarkeerde lijnen. De officiële stand wordt niet gewijzigd.</p>
+<div class="toolbar"><label for="speeldatum">Stand tot en met:</label><select id="speeldatum"><option>Datums laden…</option></select><button id="openPdf" disabled>📄 Open PDF klassement</button><button class="primary" id="refresh">Vernieuwen</button><button id="exportJson">⬇️ Backup exporteren (JSON)</button><button id="importJson">⬆️ Backup importeren (JSON)</button><input id="importJsonFile" type="file" accept=".json,application/json" hidden><button id="theme">🌙 Donker</button></div>
+<div id="status" role="status">Gegevens worden geladen…</div>
+<div class="table-wrap"><table><thead><tr><th class="check">Fout?</th><th class="num">Ranking</th><th>Team</th><th class="num">Gespeelde matchen</th><th class="num">Aantal kegels</th><th class="num">Punten</th></tr></thead><tbody id="resultaten"><tr><td colspan="6">Laden…</td></tr></tbody></table></div>
+<h2 class="section-title">Gemarkeerde lijnen – te controleren</h2>
+<p class="note">Vink bij een ploeg bovenaan ‘Fout?’ aan. Noteer hier de juiste kegels en/of punten en eventueel een toelichting. Dit is alleen een melding; de stand en Supabase worden niet aangepast. De lijst blijft bewaard in deze browser.</p>
+<div class="toolbar" style="margin-top:10px"><button id="clearChecks">Alle markeringen wissen</button></div>
+<div class="table-wrap"><table><thead><tr><th>Speeldatum</th><th class="num">Ranking</th><th>Team</th><th class="num">Gespeelde matchen</th><th class="num">Aantal kegels</th><th class="num">Punten (huidig)</th><th>Correctie kegels</th><th>Correctie punten</th><th>Toelichting</th><th>Actie</th></tr></thead><tbody id="gemarkeerdeResultaten"><tr><td colspan="10" class="empty">Nog geen lijnen gemarkeerd.</td></tr></tbody></table></div>
+<h2 class="section-title">Wedstrijden op de gekozen speeldatum</h2>
+<div class="table-wrap match-table"><table><thead><tr><th>Thuisploeg</th><th></th><th>Uitploeg</th><th class="num">Kegels thuis</th><th class="num">Kegels uit</th><th class="num">Punten thuis</th><th class="num">Punten uit</th></tr></thead><tbody id="wedstrijdenResultaat"><tr><td colspan="7" class="empty">Wedstrijden laden…</td></tr></tbody></table></div>
+<h2 class="section-title">Overzicht kegels per ploeg en per match</h2>
+<p class="note">De tabel toont alle matchdatums van het seizoen. Ploegen staan verticaal en matchdatums horizontaal; nog niet gespeelde matchen tonen een streepje.</p>
+<div class="table-wrap"><table id="kegelsPerMatch"><thead id="kegelsPerMatchKop"></thead><tbody id="kegelsPerMatchResultaat"><tr><td class="empty">Kegels laden…</td></tr></tbody></table></div>
+<h2 class="section-title">Overzicht punten per ploeg en per match</h2>
+<p class="note">De tabel toont alle matchdatums van het seizoen. Ploegen staan verticaal en matchdatums horizontaal; nog niet gespeelde matchen tonen een streepje.</p>
+<div class="table-wrap"><table id="puntenPerMatch"><thead id="puntenPerMatchKop"></thead><tbody id="puntenPerMatchResultaat"><tr><td class="empty">Punten laden…</td></tr></tbody></table></div>
+<p class="note">Ranking wordt bepaald door het totaal aantal punten (hoogste eerst). Bij gelijke punten blijft de ploeg met de meeste kegels eerst.</p>
+</main><script>
+const SUPABASE_URL = "https://wnsvbtskynkewxggmjem.supabase.co";
+const SUPABASE_KEY = "sb_publishable_9d-2CTihH00Q9gUzLYI6lA_13GHTmCx";
+const db = supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const NORMALE_SPEELDAGEN = ["2026-09-04","2026-09-11","2026-09-18","2026-09-25","2026-10-02","2026-10-09","2026-10-16","2026-11-20","2026-11-27","2026-12-04","2026-12-11","2027-01-15","2027-01-22","2027-01-29","2027-02-19","2027-02-26","2027-03-19","2027-03-26","2027-04-16","2027-04-23","2027-05-07","2027-05-14"];
+function datumTekst(d){return new Date(d+"T12:00:00").toLocaleDateString('nl-BE',{day:'2-digit',month:'2-digit',year:'numeric'});}
+let pdfPerDatum = {};
+let speeldagenDatums = [];
+async function laadPdfLinks(){
+  const knop=document.getElementById('openPdf');
+  knop.disabled=true;
+  const {data,error}=await db.from('speeldagen').select('*');
+  if(error){
+    console.warn('Speeldagen/PDF-links konden niet worden geladen:',error.message);
+    knop.title='De tabel speeldagen kon niet worden geladen. Controleer de Supabase-rechten.';
+    pdfPerDatum={};
+    speeldagenDatums=[];
+    return;
+  }
+  pdfPerDatum={};
+  speeldagenDatums=[];
+  (data||[]).forEach(r=>{
+    const datum=typeof r.speeldatum==='string' ? r.speeldatum.slice(0,10) : '';
+    const url=r['Klasm-url'];
+    if(datum) speeldagenDatums.push(datum);
+    if(datum && typeof url==='string' && url.trim()) pdfPerDatum[datum]=url.trim();
+  });
+  speeldagenDatums=[...new Set(speeldagenDatums)];
+  werkPdfKnopBij();
+}
+function werkPdfKnopBij(){
+  const datum=document.getElementById('speeldatum').value;
+  const url=pdfPerDatum[datum];
+  const knop=document.getElementById('openPdf');
+  knop.disabled=!url;
+  knop.title=url?'Open de PDF voor '+datumTekst(datum):'Voor deze speeldatum is geen PDF-link ingevuld in Supabase.';
+}
+document.getElementById('openPdf').addEventListener('click',()=>{
+  const url=pdfPerDatum[document.getElementById('speeldatum').value];
+  if(url){
+    try{
+      const parsed=new URL(url,window.location.href);
+      if(parsed.protocol==='https:'||parsed.protocol==='http:') window.open(parsed.href,'_blank','noopener');
+      else alert('De PDF-link in Supabase is geen geldige web-URL.');
+    }catch{alert('De PDF-link in Supabase is niet geldig.');}
+  }
+});
+async function laadDatums(){await laadPdfLinks();const sel=document.getElementById('speeldatum');const {data,error}=await db.from('wedstrijden').select('geplande_datum,werkelijke_datum,thuisploeg,uitploeg');if(error)console.warn('Wedstrijddatums:',error.message);const inhaal=(data||[]).filter(w=>w.werkelijke_datum&&w.geplande_datum&&w.werkelijke_datum!==w.geplande_datum).map(w=>w.werkelijke_datum);const dates=[...new Set([...NORMALE_SPEELDAGEN,...speeldagenDatums,...inhaal])].sort();sel.replaceChildren();dates.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=datumTekst(d)+(inhaal.includes(d)?' — inhaalwedstrijd':'');sel.appendChild(o)});const today=new Date();const iso=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');sel.value=dates.find(d=>d>=iso)||dates[dates.length-1];werkPdfKnopBij();await laadKlassement();await laadWedstrijdenDatum();await laadKegelsPerMatch();await laadPuntenPerMatch();}
+const CHECK_STORAGE_KEY='rollbowl-controle-gemarkeerde-lijnen-v1';
+
+// JSON-back-up van de gemarkeerde lijnen en hun voorgestelde correcties.
+document.getElementById('exportJson').addEventListener('click',()=>{
+  const backup={
+    app:'Roll & Bowl – Controle klassement per speeldatum',
+    versie:1,
+    exportDatum:new Date().toISOString(),
+    opslagSleutel:CHECK_STORAGE_KEY,
+    gemarkeerdeLijnen:leesMarkeringen()
+  };
+  const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='roll-bowl-controle-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+});
+document.getElementById('importJson').addEventListener('click',()=>{
+  document.getElementById('importJsonFile').click();
+});
+document.getElementById('importJsonFile').addEventListener('change',async(event)=>{
+  const file=event.target.files&&event.target.files[0];
+  if(!file)return;
+  try{
+    const parsed=JSON.parse(await file.text());
+    const items=Array.isArray(parsed)?parsed:parsed.gemarkeerdeLijnen;
+    if(!Array.isArray(items))throw new Error('Dit JSON-bestand bevat geen lijst met gemarkeerde lijnen.');
+    if(!items.every(x=>x&&typeof x==='object'&&typeof x.team==='string'&&typeof x.datum==='string')){
+      throw new Error('De inhoud van het JSON-bestand heeft niet het verwachte formaat.');
+    }
+    if(!confirm('De huidige gemarkeerde lijnen vervangen door '+items.length+' lijnen uit de backup?'))return;
+    localStorage.setItem(CHECK_STORAGE_KEY,JSON.stringify(items));
+    toonMarkeringen();
+    alert('JSON-backup geïmporteerd. '+items.length+' gemarkeerde lijnen geladen.');
+  }catch(err){
+    alert('Importeren mislukt: '+err.message);
+  }finally{
+    event.target.value='';
+  }
+});
+function leesMarkeringen(){try{return JSON.parse(localStorage.getItem(CHECK_STORAGE_KEY)||'[]')}catch{return []}}
+function bewaarMarkeringen(items){localStorage.setItem(CHECK_STORAGE_KEY,JSON.stringify(items));toonMarkeringen();laadKlassement()}
+function markeerLijn(row,checked){const key=row.datum+'|'+row.team;let items=leesMarkeringen();if(checked){if(!items.some(x=>x.key===key))items.push({...row,key});}else items=items.filter(x=>x.key!==key);bewaarMarkeringen(items)}
+function toonMarkeringen(){
+ const tbody=document.getElementById('gemarkeerdeResultaten');tbody.replaceChildren();const items=leesMarkeringen();
+ if(!items.length){tbody.innerHTML='<tr><td colspan="10" class="empty">Nog geen lijnen gemarkeerd.</td></tr>';return;}
+ items.forEach((r)=>{const tr=document.createElement('tr');
+  [datumTekst(r.datum),r.rang,r.team,r.matchen,Number(r.kegels).toLocaleString('nl-BE'),Number(r.punten).toLocaleString('nl-BE')].forEach((v,i)=>{const td=document.createElement('td');td.textContent=v;if(i===1||i>=3)td.classList.add('num');tr.appendChild(td)});
+  [['correctieKegels','Bijv. '+r.kegels],['correctiePunten','Bijv. '+r.punten]].forEach(([field,placeholder])=>{const td=document.createElement('td');const inp=document.createElement('input');inp.type='number';inp.step='1';inp.placeholder=placeholder;inp.value=r[field]??'';inp.style.cssText='width:125px;max-width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--text)';inp.setAttribute('aria-label',field==='correctieKegels'?'Voorgestelde correctie kegels':'Voorgestelde correctie punten');inp.addEventListener('change',()=>werkMarkeringBij(r.key,{[field]:inp.value.trim()}));td.appendChild(inp);tr.appendChild(td)});
+  const noteTd=document.createElement('td');const note=document.createElement('input');note.type='text';note.placeholder='Wat is de fout?';note.value=r.toelichting||'';note.style.cssText='min-width:150px;width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--text)';note.addEventListener('change',()=>werkMarkeringBij(r.key,{toelichting:note.value}));noteTd.appendChild(note);tr.appendChild(noteTd);
+  const action=document.createElement('td');const btn=document.createElement('button');btn.textContent='Verwijderen';btn.addEventListener('click',()=>bewaarMarkeringen(leesMarkeringen().filter(x=>x.key!==r.key)));action.appendChild(btn);tr.appendChild(action);tbody.appendChild(tr);
+ });
+}
+function werkMarkeringBij(key,updates){const items=leesMarkeringen().map(x=>x.key===key?{...x,...updates}:x);bewaarMarkeringen(items)}
+
+async function laadKlassement(){
+ const cutoff=document.getElementById('speeldatum').value,status=document.getElementById('status'),tbody=document.getElementById('resultaten');
+ if(!cutoff){status.textContent='Geen speeldatum beschikbaar.';return;}
+ status.textContent='Gegevens worden opgehaald…';tbody.replaceChildren();
+ const {data,error}=await db.from('interteam_scores').select('speeldatum,ploeg,kegels,punten').lte('speeldatum',cutoff).order('speeldatum',{ascending:true});
+ if(error){status.textContent='Fout bij ophalen van scores: '+error.message;tbody.innerHTML='<tr><td colspan="6">Gegevens konden niet worden geladen.</td></tr>';return;}
+ const teams=new Map();(data||[]).forEach(r=>{if(!r.ploeg)return;if(!teams.has(r.ploeg))teams.set(r.ploeg,{team:r.ploeg,kegels:0,punten:0,datums:new Set()});const t=teams.get(r.ploeg);t.kegels+=Number(r.kegels)||0;t.punten+=Number(r.punten)||0;if(r.speeldatum)t.datums.add(r.speeldatum);});
+ const rows=[...teams.values()].map(r=>({...r,key:cutoff+'|'+r.team,datum:cutoff})).sort((a,b)=>b.punten-a.punten||b.kegels-a.kegels||a.team.localeCompare(b.team,'nl'));
+ if(!rows.length){tbody.innerHTML='<tr><td colspan="6">Nog geen scores opgeslagen tot en met deze datum.</td></tr>';}
+ const gemarkeerdePloegen=new Set(leesMarkeringen().map(x=>String(x.team||'').trim().toLocaleLowerCase('nl')));
+ rows.forEach((r,i)=>{
+  const row={datum:cutoff,rang:i+1,team:r.team,matchen:r.datums.size,kegels:r.kegels,punten:r.punten,key:r.key};const tr=document.createElement('tr');
+  if(gemarkeerdePloegen.has(String(r.team||'').trim().toLocaleLowerCase('nl')))tr.classList.add('team-marked');
+  const checkTd=document.createElement('td');checkTd.className='check';const check=document.createElement('input');check.type='checkbox';check.setAttribute('aria-label','Markeer '+r.team+' om te controleren');check.checked=leesMarkeringen().some(x=>x.key===r.key);check.addEventListener('change',()=>markeerLijn(row,check.checked));checkTd.appendChild(check);tr.appendChild(checkTd);
+  [i+1,r.team,r.datums.size,r.kegels,r.punten].forEach((v,j)=>{const td=document.createElement('td');td.textContent=typeof v==='number'?v.toLocaleString('nl-BE'):v;if(j===0)td.className='num rank';if(j>=2)td.classList.add('num');tr.appendChild(td)});tbody.appendChild(tr);
+ });
+ status.textContent='Stand tot en met '+datumTekst(cutoff)+' · '+rows.length+' ploegen. Correcties noteer je onderaan bij de markeringen.';
+}
+
+function stelMatchTabelBreedteIn(tableId,aantalDatums){
+ const table=document.getElementById(tableId);
+ const wrap=table.parentElement;
+ const mobiel=window.matchMedia('(max-width: 600px)').matches;
+ const eersteKolom=mobiel?125:145;
+ const matchKolom=mobiel?68:78;
+ const gewensteBreedte=eersteKolom+Math.max(0,aantalDatums)*matchKolom;
+ table.style.width=Math.max(wrap.clientWidth,gewensteBreedte)+'px';
+}
+
+async function laadKegelsPerMatch(){
+ const head=document.getElementById('kegelsPerMatchKop'), body=document.getElementById('kegelsPerMatchResultaat');
+ head.replaceChildren();body.replaceChildren();
+ const {data,error}=await db.from('interteam_scores').select('speeldatum,ploeg,kegels').order('speeldatum',{ascending:true});
+ if(error){body.innerHTML='<tr><td class="empty">Kegels konden niet worden geladen: '+error.message+'</td></tr>';return;}
+ const rows=data||[];
+ const dates=[...new Set([...NORMALE_SPEELDAGEN,...speeldagenDatums,...rows.map(r=>r.speeldatum).filter(Boolean)])].sort();
+ const teams=[...new Set(rows.map(r=>String(r.ploeg||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'nl'));
+ const trHead=document.createElement('tr');const first=document.createElement('th');first.textContent='Ploeg';trHead.appendChild(first);
+ dates.forEach((d,i)=>{const th=document.createElement('th');th.className='num';th.textContent='Match '+(i+1)+' · '+datumTekst(d);trHead.appendChild(th)});head.appendChild(trHead);
+ stelMatchTabelBreedteIn('kegelsPerMatch',dates.length);
+ if(!teams.length){body.innerHTML='<tr><td class="empty" colspan="'+(dates.length+1)+'">Nog geen kegels opgeslagen. De matchdatums blijven zichtbaar in de kop.</td></tr>';return;}
+ const scores=new Map();rows.forEach(r=>scores.set(String(r.ploeg||'').trim()+'|'+r.speeldatum,Number(r.kegels)||0));
+ teams.forEach(team=>{const tr=document.createElement('tr');const name=document.createElement('td');name.textContent=team;name.className='team';tr.appendChild(name);dates.forEach(d=>{const td=document.createElement('td');td.className='num';const key=team+'|'+d;td.textContent=scores.has(key)?scores.get(key).toLocaleString('nl-BE'):'—';tr.appendChild(td)});body.appendChild(tr)});
+}
+async function laadPuntenPerMatch(){
+ const head=document.getElementById('puntenPerMatchKop'), body=document.getElementById('puntenPerMatchResultaat');
+ head.replaceChildren();body.replaceChildren();
+ const {data,error}=await db.from('interteam_scores').select('speeldatum,ploeg,punten').order('speeldatum',{ascending:true});
+ if(error){body.innerHTML='<tr><td class="empty">Punten konden niet worden geladen: '+error.message+'</td></tr>';return;}
+ const rows=data||[];
+ const dates=[...new Set([...NORMALE_SPEELDAGEN,...speeldagenDatums,...rows.map(r=>r.speeldatum).filter(Boolean)])].sort();
+ const teams=[...new Set(rows.map(r=>String(r.ploeg||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'nl'));
+ const trHead=document.createElement('tr');const first=document.createElement('th');first.textContent='Ploeg';trHead.appendChild(first);
+ dates.forEach((d,i)=>{const th=document.createElement('th');th.className='num';th.textContent='Match '+(i+1)+' · '+datumTekst(d);trHead.appendChild(th)});head.appendChild(trHead);
+ stelMatchTabelBreedteIn('puntenPerMatch',dates.length);
+ if(!teams.length){body.innerHTML='<tr><td class="empty" colspan="'+(dates.length+1)+'">Nog geen punten opgeslagen. De matchdatums blijven zichtbaar in de kop.</td></tr>';return;}
+ const scores=new Map();rows.forEach(r=>scores.set(String(r.ploeg||'').trim()+'|'+r.speeldatum,Number(r.punten)||0));
+ teams.forEach(team=>{const tr=document.createElement('tr');const name=document.createElement('td');name.textContent=team;name.className='team';tr.appendChild(name);dates.forEach(d=>{const td=document.createElement('td');td.className='num';const key=team+'|'+d;td.textContent=scores.has(key)?scores.get(key).toLocaleString('nl-BE'):'—';tr.appendChild(td)});body.appendChild(tr)});
+}
+async function laadWedstrijdenDatum(){const datum=document.getElementById('speeldatum').value;const tbody=document.getElementById('wedstrijdenResultaat');tbody.replaceChildren();if(!datum){tbody.innerHTML='<tr><td colspan="7" class="empty">Geen speeldatum gekozen.</td></tr>';return;}const [{data:wedstrijden,error:wedstrijdError},{data:scores,error:scoreError}]=await Promise.all([db.from('wedstrijden').select('geplande_datum,werkelijke_datum,thuisploeg,uitploeg').or('geplande_datum.eq.'+datum+',werkelijke_datum.eq.'+datum),db.from('interteam_scores').select('speeldatum,ploeg,kegels,punten').eq('speeldatum',datum)]);if(wedstrijdError){tbody.innerHTML='<tr><td colspan="7" class="empty">Wedstrijden konden niet worden geladen: '+wedstrijdError.message+'</td></tr>';return;}if(scoreError){tbody.innerHTML='<tr><td colspan="7" class="empty">Scores konden niet worden geladen: '+scoreError.message+'</td></tr>';return;}const scoreMap=new Map((scores||[]).map(r=>[String(r.ploeg||'').trim(),{kegels:Number(r.kegels)||0,punten:Number(r.punten)||0}]));const matches=(wedstrijden||[]).filter(w=>(w.werkelijke_datum||w.geplande_datum)===datum || w.geplande_datum===datum && (!w.werkelijke_datum||w.werkelijke_datum===w.geplande_datum));if(!matches.length){tbody.innerHTML='<tr><td colspan="7" class="empty">Geen wedstrijden gevonden voor '+datumTekst(datum)+'.</td></tr>';return;}matches.sort((a,b)=>String(a.thuisploeg||'').localeCompare(String(b.thuisploeg||''),'nl'));matches.forEach(w=>{const thuis=String(w.thuisploeg||'—').trim(),uit=String(w.uitploeg||'—').trim(),a=scoreMap.get(thuis),b=scoreMap.get(uit);const tr=document.createElement('tr');[thuis,'-',uit,a?a.kegels:'—',b?b.kegels:'—',a?a.punten:'—',b?b.punten:'—'].forEach((v,i)=>{const td=document.createElement('td');td.textContent=typeof v==='number'?v.toLocaleString('nl-BE'):v;if(i===1)td.className='dash';if(i>=3)td.classList.add('num');if(i===0||i===2)td.classList.add('team');tr.appendChild(td)});tbody.appendChild(tr)});}
+document.getElementById('speeldatum').addEventListener('change',async()=>{werkPdfKnopBij();await laadKlassement();await laadWedstrijdenDatum();await laadKegelsPerMatch();await laadPuntenPerMatch();});document.getElementById('refresh').addEventListener('click',async()=>{await laadPdfLinks();await laadKlassement();await laadWedstrijdenDatum();await laadKegelsPerMatch();await laadPuntenPerMatch();});document.getElementById('clearChecks').addEventListener('click',()=>{if(confirm('Alle gemarkeerde lijnen wissen?'))bewaarMarkeringen([]);});toonMarkeringen();document.getElementById('theme').addEventListener('click',()=>{document.body.classList.toggle('dark');document.getElementById('theme').textContent=document.body.classList.contains('dark')?'☀️ Licht':'🌙 Donker';});laadDatums();
+</script></body></html>
