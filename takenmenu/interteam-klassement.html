@@ -86,6 +86,19 @@ h2 {
     color: #b00020;
 }
 
+.inhaal-melding {
+    margin: -8px 0 22px;
+    padding: 15px 18px;
+    border: 2px solid #e0a000;
+    border-radius: 10px;
+    background: #fff4ce;
+    color: #7a4b00;
+    font-weight: bold;
+    line-height: 1.5;
+}
+.inhaal-melding ul { margin: 8px 0 0; padding-left: 22px; font-weight: normal; }
+body.rb-dark .inhaal-melding { background: #493817 !important; border-color: #d6a52d !important; color: #ffedb0 !important; }
+
 
 /* =========================
    TABELLEN
@@ -143,6 +156,21 @@ tr:hover {
 .rnb-row {
     background: #fff2a8 !important;
     font-weight: bold;
+}
+
+.match-aantal-minder {
+    display: inline-block;
+    padding: 4px 7px;
+    border-radius: 6px;
+    background: #fff0c2;
+    color: #805400;
+    font-weight: bold;
+    white-space: nowrap;
+    font-size: 12px;
+}
+body.rb-dark .match-aantal-minder {
+    background: #493817 !important;
+    color: #ffedb0 !important;
 }
 
 
@@ -394,6 +422,8 @@ body.rb-dark .kalender-modal-info { color:#cbd5e1; }
 
 </div>
 
+<div id="inhaalMelding" class="inhaal-melding" style="display:none;" role="status" aria-live="polite"></div>
+
 
 <!-- =================================================
      1. ALGEMEEN CUMULATIEF KLASSEMENT
@@ -433,6 +463,7 @@ body.rb-dark .kalender-modal-info { color:#cbd5e1; }
 
 <th>Plaats<br>op kegels</th>
 <th>Verschil</th>
+<th>Wedstrijden</th>
 
 </tr>
 
@@ -884,6 +915,36 @@ function normaliseer(
 
 
 // =====================================================
+// MELDING INHAALWEDSTRIJDEN
+// =====================================================
+function toonInhaalMeldingen() {
+    const melding = document.getElementById("inhaalMelding");
+    if (!melding) return;
+
+    const inhaalWedstrijden = (wedstrijdenData || [])
+        .filter(w => w.geplande_datum && w.werkelijke_datum &&
+            w.geplande_datum !== w.werkelijke_datum &&
+            String(w.status || "gepland").toLowerCase().trim() !== "gespeeld")
+        .sort((a, b) => String(a.werkelijke_datum).localeCompare(String(b.werkelijke_datum)));
+
+    if (inhaalWedstrijden.length === 0) {
+        melding.style.display = "none";
+        melding.innerHTML = "";
+        return;
+    }
+
+    const regels = inhaalWedstrijden.map(w => {
+        const ploegen = [w.thuisploeg, w.uitploeg].filter(Boolean).join(" – ");
+        const wedstrijd = ploegen ? escapeHtml(ploegen) : "Wedstrijd";
+        return `<li>${wedstrijd}: oorspronkelijk ${datumTekst(w.geplande_datum)}, inhaaldatum ${datumTekst(w.werkelijke_datum)}</li>`;
+    }).join("");
+
+    melding.innerHTML = `⚠️ INHAALMATCH${inhaalWedstrijden.length > 1 ? "EN" : ""} — let op de gewijzigde speeldatum:<ul>${regels}</ul>`;
+    melding.style.display = "block";
+}
+
+
+// =====================================================
 // DATA OPHALEN
 // =====================================================
 
@@ -975,6 +1036,8 @@ async function laadData() {
         wedstrijdenResult && !wedstrijdenResult.error
             ? (wedstrijdenResult.data || [])
             : [];
+
+    toonInhaalMeldingen();
 
     bowlingScores =
         bowlingResult && !bowlingResult.error
@@ -1189,6 +1252,28 @@ function toonAlgemeenKlassement() {
 
     const huidigeDatum = gespeeldeDatums[huidigKlassementIndex];
     const vorigeDatum = huidigKlassementIndex > 0 ? gespeeldeDatums[huidigKlassementIndex - 1] : null;
+
+    // Ploegen met een wedstrijd die al gepland was vóór of op deze
+    // klassementsdatum, maar pas later werkelijk wordt gespeeld.
+    const ploegenMetInhaalAchterstand = new Map();
+    (wedstrijdenData || []).forEach(w => {
+        if (
+            w.geplande_datum &&
+            w.werkelijke_datum &&
+            w.geplande_datum <= huidigeDatum &&
+            w.werkelijke_datum > huidigeDatum &&
+            String(w.status || "gepland").toLowerCase().trim() !== "gespeeld"
+        ) {
+            [w.thuisploeg, w.uitploeg].filter(Boolean).forEach(ploeg => {
+                const key = normaliseer(ploeg);
+                ploegenMetInhaalAchterstand.set(
+                    key,
+                    (ploegenMetInhaalAchterstand.get(key) || 0) + 1
+                );
+            });
+        }
+    });
+
     const lijst = maakCumulatiefKlassement(huidigeDatum);
     const vorigeLijst = vorigeDatum ? maakCumulatiefKlassement(vorigeDatum) : [];
 
@@ -1237,7 +1322,10 @@ function toonAlgemeenKlassement() {
             <td class="${kegelsHoogste ? "hoogste-stat" : ""}">${team.kegels}</td>
             <td class="${gemiddeldeHoogste ? "hoogste-stat" : ""}">${gem.toFixed(2)}</td>
             <td class="position">${positieKegels}</td>
-            <td>${verschilHtml}</td>`;
+            <td>${verschilHtml}</td>
+            <td>${(ploegenMetInhaalAchterstand.get(normaliseer(team.ploeg)) || 0) > 0
+                ? `<span class="match-aantal-minder">${ploegenMetInhaalAchterstand.get(normaliseer(team.ploeg))} match${ploegenMetInhaalAchterstand.get(normaliseer(team.ploeg)) > 1 ? "es" : ""} minder</span>`
+                : `${aantalSpeeldagen} gespeeld`}</td>`;
         tbody.appendChild(tr);
     });
 
