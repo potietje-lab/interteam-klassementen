@@ -8,6 +8,13 @@
 body{font-family:Arial,sans-serif;margin:0;padding:20px;background:transparent;color:#222}
 .container{max-width:900px;margin:auto;background:rgba(255,255,255,.96);padding:25px;border-radius:18px;box-shadow:0 4px 18px rgba(0,0,0,.12)}
 h1{text-align:center;margin-top:0;font-size:28px}.subtitel{text-align:center;margin-bottom:25px;color:#555}
+.kaart{display:flex;align-items:center;gap:14px;padding:14px;margin:10px 0;border:1px solid #ddd;border-radius:12px;background:#fff}
+.rang{font-size:24px;font-weight:bold;min-width:32px;text-align:center}
+.gegevens{min-width:0;flex:1}.tegenstander{font-size:18px;font-weight:bold;margin-bottom:6px}
+.details{line-height:1.6}.scoreblad-link{display:inline-block;margin-top:8px;padding:7px 11px;border-radius:8px;background:#2563eb;color:#fff!important;text-decoration:none;font-weight:bold;font-size:14px}
+.scoreblad-link:hover{background:#1d4ed8}.scoreblad-link{border:0;cursor:pointer;font-family:inherit}.scoreblad-link:disabled{opacity:.7;cursor:wait}
+body.rb-dark .kaart{background:#1f2937!important;border-color:#4b5563!important;color:#e5e7eb!important}
+@media(max-width:600px){.kaart{align-items:flex-start;gap:8px}.details{font-size:13px}.scoreblad-link{font-size:13px}}
 .status{text-align:center;padding:15px;color:#666}table{width:100%;border-collapse:collapse}
 th,td{padding:13px 10px;border-bottom:1px solid #ddd;text-align:center}th{background:#f1f1f1}
 td:nth-child(2){text-align:left;font-weight:bold}.plaats{font-size:22px;width:60px}.kegels{font-weight:bold;font-size:18px}
@@ -195,6 +202,136 @@ function formatDatum(d){
   return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d;
 }
 
+// Publieke PDF's staan in bucket PDF, map Scorebladen.
+// Bestandsnamen beginnen met DD-MM-YYYY_, gevolgd door match/ploeggegevens.
+// We zoeken de exacte objectnaam in Storage zodat er geen foutieve PDF-link ontstaat.
+let scorebladPerDatum = new Map();
+
+function datumPrefix(datum){
+  const match = String(datum || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return match ? `${match[3]}-${match[2]}-${match[1]}_` : "";
+}
+
+async function laadScorebladen(){
+  const { data, error } = await db.storage
+    .from("PDF")
+    .list("Scorebladen", { limit: 1000, sortBy: { column: "name", order: "asc" } });
+
+  if(error) {
+    console.warn("Scorebladen konden niet worden opgelijst:", error.message);
+    return;
+  }
+
+  scorebladPerDatum = new Map();
+  for(const bestand of (data || [])){
+    if(!bestand.name || bestand.name.startsWith(".")) continue;
+    const match = bestand.name.match(/^(\d{2}-\d{2}-\d{4})_/);
+    if(!match) continue;
+    const delen = match[1].split("-");
+    const isoDatum = `${delen[2]}-${delen[1]}-${delen[0]}`;
+    if(!scorebladPerDatum.has(isoDatum)){
+      const { data: publicData } = db.storage
+        .from("PDF")
+        .getPublicUrl(`Scorebladen/${bestand.name}`);
+      scorebladPerDatum.set(isoDatum, publicData?.publicUrl || "");
+    }
+  }
+}
+
+function scorebladUrl(datum){
+  return scorebladPerDatum.get(String(datum || "").slice(0,10)) || "";
+}
+
+// De knop blijft zichtbaar, ook wanneer Storage de bestandslijst niet vooraf toestaat.
+// Bij een klik zoeken we opnieuw naar een PDF waarvan de naam met DD-MM-YYYY_ begint.
+function normBestandsnaam(waarde){
+  return String(waarde || "")
+    .normalize("NFD").replace(/[\\u0300-\\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+async function openScoreblad(datum, ploeg1, ploeg2, knop){
+  const prefix = datumPrefix(datum);
+  if(!prefix){
+    alert("Voor deze wedstrijd is geen geldige speeldatum beschikbaar.");
+    return;
+  }
+  const origineleTekst = knop ? knop.textContent : "";
+  if(knop){ knop.disabled = true; knop.textContent = "PDF zoeken…"; }
+  try{
+    // Zoek zonder de Storage-parameter "search": die kan resultaten missen.
+    // Haal de map in pagina's op en vergelijk daarna de exacte datum-prefix.
+    let bestanden = [];
+    let offset = 0;
+    const paginaGrootte = 100;
+    while(true){
+      const { data, error } = await db.storage
+        .from("PDF")
+        .list("Scorebladen", {
+          limit: paginaGrootte,
+          offset,
+          sortBy: { column: "name", order: "asc" }
+        });
+      if(error){
+        console.error("Scoreblad zoeken mislukt:", error);
+        alert("Supabase laat de bestandenlijst niet lezen. Controleer de Storage-listrechten voor bucket PDF en map Scorebladen. Details: " + error.message);
+        return;
+      }
+      const pagina = data || [];
+      bestanden = bestanden.concat(pagina);
+      if(pagina.length < paginaGrootte) break;
+      offset += paginaGrootte;
+    }
+    const naam1 = normBestandsnaam(ploeg1);
+    const naam2 = normBestandsnaam(ploeg2);
+    const opDatum = bestanden.filter(item => item.name && item.name.startsWith(prefix));
+    const bevatPloeg = (bestandsnaam, ploeg) => {
+      if(!ploeg) return false;
+      const fileNorm = normBestandsnaam(bestandsnaam);
+      // Teamnamen kunnen in de PDF-naam aangevuld zijn met sponsornamen.
+      return fileNorm.includes(ploeg) ||
+        (ploeg.length > 8 && fileNorm.includes(ploeg.slice(0, Math.min(ploeg.length, 14))));
+    };
+    // Eerst de sterkste match: datum en beide ploegen.
+    let bestand = opDatum.find(item =>
+      bevatPloeg(item.name, naam1) && bevatPloeg(item.name, naam2)
+    );
+
+    // Als de namen in de database anders geschreven zijn dan in de PDF,
+    // probeer datum + één van de ploegen. Kies alleen als dit uniek is.
+    if(!bestand){
+      const matchesEenPloeg = opDatum.filter(item =>
+        bevatPloeg(item.name, naam1) || bevatPloeg(item.name, naam2)
+      );
+      if(matchesEenPloeg.length === 1) bestand = matchesEenPloeg[0];
+    }
+
+    // Als er maar één PDF voor die datum bestaat, is die ondubbelzinnig.
+    if(!bestand && opDatum.length === 1) bestand = opDatum[0];
+
+    const padScoreblad = bestand ? ("Scorebladen/" + bestand.name) : "";
+    if(!padScoreblad){
+      const namen = opDatum.map(item => item.name).join("\\n");
+      alert("Ik kan het juiste scoreblad voor " + prefix.slice(0,10) +
+        " niet eenduidig bepalen op basis van de ploegnamen. PDF's voor deze datum:\\n" +
+        (namen || "(geen bestanden gevonden)") +
+        "\\nStuur deze lijst door, dan pas ik de koppeling aan.");
+      return;
+    }
+    const { data: publicData } = db.storage.from("PDF").getPublicUrl(padScoreblad);
+    if(!publicData?.publicUrl){
+      alert("De publieke URL van het scoreblad kon niet worden gemaakt.");
+      return;
+    }
+    window.open(publicData.publicUrl, "_blank", "noopener,noreferrer");
+  }catch(err){
+    console.error(err);
+    alert("Er ging iets mis bij het zoeken naar het scoreblad: " + (err.message || err));
+  }finally{
+    if(knop){ knop.disabled = false; knop.textContent = origineleTekst || "📄 Scoreblad openen"; }
+  }
+}
+
 async function laadData(){
 
   const status = document.getElementById("status");
@@ -306,6 +443,9 @@ async function laadData(){
       }
     }
 
+    // Zoek eerst de bestaande PDF-bestanden op basis van hun werkelijke bestandsnamen.
+    await laadScorebladen();
+
     // Rangschikking 1: hoogste score van tegenstanders waarmee RNB
     // daadwerkelijk gespeeld heeft.
     resultaten.sort((a,b) => b.kegels - a.kegels);
@@ -315,12 +455,23 @@ async function laadData(){
     // Deze ploegen hoefden dus niet tegen RNB gespeeld te hebben.
     const alleScores = scoreRows
       .filter(s => Number.isFinite(s.kegelsNum))
-      .map(s => ({
-        ploeg: s.teamNaam,
-        kegels: s.kegelsNum,
-        punten: s.puntenNum,
-        datum: s.speeldatum
-      }))
+      .map(s => {
+        const wedstrijd = (wedstrijden || []).find(w =>
+          (w.werkelijke_datum || w.geplande_datum) === s.speeldatum &&
+          (norm(w.thuisploeg) === norm(s.teamNaam) || norm(w.uitploeg) === norm(s.teamNaam))
+        );
+        const tegenploeg = wedstrijd
+          ? (norm(wedstrijd.thuisploeg) === norm(s.teamNaam) ? wedstrijd.uitploeg : wedstrijd.thuisploeg)
+          : "";
+        return {
+          ploeg: s.teamNaam,
+          kegels: s.kegelsNum,
+          punten: s.puntenNum,
+          datum: s.speeldatum,
+          ploeg1: s.teamNaam,
+          ploeg2: tegenploeg
+        };
+      })
       .sort((a,b) => b.kegels - a.kegels);
 
     const top3AllePloegen = alleScores.slice(0,3);
@@ -346,6 +497,7 @@ async function laadData(){
               &nbsp; • &nbsp;
               ${formatDatum(r.datum)}
             </div>
+            <button type="button" class="scoreblad-link" onclick="openScoreblad('${String(r.datum || "").slice(0,10)}', '${String(r.ploeg1 || "RNB Geenens Construct").replace(/\\'/g, "\\\\'")}', '${String(r.ploeg2 || r.tegenstander || r.ploeg || "").replace(/\\'/g, "\\\\'")}', this)">📄 Scoreblad openen</button>
           </div>
         </div>
       `).join("");
