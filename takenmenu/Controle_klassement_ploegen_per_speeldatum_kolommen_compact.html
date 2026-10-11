@@ -26,7 +26,7 @@
 <div class="toolbar" style="margin-top:10px"><button id="clearChecks">Alle markeringen wissen</button></div>
 <div class="table-wrap"><table><thead><tr><th>Speeldatum</th><th class="num">Ranking</th><th>Team</th><th class="num">Gespeelde matchen</th><th class="num">Aantal kegels</th><th class="num">Punten (huidig)</th><th>Correctie kegels</th><th>Correctie punten</th><th>Toelichting</th><th>Actie</th></tr></thead><tbody id="gemarkeerdeResultaten"><tr><td colspan="10" class="empty">Nog geen lijnen gemarkeerd.</td></tr></tbody></table></div>
 <h2 class="section-title">Wedstrijden op de gekozen speeldatum</h2>
-<div class="table-wrap match-table"><table><thead><tr><th>Thuisploeg</th><th></th><th>Uitploeg</th><th class="num">Kegels thuis</th><th class="num">Kegels uit</th><th class="num">Punten thuis</th><th class="num">Punten uit</th></tr></thead><tbody id="wedstrijdenResultaat"><tr><td colspan="7" class="empty">Wedstrijden laden…</td></tr></tbody></table></div>
+<div class="table-wrap match-table"><table><thead><tr><th>Thuisploeg</th><th></th><th>Uitploeg</th><th class="num">Kegels thuis</th><th class="num">Kegels uit</th><th class="num">Punten thuis</th><th class="num">Punten uit</th><th>Scoreblad</th></tr></thead><tbody id="wedstrijdenResultaat"><tr><td colspan="8" class="empty">Wedstrijden laden…</td></tr></tbody></table></div>
 <h2 class="section-title">Overzicht kegels per ploeg en per match</h2>
 <p class="note">De tabel toont alle matchdatums van het seizoen. Ploegen staan verticaal en matchdatums horizontaal; nog niet gespeelde matchen tonen een streepje.</p>
 <div class="table-wrap"><table id="kegelsPerMatch"><thead id="kegelsPerMatchKop"></thead><tbody id="kegelsPerMatchResultaat"><tr><td class="empty">Kegels laden…</td></tr></tbody></table></div>
@@ -197,6 +197,71 @@ async function laadPuntenPerMatch(){
  const scores=new Map();rows.forEach(r=>scores.set(String(r.ploeg||'').trim()+'|'+r.speeldatum,Number(r.punten)||0));
  teams.forEach(team=>{const tr=document.createElement('tr');const name=document.createElement('td');name.textContent=team;name.className='team';tr.appendChild(name);dates.forEach(d=>{const td=document.createElement('td');td.className='num';const key=team+'|'+d;td.textContent=scores.has(key)?scores.get(key).toLocaleString('nl-BE'):'—';tr.appendChild(td)});body.appendChild(tr)});
 }
-async function laadWedstrijdenDatum(){const datum=document.getElementById('speeldatum').value;const tbody=document.getElementById('wedstrijdenResultaat');tbody.replaceChildren();if(!datum){tbody.innerHTML='<tr><td colspan="7" class="empty">Geen speeldatum gekozen.</td></tr>';return;}const [{data:wedstrijden,error:wedstrijdError},{data:scores,error:scoreError}]=await Promise.all([db.from('wedstrijden').select('geplande_datum,werkelijke_datum,thuisploeg,uitploeg').or('geplande_datum.eq.'+datum+',werkelijke_datum.eq.'+datum),db.from('interteam_scores').select('speeldatum,ploeg,kegels,punten').eq('speeldatum',datum)]);if(wedstrijdError){tbody.innerHTML='<tr><td colspan="7" class="empty">Wedstrijden konden niet worden geladen: '+wedstrijdError.message+'</td></tr>';return;}if(scoreError){tbody.innerHTML='<tr><td colspan="7" class="empty">Scores konden niet worden geladen: '+scoreError.message+'</td></tr>';return;}const scoreMap=new Map((scores||[]).map(r=>[String(r.ploeg||'').trim(),{kegels:Number(r.kegels)||0,punten:Number(r.punten)||0}]));const matches=(wedstrijden||[]).filter(w=>(w.werkelijke_datum||w.geplande_datum)===datum || w.geplande_datum===datum && (!w.werkelijke_datum||w.werkelijke_datum===w.geplande_datum));if(!matches.length){tbody.innerHTML='<tr><td colspan="7" class="empty">Geen wedstrijden gevonden voor '+datumTekst(datum)+'.</td></tr>';return;}matches.sort((a,b)=>String(a.thuisploeg||'').localeCompare(String(b.thuisploeg||''),'nl'));matches.forEach(w=>{const thuis=String(w.thuisploeg||'—').trim(),uit=String(w.uitploeg||'—').trim(),a=scoreMap.get(thuis),b=scoreMap.get(uit);const tr=document.createElement('tr');[thuis,'-',uit,a?a.kegels:'—',b?b.kegels:'—',a?a.punten:'—',b?b.punten:'—'].forEach((v,i)=>{const td=document.createElement('td');td.textContent=typeof v==='number'?v.toLocaleString('nl-BE'):v;if(i===1)td.className='dash';if(i>=3)td.classList.add('num');if(i===0||i===2)td.classList.add('team');tr.appendChild(td)});tbody.appendChild(tr)});}
+function normBestandsnaam(waarde){
+ return String(waarde||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+}
+function datumPrefix(datum){
+ const m=String(datum||'').match(/^(\d{4})-(\d{2})-(\d{2})/);
+ return m?`${m[3]}-${m[2]}-${m[1]}_`:'';
+}
+async function zoekScoreblad(datum,thuis,uit){
+ const prefix=datumPrefix(datum);
+ if(!prefix)return '';
+ let bestanden=[],offset=0;const limiet=100;
+ while(true){
+  const {data,error}=await db.storage.from('PDF').list('Scorebladen',{limit:limiet,offset,sortBy:{column:'name',order:'asc'}});
+  if(error){console.warn('Scorebladen konden niet worden geladen:',error.message);return '';}
+  const pagina=data||[];bestanden=bestanden.concat(pagina);
+  if(pagina.length<limiet)break;
+  offset+=limiet;
+ }
+ const opDatum=bestanden.filter(f=>f.name&&!f.name.startsWith('.')&&f.name.startsWith(prefix));
+ const n1=normBestandsnaam(thuis),n2=normBestandsnaam(uit);
+ const bevat=(bestand,naam)=>!!naam&&normBestandsnaam(bestand).includes(naam);
+ let gekozen=opDatum.find(f=>bevat(f.name,n1)&&bevat(f.name,n2));
+ if(!gekozen){
+  const eenPloeg=opDatum.filter(f=>bevat(f.name,n1)||bevat(f.name,n2));
+  if(eenPloeg.length===1)gekozen=eenPloeg[0];
+ }
+ if(!gekozen&&opDatum.length===1)gekozen=opDatum[0];
+ if(!gekozen)return '';
+ const {data:publicData}=db.storage.from('PDF').getPublicUrl('Scorebladen/'+gekozen.name);
+ return publicData?.publicUrl||'';
+}
+async function laadWedstrijdenDatum(){
+ const datum=document.getElementById('speeldatum').value;
+ const tbody=document.getElementById('wedstrijdenResultaat');
+ tbody.replaceChildren();
+ if(!datum){tbody.innerHTML='<tr><td colspan="8" class="empty">Geen speeldatum gekozen.</td></tr>';return;}
+ const [{data:wedstrijden,error:wedstrijdError},{data:scores,error:scoreError}]=await Promise.all([
+  db.from('wedstrijden').select('geplande_datum,werkelijke_datum,thuisploeg,uitploeg').or('geplande_datum.eq.'+datum+',werkelijke_datum.eq.'+datum),
+  db.from('interteam_scores').select('speeldatum,ploeg,kegels,punten').eq('speeldatum',datum)
+ ]);
+ if(wedstrijdError){tbody.innerHTML='<tr><td colspan="8" class="empty">Wedstrijden konden niet worden geladen: '+wedstrijdError.message+'</td></tr>';return;}
+ if(scoreError){tbody.innerHTML='<tr><td colspan="8" class="empty">Scores konden niet worden geladen: '+scoreError.message+'</td></tr>';return;}
+ const scoreMap=new Map((scores||[]).map(r=>[String(r.ploeg||'').trim(),{kegels:Number(r.kegels)||0,punten:Number(r.punten)||0}]));
+ const matches=(wedstrijden||[]).filter(w=>(w.werkelijke_datum||w.geplande_datum)===datum || w.geplande_datum===datum && (!w.werkelijke_datum||w.werkelijke_datum===w.geplande_datum));
+ if(!matches.length){tbody.innerHTML='<tr><td colspan="8" class="empty">Geen wedstrijden gevonden voor '+datumTekst(datum)+'.</td></tr>';return;}
+ matches.sort((a,b)=>String(a.thuisploeg||'').localeCompare(String(b.thuisploeg||''),'nl'));
+ for(const w of matches){
+  const thuis=String(w.thuisploeg||'—').trim(),uit=String(w.uitploeg||'—').trim(),a=scoreMap.get(thuis),b=scoreMap.get(uit);
+  const tr=document.createElement('tr');
+  [thuis,'-',uit,a?a.kegels:'—',b?b.kegels:'—',a?a.punten:'—',b?b.punten:'—'].forEach((v,i)=>{
+   const td=document.createElement('td');td.textContent=typeof v==='number'?v.toLocaleString('nl-BE'):v;
+   if(i===1)td.className='dash';if(i>=3)td.classList.add('num');if(i===0||i===2)td.classList.add('team');tr.appendChild(td);
+  });
+  const pdfTd=document.createElement('td');
+  const pdfUrl=await zoekScoreblad(datum,thuis,uit);
+  if(pdfUrl){
+   const btn=document.createElement('button');btn.type='button';btn.textContent='📄 Open PDF';
+   btn.addEventListener('click',()=>window.open(pdfUrl,'_blank','noopener,noreferrer'));
+   pdfTd.appendChild(btn);
+  }else{
+   pdfTd.textContent='—';
+   pdfTd.title='Geen eenduidig scoreblad gevonden in Supabase voor deze datum en ploegen.';
+  }
+  tr.appendChild(pdfTd);tbody.appendChild(tr);
+ }
+}
 document.getElementById('speeldatum').addEventListener('change',async()=>{werkPdfKnopBij();await laadKlassement();await laadWedstrijdenDatum();await laadKegelsPerMatch();await laadPuntenPerMatch();});document.getElementById('refresh').addEventListener('click',async()=>{await laadPdfLinks();await laadKlassement();await laadWedstrijdenDatum();await laadKegelsPerMatch();await laadPuntenPerMatch();});document.getElementById('clearChecks').addEventListener('click',()=>{if(confirm('Alle gemarkeerde lijnen wissen?'))bewaarMarkeringen([]);});toonMarkeringen();document.getElementById('theme').addEventListener('click',()=>{document.body.classList.toggle('dark');document.getElementById('theme').textContent=document.body.classList.contains('dark')?'☀️ Licht':'🌙 Donker';});laadDatums();
 </script></body></html>
