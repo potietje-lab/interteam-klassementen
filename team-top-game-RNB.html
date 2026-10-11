@@ -13,7 +13,7 @@ h1{text-align:center;margin-bottom:8px}
 .card{background:#fff;border-radius:12px;padding:22px 10px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.12)}
 .game{font-size:18px;font-weight:bold;margin-bottom:10px}
 .score{font-size:42px;font-weight:bold}
-.date{margin-top:10px;color:#666;font-size:14px}
+.date{margin-top:10px;color:#666;font-size:14px}.pdf-link{display:inline-block;margin-top:10px;padding:8px 12px;background:#1769aa;color:#fff;text-decoration:none;border-radius:7px;font-size:14px;font-weight:bold}.pdf-link:hover{opacity:.88}.pdf-link[hidden]{display:none!important}
 .avg-label{margin-top:18px;font-size:13px;color:#666}
 .average{font-size:22px;font-weight:bold;margin-top:4px}
 .status{text-align:center;margin:20px 0;color:#666}
@@ -47,6 +47,7 @@ th,td{white-space:normal;overflow-wrap:anywhere}
   <div class="game">Game 1</div>
   <div id="game1" class="score">-</div>
   <div id="date1" class="date"></div>
+  <a id="pdf1" class="pdf-link" href="#" target="_blank" rel="noopener" hidden>📄 Open scoreblad PDF</a>
   <div class="avg-label">Ploeggemiddelde</div>
   <div id="avgBest1" class="average">-</div>
   <div class="avg-label">Gemiddelde tot nog toe</div>
@@ -56,6 +57,7 @@ th,td{white-space:normal;overflow-wrap:anywhere}
   <div class="game">Game 2</div>
   <div id="game2" class="score">-</div>
   <div id="date2" class="date"></div>
+  <a id="pdf2" class="pdf-link" href="#" target="_blank" rel="noopener" hidden>📄 Open scoreblad PDF</a>
   <div class="avg-label">Ploeggemiddelde</div>
   <div id="avgBest2" class="average">-</div>
   <div class="avg-label">Gemiddelde tot nog toe</div>
@@ -65,6 +67,7 @@ th,td{white-space:normal;overflow-wrap:anywhere}
   <div class="game">Game 3</div>
   <div id="game3" class="score">-</div>
   <div id="date3" class="date"></div>
+  <a id="pdf3" class="pdf-link" href="#" target="_blank" rel="noopener" hidden>📄 Open scoreblad PDF</a>
   <div class="avg-label">Ploeggemiddelde</div>
   <div id="avgBest3" class="average">-</div>
   <div class="avg-label">Gemiddelde tot nog toe</div>
@@ -141,6 +144,44 @@ async function getJson(url){
   }finally{
     clearTimeout(timeout);
   }
+}
+
+
+// Zoek het scoreblad in de publieke Supabase Storage-bucket PDF, map Scorebladen.
+async function zoekScoreblad(datum, ploegNaam){
+  if(!datum || !ploegNaam) return null;
+  const [yyyy,mm,dd]=datum.split("-");
+  const prefix=`${dd}-${mm}-${yyyy}_`;
+  const response=await fetch(`${SUPABASE_URL}/storage/v1/object/list/PDF`,{
+    method:"POST",
+    headers:{...headers,"Content-Type":"application/json"},
+    body:JSON.stringify({prefix:"Scorebladen",limit:1000,offset:0,sortBy:{column:"name",order:"asc"}})
+  });
+  if(!response.ok) throw new Error("Scorebladen konden niet worden opgehaald uit Supabase Storage.");
+  const files=await response.json();
+  const normalized=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"");
+  // De Storage API geeft alleen de bestandsnaam terug; filter daarom op de datum in de naam.
+  const dateMatches=(files||[]).filter(f=>f.name && f.name.toLowerCase().endsWith(".pdf") && f.name.startsWith(prefix));
+  if(!dateMatches.length) return null;
+  const target=normalized(ploegNaam);
+  const matching=dateMatches.filter(f=>normalized(f.name).includes(target));
+  // Alleen een duidelijke match gebruiken; als er die dag maar één PDF is, is die eenduidig.
+  const chosen=matching.length===1 ? matching[0] : (dateMatches.length===1 ? dateMatches[0] : null);
+  if(!chosen) return null;
+  return `${SUPABASE_URL}/storage/v1/object/public/PDF/Scorebladen/${encodeURIComponent(chosen.name)}`;
+}
+async function toonScorebladVoorBesteGames(beste){
+  await Promise.all([1,2,3].map(async n=>{
+    const link=document.getElementById("pdf"+n);
+    link.hidden=true; link.removeAttribute("href");
+    const item=beste[n-1];
+    if(!item || !item.datum || item.score<0) return;
+    try{
+      // In de database heet de ploeg "RNB Geenens"; de langere naam is alleen de weergavenaam.
+      const url=await zoekScoreblad(item.datum,DATABASE_TEAM);
+      if(url){link.href=url;link.hidden=false;link.title="Open het scoreblad van "+formatDate(item.datum);}
+    }catch(err){console.warn("Scoreblad niet beschikbaar:",err);}
+  }));
 }
 
 async function laadTopGames(){
@@ -244,6 +285,9 @@ async function laadTopGames(){
         }
       });
     });
+
+    // Scoreblad toevoegen bij de datums van de hoogste ploegtotalen.
+    await toonScorebladVoorBesteGames(beste);
 
     // Resultaten tonen
     games.forEach(n=>{
