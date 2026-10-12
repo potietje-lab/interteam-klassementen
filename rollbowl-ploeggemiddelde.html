@@ -87,6 +87,32 @@ h1 {
     font-size: 17px;
 }
 
+.stat-date {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #444;
+}
+
+.scoreblad-link {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: #1769aa;
+    color: #fff;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.scoreblad-link:hover {
+    background: #0f4f83;
+}
+
+.scoreblad-link[hidden] {
+    display: none !important;
+}
+
 .best {
     border-top: 5px solid #2e8b57;
 }
@@ -160,6 +186,9 @@ h1 {
                 Gemiddelde: -
             </div>
 
+            <div id="besteDatum" class="stat-date">Speeldatum: -</div>
+            <a id="bestePdf" class="scoreblad-link" href="#" target="_blank" rel="noopener" hidden>📄 Open scoreblad PDF</a>
+
         </div>
 
 
@@ -176,6 +205,9 @@ h1 {
             <div id="minimumGemiddelde" class="stat-average">
                 Gemiddelde: -
             </div>
+
+            <div id="minimumDatum" class="stat-date">Speeldatum: -</div>
+            <a id="minimumPdf" class="scoreblad-link" href="#" target="_blank" rel="noopener" hidden>📄 Open scoreblad PDF</a>
 
         </div>
 
@@ -250,6 +282,59 @@ function toonDatum(datum) {
 
 }
 
+function toonVolledigeDatum(datum) {
+    const delen = datum.split("-");
+    return delen[2] + "/" + delen[1] + "/" + delen[0];
+}
+
+function datumVoorBestandsnaam(datum) {
+    const delen = datum.split("-");
+    return delen[2] + "-" + delen[1] + "-" + delen[0];
+}
+
+async function toonScorebladKnop(datum, datumElementId, knopElementId) {
+    const datumElement = document.getElementById(datumElementId);
+    const knop = document.getElementById(knopElementId);
+    datumElement.textContent = "Speeldatum: " + toonVolledigeDatum(datum);
+
+    // Toon de knop altijd, ook als de PDF niet automatisch gevonden wordt.
+    knop.hidden = false;
+    knop.href = "#";
+    knop.onclick = function(event) {
+        if (knop.href.endsWith("#") || knop.getAttribute("href") === "#") {
+            event.preventDefault();
+            alert("Geen scoreblad-PDF gevonden voor RNB op " + toonVolledigeDatum(datum) + ". Controleer of de PDF in Supabase Storage > PDF > Scorebladen staat en of de bestandsnaam begint met " + datumVoorBestandsnaam(datum) + "_ en ook RNB vermeldt.");
+        }
+    };
+
+    try {
+        const { data: bestanden, error } = await supabaseClient
+            .storage.from("PDF")
+            .list("Scorebladen", { limit: 1000 });
+
+        if (error) throw error;
+
+        const datumPrefix = datumVoorBestandsnaam(datum);
+        const matches = (bestanden || []).filter(bestand =>
+            bestand.name &&
+            bestand.name.toLowerCase().endsWith(".pdf") &&
+            bestand.name.startsWith(datumPrefix) &&
+            /(^|[^a-z0-9])rnb([^a-z0-9]|$)/i.test(bestand.name)
+        );
+
+        // Alleen een scoreblad gebruiken waarvan de bestandsnaam ook RNB vermeldt.
+        // Zo wordt niet per ongeluk het scoreblad van een andere ploeg geopend.
+        if (matches.length >= 1) {
+            const { data: publicData } = supabaseClient
+                .storage.from("PDF")
+                .getPublicUrl("Scorebladen/" + matches[0].name);
+            knop.href = publicData.publicUrl;
+            knop.onclick = null;
+        }
+    } catch (error) {
+        console.error("Scoreblad PDF zoeken mislukt:", error);
+    }
+}
 
 // ==================================================
 // DATA LADEN
@@ -691,6 +776,10 @@ function toonStatistieken(resultaten) {
         "Gemiddelde: <strong>" +
         minimumGemiddelde.toFixed(1) +
         "</strong>";
+
+    // Speeldatum en bijhorend scoreblad tonen in beide statistiekkaders.
+    toonScorebladKnop(beste.datum, "besteDatum", "bestePdf");
+    toonScorebladKnop(minimum.datum, "minimumDatum", "minimumPdf");
 
 }
 
