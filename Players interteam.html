@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roll & Bowl – Spelerslijst</title>
+<style>
+:root{--bg:#0b1220;--panel:#121d30;--panel2:#18263d;--line:#2b3b55;--text:#edf3fb;--muted:#aab9cc;--accent:#f5b82e;--green:#45d483;--blue:#68b7ff}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(135deg,#08101d,#111d30 60%,#0b1220);color:var(--text);font:15px/1.45 Arial,Helvetica,sans-serif}
+header{padding:28px 18px 20px;text-align:center;border-bottom:1px solid var(--line);background:#0a1322}
+h1{margin:0;font-size:clamp(25px,4vw,38px);letter-spacing:.4px}
+h1 span{color:var(--accent)}
+.subtitle{margin:7px 0 0;color:var(--muted)}
+main{max-width:1250px;margin:22px auto;padding:0 14px 36px}
+.summary{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;min-width:145px;flex:1}
+.stat .number{display:block;color:var(--accent);font-size:25px;font-weight:800}
+.stat .label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.8px}
+.controls{display:grid;grid-template-columns:minmax(190px,1.6fr) minmax(170px,1fr) auto auto;gap:10px;background:var(--panel);padding:13px;border:1px solid var(--line);border-radius:12px;margin-bottom:15px}
+input,select,button{font:inherit;border-radius:8px;border:1px solid var(--line);padding:11px 12px;background:#0b1525;color:var(--text);min-width:0}
+input::placeholder{color:#8293aa}
+button{cursor:pointer;font-weight:700;background:var(--accent);color:#17202d;border-color:var(--accent)}
+button.secondary{background:var(--panel2);color:var(--text);border-color:var(--line)}
+button:hover{filter:brightness(1.08)}
+.info{color:var(--muted);font-size:13px;margin:10px 2px 13px}
+.team-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:18px 2px 9px}
+.team-heading h2{font-size:18px;margin:0}
+.team-heading span{font-size:12px;color:var(--muted);background:var(--panel2);padding:4px 9px;border-radius:20px}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:11px;background:rgba(18,29,48,.9)}
+table{border-collapse:collapse;width:100%;min-width:650px}
+thead{background:#1a2a42}
+th{font-size:12px;letter-spacing:.7px;text-transform:uppercase;color:#b9c8da;text-align:left;padding:12px 14px;white-space:nowrap}
+td{padding:10px 14px;border-top:1px solid rgba(43,59,85,.72)}
+tbody tr:nth-child(even){background:rgba(255,255,255,.025)}
+tbody tr:hover{background:rgba(104,183,255,.08)}
+td:first-child{color:var(--muted);font-variant-numeric:tabular-nums}
+.player{font-weight:700}
+.cat{display:inline-block;min-width:34px;text-align:center;padding:3px 7px;border-radius:6px;font-size:12px;font-weight:800;background:#263750}
+.cat-a,.cat-ap{background:#5b4220;color:#ffdb78}
+.cat-b{background:#173d5d;color:#8dd0ff}
+.cat-c{background:#244331;color:#8ce5ad}
+.cat-d,.cat-dp{background:#3b2b4c;color:#dfb6ff}
+.avg{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}
+.avg.high{color:var(--green)}
+.avg.missing{color:#74849a;font-weight:400}
+.empty{padding:24px;text-align:center;color:var(--muted)}
+footer{text-align:center;color:#71839b;font-size:12px;padding:18px}
+@media(max-width:760px){.controls{grid-template-columns:1fr 1fr}.controls input{grid-column:1/-1}.stat{min-width:calc(50% - 8px)}}
+@media(max-width:430px){.controls{grid-template-columns:1fr}.controls input{grid-column:auto}.stat{min-width:100%}main{padding:0 9px 25px}}
+@media print{body{background:#fff;color:#111}header{background:#fff;color:#111;border-color:#bbb}.subtitle,.info,footer{color:#555}.stat,.controls,.table-wrap{background:#fff;border-color:#bbb}.stat .number{color:#111}input,select,button{display:none}thead{background:#eee}th{color:#111}td{border-color:#ddd}tbody tr:nth-child(even){background:#f7f7f7}.cat{background:#eee!important;color:#111!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1>ROLL <span>&amp;</span> BOWL</h1>
+  <p class="subtitle">Spelerslijst · teams, categorieën en gemiddelden</p>
+</header>
+<main>
+  <section class="summary" aria-label="Overzicht">
+    <div class="stat"><span class="number" id="playerCount">0</span><span class="label">Spelers</span></div>
+    <div class="stat"><span class="number" id="teamCount">0</span><span class="label">Teams</span></div>
+    <div class="stat"><span class="number" id="topAverage">—</span><span class="label">Hoogste gemiddelde</span></div>
+  </section>
+  <section class="controls" aria-label="Zoeken en filteren">
+    <input id="search" type="search" placeholder="Zoek op naam, licentie of team…" aria-label="Zoeken">
+    <select id="teamFilter" aria-label="Filter op team"><option value="">Alle teams</option></select>
+    <select id="sort" aria-label="Sorteren">
+      <option value="team-asc">Team: A–Z</option>
+      <option value="team-desc">Team: Z–A</option>
+      <option value="license-asc">Licentie: laag naar hoog</option>
+      <option value="license-desc">Licentie: hoog naar laag</option>
+      <option value="name-asc">Naam: A–Z</option>
+      <option value="name-desc">Naam: Z–A</option>
+      <option value="cat-asc">Categorie: A–Z</option>
+      <option value="cat-desc">Categorie: Z–A</option>
+      <option value="avg-desc">Gemiddelde: hoog naar laag</option>
+      <option value="avg-asc">Gemiddelde: laag naar hoog</option>
+    </select>
+    <button class="secondary" onclick="window.print()">Afdrukken</button>
+  </section>
+  <p class="info" id="resultInfo" aria-live="polite"></p>
+  <div id="tables"></div>
+</main>
+<footer>Roll &amp; Bowl · Spelersoverzicht</footer>
+<script>
+const players = [
+["23856","Reggy De Coninck","B",188,"BC Ajuin"],
+["36458","Tim Meert","B",180,"BC Ajuin"],
+["37509","Bennet Chiau","C",178,"BC Ajuin"],
+["30492","Filip Van Boxstael","C",170,"BC Ajuin"],
+["9109","Jean-Paul Hoffelinck","D+",163,"BC Ajuin"],
+["6460","Marcel De Ras","D",151,"BC Ajuin"],
+["8549","Herman De Wit","D",150,"BC Ajuin"],
+["37454","Gerbrand Colombier","D",133,"BC Ajuin"],
+["37513","Sander Colombier","D",113,"BC Ajuin"],
+["38517","Yves Van den Berghe","D+",null,"BC Ajuin"],
+["36767","Brieuc Derudder","B",180,"BC Ledeganck 2 Burtline"],
+["28222","Mark Boeykens","C",178,"BC Ledeganck 2 Burtline"],
+["25830","Dirk Boeykens","D+",165,"BC Ledeganck 2 Burtline"],
+["22565","Johan De Ronne","D",150,"BC Ledeganck 2 Burtline"],
+["38513","Daniël Ruysschaert","D+",null,"BC Ledeganck 2 Burtline"],
+["38471","Gialique Christiaens","D+",null,"BC Ledeganck 2 Burtline"],
+["17812","Hans Ghysels","B",187,"DCG Yok Tha"],
+["14631","Gerrit Bundervoet","B",185,"DCG Yok Tha"],
+["22539","Pedro De Vos","B",183,"DCG Yok Tha"],
+["16625","Edward Verhelst","C",179,"DCG Yok Tha"],
+["37954","Xander Bartels","D+",163,"DCG Yok Tha"],
+["7326","Nadine Drisse","D",155,"DCG Yok Tha"],
+["29526","Davy De Cock","D+",168,"FLP ALLCORE IT"],
+["36363","Rudy Praet","D",157,"FLP ALLCORE IT"],
+["29306","Tom Baeyens","D",151,"FLP ALLCORE IT"],
+["37956","Amo Baeyens","D",145,"FLP ALLCORE IT"],
+["25834","Roger Neyrinck","D",144,"FLP ALLCORE IT"],
+["37014","Els Verdonck","D",118,"FLP ALLCORE IT"],
+["38475","Leila Vanoplynes","D+",null,"FLP ALLCORE IT"],
+["36252","Alex De Bock","A",195,"FLP Argenta Hamme"],
+["29130","Jurgen Driesen","B",189,"FLP Argenta Hamme"],
+["16311","Jorrit Hillaert","C",178,"FLP Argenta Hamme"],
+["8372","José Hillaert","C",177,"FLP Argenta Hamme"],
+["22933","Denis Roegiest","C",174,"FLP Argenta Hamme"],
+["25784","Peggy Mannaert","D+",163,"FLP Argenta Hamme"],
+["38464","Ben Tosseyn","D+",160,"FLP Argenta Hamme"],
+["29625","Cindy Braem","D",157,"FLP Argenta Hamme"],
+["37913","Bram Van Landuyt","C",178,"LAT Esento"],
+["36594","Freddy Claerman","C",174,"LAT Esento"],
+["807","Luc Van den Haute","C",172,"LAT Esento"],
+["37915","Tim Van Landuyt","C",170,"LAT Esento"],
+["36661","John Troch","D+",168,"LAT Esento"],
+["36660","Véronique Seynaeve","D+",167,"LAT Esento"],
+["37735","Etienne Lion","D+",164,"LAT Esento"],
+["37061","Katleen Gyselinck","D",148,"LAT Esento"],
+["36990","Romi Troch","D",147,"LAT Esento"],
+["35947","Leyton Vankeirsbulck","D",130,"LAT Esento"],
+["37653","Ruben Staelens","B",183,"Oilsjt 2 Yok Tha"],
+["37980","Anthony Sluys","C",176,"Oilsjt 2 Yok Tha"],
+["30309","Luc Spruyt","C",176,"Oilsjt 2 Yok Tha"],
+["30285","Peter Fieremans","C",173,"Oilsjt 2 Yok Tha"],
+["5400","Rudy Troch","D+",167,"Oilsjt 2 Yok Tha"],
+["16315","Hans De Wilde","D+",163,"Oilsjt 2 Yok Tha"],
+["25245","Lieven Van Den Driessche","D+",163,"Oilsjt 2 Yok Tha"],
+["37297","Jeroen Ghijselinck","D+",161,"Oilsjt 2 Yok Tha"],
+["13418","Marc Baeyens","D+",161,"Oilsjt 2 Yok Tha"],
+["34067","Glenn Geenens","B",184,"RNB Geenens Construct-Vapor"],
+["28682","Mathias Vanderlinden","B",181,"RNB Geenens Construct-Vapor"],
+["35360","Arne Boone","C",179,"RNB Geenens Construct-Vapor"],
+["11337","Stephan Van Isacker","C",177,"RNB Geenens Construct-Vapor"],
+["1111","Gary Geenens","D+",166,"RNB Geenens Construct-Vapor"],
+["35815","Steven Braeckman","B",187,"Royal Ghent 3"],
+["38415","Tobias Deuvaert","B",183,"Royal Ghent 3"],
+["7532","Daniel Bruijnje","B",185,"Royal Ghent 3"],
+["866","Danny Van Houte","D",152,"Royal Ghent 3"],
+["932","Herbert Valckeneire","B",189,"Royal Ghent 3"],
+["36764","Kevin Blairon","B",184,"Royal Ghent 3"],
+["27830","Marco Nienhuijs","C",170,"Royal Ghent 3"],
+["30210","Nathalie Ruys","C",172,"Royal Ghent 3"],
+["20132","Paco Verstichel","B",186,"Royal Ghent 3"],
+["25377","Martin Deceuninck","A+",205,"Stene - Pleisterwerken Delrue JP"],
+["11353","Yannick Rys","B",182,"Stene - Pleisterwerken Delrue JP"],
+["25003","Dirk Meeze","C",172,"Stene - Pleisterwerken Delrue JP"],
+["23800","Marc Rammelaere","C",171,"Stene - Pleisterwerken Delrue JP"],
+["37359","Mathias Verminck","C",171,"Stene - Pleisterwerken Delrue JP"],
+["38067","Kenny Cauwels","D+",168,"Stene - Pleisterwerken Delrue JP"],
+["33457","Robby Derijck","A",200,"TSZ Bieshoop"],
+["35767","Jelle Praet","B",188,"TSZ Bieshoop"],
+["27615","Ivo Van De Wiele","C",179,"TSZ Bieshoop"],
+["19548","Christophe De Paepe","C",171,"TSZ Bieshoop"],
+["32302","Po Lung Lee","C",170,"TSZ Bieshoop"],
+["38106","Sylvie Verpaele","D",150,"TSZ Bieshoop"],
+["25531","Stefan Verrooten","B",184,"Wuitens"],
+["27057","Wery Willaert","C",179,"Wuitens"],
+["31799","Frans Malfliet","D+",169,"Wuitens"],
+["35401","Frederic Piessens","D+",169,"Wuitens"],
+["35400","Bart Piessens","D+",166,"Wuitens"],
+["31640","Kif Willaert","D+",166,"Wuitens"],
+["35422","Jana Piessens","D",148,"Wuitens"]
+];
+const $ = id => document.getElementById(id);
+const teamNames = [...new Set(players.map(p=>p[4]))].sort((a,b)=>a.localeCompare(b,'nl'));
+teamNames.forEach(team=>{const o=document.createElement('option');o.value=team;o.textContent=team;$('teamFilter').appendChild(o)});
+$('playerCount').textContent=players.length;
+$('teamCount').textContent=teamNames.length;
+$('topAverage').textContent=Math.max(...players.filter(p=>p[3]!==null).map(p=>p[3]));
+function catClass(cat){return 'cat-'+cat.toLowerCase().replace('+','p')}
+function render(){
+ const q=$('search').value.trim().toLocaleLowerCase('nl');
+ const selectedTeam=$('teamFilter').value;
+ const sort=$('sort').value;
+ let rows=players.filter(p=>(!selectedTeam||p[4]===selectedTeam)&&p.join(' ').toLocaleLowerCase('nl').includes(q));
+ const cmp=(a,b)=>a.localeCompare(b,'nl',{numeric:true,sensitivity:'base'});
+ rows.sort((a,b)=>{
+  switch(sort){
+   case 'team-asc': return cmp(a[4],b[4])||cmp(a[1],b[1]);
+   case 'team-desc': return cmp(b[4],a[4])||cmp(a[1],b[1]);
+   case 'license-asc': return Number(a[0])-Number(b[0]);
+   case 'license-desc': return Number(b[0])-Number(a[0]);
+   case 'name-asc': return cmp(a[1],b[1]);
+   case 'name-desc': return cmp(b[1],a[1]);
+   case 'cat-asc': return cmp(a[2],b[2])||cmp(a[1],b[1]);
+   case 'cat-desc': return cmp(b[2],a[2])||cmp(a[1],b[1]);
+   case 'avg-desc': return (b[3]??-1)-(a[3]??-1)||cmp(a[1],b[1]);
+   case 'avg-asc': return (a[3]??999)-(b[3]??999)||cmp(a[1],b[1]);
+   default: return cmp(a[4],b[4])||cmp(a[1],b[1]);
+  }
+ });
+ $('resultInfo').textContent=`${rows.length} van ${players.length} spelers weergegeven`;
+ const host=$('tables');host.replaceChildren();
+ if(!rows.length){host.innerHTML='<div class="table-wrap empty">Geen spelers gevonden.</div>';return}
+ const wrap=document.createElement('div');wrap.className='table-wrap';
+ const table=document.createElement('table');
+ table.innerHTML='<thead><tr><th>Licentie</th><th>Naam</th><th>Categorie</th><th>Gemiddelde</th><th>Team</th></tr></thead>';
+ const body=document.createElement('tbody');
+ rows.forEach(p=>{
+  const tr=document.createElement('tr');
+  const lic=document.createElement('td');lic.textContent=p[0];
+  const name=document.createElement('td');name.className='player';name.textContent=p[1];
+  const cat=document.createElement('td');const badge=document.createElement('span');badge.className='cat '+catClass(p[2]);badge.textContent=p[2];cat.appendChild(badge);
+  const avg=document.createElement('td');avg.className='avg '+(p[3]===null?'missing':p[3]>=190?'high':'');avg.textContent=p[3]===null?'—':p[3];
+  const team=document.createElement('td');team.textContent=p[4];
+  tr.append(lic,name,cat,avg,team);body.appendChild(tr);
+ });
+ table.appendChild(body);wrap.appendChild(table);host.appendChild(wrap);
+}
+$('search').addEventListener('input',render);
+$('teamFilter').addEventListener('change',render);
+$('sort').addEventListener('change',render);
+render();
+</script>
+</body>
+</html>
