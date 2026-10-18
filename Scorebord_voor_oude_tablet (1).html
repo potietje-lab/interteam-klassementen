@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Set – punten optellen</title>
+<style>
+:root{color-scheme:light;--bg:#f3f6fa;--panel:#ffffff;--line:#cbd5e1;--text:#172033;--muted:#46566d;--accent:#0284c7;--green:#15803d;--red:#b91c1c}
+*{box-sizing:border-box}body{margin:0;padding:18px;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+main{max-width:1150px;margin:0 auto}h1{text-align:center;margin:8px 0;font-size:clamp(1.8rem,4vw,2.5rem)}.subtitle{text-align:center;color:var(--muted);margin:0 0 22px}
+.settings,.team,.history-wrap,.status,.entry,.sets-panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.settings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:18px}
+label{display:block;font-weight:700;margin-bottom:7px}input{width:100%;min-width:0;background:#ffffff;color:#111827;border:2px solid #64748b;border-radius:9px;padding:11px;font-size:1rem;font-weight:700}input::placeholder{color:#64748b;opacity:1}input:focus{outline:3px solid #7dd3fc;outline-offset:1px;border-color:#0369a1}
+.entry{margin-bottom:18px}.entry-fields{display:grid;grid-template-columns:1fr 1fr;gap:14px}.entry-team{border:1px solid var(--line);border-radius:11px;padding:13px}.entry-team h2{font-size:1.1rem;margin:0 0 10px}
+.teams{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.team{text-align:center}.team.winner{border:2px solid var(--green)}
+.team-name{font-size:1.25rem;font-weight:700;margin:0 0 8px}.score{font-size:clamp(3.5rem,9vw,5.5rem);line-height:1.1;font-weight:800;margin:10px 0 18px;font-variant-numeric:tabular-nums}
+button{cursor:pointer;border:0;border-radius:9px;padding:11px 15px;font-size:1rem;font-weight:700;color:#082f49;background:var(--accent)}
+button:disabled{opacity:.4;cursor:not-allowed}button.secondary{background:#334155;color:#ffffff}button.danger{background:#7f1d1d;color:white}button.success{background:#166534;color:white}
+.status{margin:18px 0;text-align:center;font-size:1.05rem;min-height:55px;display:flex;align-items:center;justify-content:center}
+.sets-panel{margin:18px 0}.sets-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.sets-header h2{margin:0;font-size:1.25rem}.set-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.set-tab{background:#334155;color:#fff}.set-tab.active{background:var(--accent);color:#082f49}.set-tab.current{outline:2px solid #bae6fd}
+.history-wrap{margin-top:18px}.history-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}h2{font-size:1.2rem;margin:0 0 12px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line)}th{color:#075985}td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}.empty{text-align:center;color:#46566d;padding:18px}.combined-history thead tr:first-child th{text-align:center;background:#172033}.combined-history thead tr:nth-child(2) th{font-size:.9rem}.table-scroll{overflow-x:auto}.combined-history{min-width:520px}
+.bottom{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:16px}.hint{color:var(--muted);text-align:center;font-size:.9rem;margin-top:12px}
+@media(max-width:650px){body{padding:10px}.settings{grid-template-columns:1fr}.entry-fields,.teams,.history-columns{grid-template-columns:1fr}th,td{padding:8px 5px;font-size:.9rem}.sets-header button,.bottom button{width:100%}}
+</style>
+</head>
+<body>
+<main>
+<h1>Jeu de boules</h1>
+<p class="subtitle">Beheer meerdere sets. Je gegevens worden automatisch in deze browser opgeslagen.</p>
+<p id="saveStatus" class="hint" role="status">Gegevens worden geladen…</p>
+
+<section class="settings">
+<div><label for="target">Set eindigt bij (punten)</label><input id="target" type="number" min="1" step="1" value="50"></div>
+<div><label for="team1name">Naam ploeg 1</label><input id="team1name" type="text" value="Ploeg 1" maxlength="40"></div>
+<div><label for="team2name">Naam ploeg 2</label><input id="team2name" type="text" value="Ploeg 2" maxlength="40"></div>
+</section>
+
+<section class="sets-panel">
+<div class="sets-header"><h2>Sets</h2><button type="button" class="success" onclick="addSet()">+ Set toevoegen</button></div>
+<div class="set-tabs" id="setTabs"></div>
+<p class="hint">Klik op een set om het bijbehorende puntenoverzicht te bekijken. Een nieuwe set begint met 0 punten; eerdere sets blijven bewaard.</p>
+</section>
+
+<section class="entry">
+<div class="entry-fields">
+<div class="entry-team">
+<h2 id="entryName1">Ploeg 1</h2>
+<label for="points1">Punten van deze game</label>
+<input id="points1" type="number" min="1" step="1" placeholder="Bijvoorbeeld 1 of 3">
+<button type="button" id="confirm1" onclick="confirmPoints(1)">Bevestig punten ploeg 1</button>
+</div>
+<div class="entry-team">
+<h2 id="entryName2">Ploeg 2</h2>
+<label for="points2">Punten van deze game</label>
+<input id="points2" type="number" min="1" step="1" placeholder="Bijvoorbeeld 1 of 3">
+<button type="button" id="confirm2" onclick="confirmPoints(2)">Bevestig punten ploeg 2</button>
+</div>
+</div>
+<p class="hint">Vul de punten in het vak van de juiste ploeg in en klik op de bevestigingsknop onder dat vak.</p>
+</section>
+
+<section class="teams">
+<article class="team" id="card1"><div class="team-name" id="display1">Ploeg 1</div><div class="score" id="score1">0</div></article>
+<article class="team" id="card2"><div class="team-name" id="display2">Ploeg 2</div><div class="score" id="score2">0</div></article>
+</section>
+<section class="status" id="status" aria-live="polite">Stel de eindscore in en bevestig daarna de punten per ploeg.</section>
+
+<section class="history-wrap overall-wrap">
+<h2>Totaal eindscores van alle sets</h2>
+<p class="hint">De eindscores van alle gespeelde sets worden hier per ploeg bij elkaar opgeteld.</p>
+<div class="teams overall-teams">
+  <article class="team"><div class="team-name" id="overallName1">Ploeg 1</div><div class="score" id="overallScore1">0</div><div class="hint">Totaal punten over alle sets</div></article>
+  <article class="team"><div class="team-name" id="overallName2">Ploeg 2</div><div class="score" id="overallScore2">0</div><div class="hint">Totaal punten over alle sets</div></article>
+</div>
+<h2 style="margin-top:22px">Aantal games per set tot de eindscore</h2>
+<div class="table-scroll">
+<table>
+<thead><tr><th>Set</th><th class="num" id="gamesName1">Ploeg 1</th><th class="num" id="gamesName2">Ploeg 2</th><th>Status</th></tr></thead>
+<tbody id="setGamesSummary"><tr><td colspan="4" class="empty">Nog geen sets afgewerkt.</td></tr></tbody>
+</table>
+</div>
+<p class="hint">Hier zie je hoeveel games elke ploeg heeft bevestigd in elke set. Een set is afgewerkt zodra een ploeg de ingestelde eindscore bereikt.</p>
+</section>
+
+<section class="history-wrap">
+<h2 id="historyTitle">Games per ploeg — Set 1</h2>
+<div class="table-scroll">
+<table class="combined-history">
+<thead><tr><th>Game</th><th id="historyName1" colspan="2">Ploeg 1</th><th id="historyName2" colspan="2">Ploeg 2</th></tr>
+<tr><th>Nr.</th><th class="num">Punten</th><th class="num">Totaal</th><th class="num">Punten</th><th class="num">Totaal</th></tr></thead>
+<tbody id="combinedHistory"><tr><td colspan="5" class="empty">Nog geen games bevestigd.</td></tr></tbody>
+</table>
+</div>
+<p class="hint">Elke bevestiging maakt één nieuw game en krijgt het volgende gamenummer, ongeacht welke ploeg scoort. De punten verschijnen in de kolom van de ploeg die bevestigt.</p>
+<div class="bottom"><button type="button" class="secondary" onclick="undoLast()">Laatste bevestiging ongedaan maken</button><button type="button" class="danger" onclick="resetCurrentSet()">Reset huidige set</button></div>
+</section>
+</main>
+<script>
+var STORAGE_KEY='setPuntenApp_v1';
+var sets=[{id:1,entries:[],finished:false}],currentSetId=1,nextSetId=2;
+var targetInput=document.getElementById('target'),name1Input=document.getElementById('team1name'),name2Input=document.getElementById('team2name');
+function saveData(){try{var data={sets:sets,currentSetId:currentSetId,nextSetId:nextSetId,target:targetInput.value,team1name:name1Input.value,team2name:name2Input.value};localStorage.setItem(STORAGE_KEY,JSON.stringify(data));var s=document.getElementById('saveStatus');if(s)s.textContent='✓ Automatisch opgeslagen in deze browser';}catch(err){var s2=document.getElementById('saveStatus');if(s2)s2.textContent='⚠ Opslaan lukt niet in deze browser. Gebruik een back-up.';}}
+function loadData(){try{var raw=localStorage.getItem(STORAGE_KEY);if(!raw){document.getElementById('saveStatus').textContent='Nog geen opgeslagen gegevens — nieuwe invoer wordt automatisch bewaard.';return;}var data=JSON.parse(raw);if(data&&Object.prototype.toString.call(data.sets)==='[object Array]'&&data.sets.length){var loaded=[];for(var i=0;i<data.sets.length;i++){var s=data.sets[i];if(s&&isFinite(Number(s.id))&&Object.prototype.toString.call(s.entries)==='[object Array]'){var entries=[];for(var j=0;j<s.entries.length;j++){var e=s.entries[j];if((e.team===1||e.team===2)&&isFinite(Number(e.points)))entries.push({team:e.team,points:Number(e.points)});}loaded.push({id:Number(s.id),entries:entries,finished:!!s.finished});}}if(loaded.length)sets=loaded;var found=false;for(var k=0;k<sets.length;k++){if(sets[k].id===Number(data.currentSetId))found=true;}currentSetId=found?Number(data.currentSetId):sets[0].id;nextSetId=Number(data.nextSetId)||1;for(var m=0;m<sets.length;m++)if(sets[m].id+1>nextSetId)nextSetId=sets[m].id+1;if(data.target!==undefined)targetInput.value=data.target;if(typeof data.team1name==='string')name1Input.value=data.team1name;if(typeof data.team2name==='string')name2Input.value=data.team2name;document.getElementById('saveStatus').textContent='✓ Opgeslagen gegevens teruggeladen';}}catch(err){document.getElementById('saveStatus').textContent='⚠ Eerder opgeslagen gegevens konden niet worden gelezen.';}}
+function currentSet(){for(var i=0;i<sets.length;i++)if(sets[i].id===currentSetId)return sets[i];return sets[0];}
+function teamName(t){var v=(t===1?name1Input.value:name2Input.value).replace(/^\s+|\s+$/g,'');return v||('Ploeg '+t);}
+function target(){var n=parseInt(targetInput.value,10);return isFinite(n)&&n>=1?n:50;}
+function totals(set){set=set||currentSet();var out={1:0,2:0};for(var i=0;i<set.entries.length;i++)out[set.entries[i].team]+=set.entries[i].points;return out;}
+function isFinished(set){set=set||currentSet();var t=totals(set);return set.finished||t[1]>=target()||t[2]>=target();}
+function syncNames(){for(var t=1;t<=2;t++){var n=teamName(t);document.getElementById('display'+t).textContent=n;document.getElementById('entryName'+t).textContent=n;document.getElementById('historyName'+t).textContent=n;document.getElementById('overallName'+t).textContent=n;document.getElementById('gamesName'+t).textContent=n;}render();}
+name1Input.addEventListener('input',function(){syncNames();saveData();});name2Input.addEventListener('input',function(){syncNames();saveData();});targetInput.addEventListener('change',function(){render();saveData();});
+document.getElementById('points1').addEventListener('keydown',function(e){if(e.key==='Enter'||e.keyCode===13)confirmPoints(1);});document.getElementById('points2').addEventListener('keydown',function(e){if(e.key==='Enter'||e.keyCode===13)confirmPoints(2);});
+function confirmPoints(team){var set=currentSet();if(isFinished(set)){alert('Deze set is afgelopen. Voeg een nieuwe set toe om verder te spelen.');return;}var input=document.getElementById('points'+team),points=parseInt(input.value,10);if(!isFinite(points)||points<1){alert('Vul minstens 1 punt in voor '+teamName(team)+'.');input.focus();return;}set.entries.push({team:team,points:points});var t=totals(set);if(t[team]>=target())set.finished=true;input.value='';render();saveData();if(!isFinished(set))input.focus();}
+function addSet(){var s={id:nextSetId,entries:[],finished:false};nextSetId++;sets.push(s);currentSetId=s.id;document.getElementById('points1').value='';document.getElementById('points2').value='';render();saveData();}
+function selectSet(id){currentSetId=id;document.getElementById('points1').value='';document.getElementById('points2').value='';render();saveData();}
+function render(){var set=currentSet(),t=totals(set),done=isFinished(set),all={1:0,2:0};for(var i=0;i<sets.length;i++){var st=totals(sets[i]);all[1]+=st[1];all[2]+=st[2];}document.getElementById('overallScore1').textContent=all[1];document.getElementById('overallScore2').textContent=all[2];renderSetGamesSummary();document.getElementById('score1').textContent=t[1];document.getElementById('score2').textContent=t[2];document.getElementById('card1').className='team'+(done&&t[1]>=target()?' winner':'');document.getElementById('card2').className='team'+(done&&t[2]>=target()?' winner':'');document.getElementById('confirm1').disabled=done;document.getElementById('confirm2').disabled=done;document.getElementById('historyTitle').textContent='Puntenoverzicht — Set '+set.id;var status=document.getElementById('status'),scoreParts=[];for(var q=0;q<sets.length;q++){var ss=sets[q],stt=totals(ss);if(isFinished(ss)){var win=stt[1]>=target()?1:2;scoreParts.push('Set '+ss.id+': '+teamName(1)+' <span style="color:'+(win===1?'var(--green)':'var(--red)')+';font-weight:700">'+stt[1]+'</span> – '+teamName(2)+' <span style="color:'+(win===2?'var(--green)':'var(--red)')+';font-weight:700">'+stt[2]+'</span>');}else scoreParts.push('Set '+ss.id+': '+teamName(1)+' '+stt[1]+' – '+teamName(2)+' '+stt[2]);}var currentStatus;if(done){var w=t[1]>=target()?1:2,l=w===1?2:1;currentStatus='🏆 '+teamName(w)+' wint set '+set.id+' met <span style="color:var(--green);font-weight:700">'+t[w]+'</span> punten. Verliezer: <span style="color:var(--red);font-weight:700">'+t[l]+'</span> punten.';}else currentStatus='Set '+set.id+' · Nog '+Math.max(0,target()-t[1])+' punten nodig voor '+teamName(1)+' · Nog '+Math.max(0,target()-t[2])+' punten nodig voor '+teamName(2)+'.';status.innerHTML='<div><div>'+currentStatus+'</div><div style="margin-top:8px;font-size:.92rem;color:var(--muted)"><strong>Scores per set:</strong><br>'+scoreParts.join(' | ')+'</div></div>';renderHistory(set);renderTabs();}
+function renderSetGamesSummary(){var body=document.getElementById('setGamesSummary');if(!sets.length){body.innerHTML='<tr><td colspan="4" class="empty">Nog geen sets.</td></tr>';return;}var rows=[];for(var i=0;i<sets.length;i++){var s=sets[i],count1=0,count2=0;for(var j=0;j<s.entries.length;j++){if(s.entries[j].team===1)count1++;else if(s.entries[j].team===2)count2++;}var score=totals(s),finished=isFinished(s),status='Bezig';if(finished){var winner=score[1]>=target()?1:2;status='Afgewerkt — '+teamName(winner)+' won';}var scoreDisplay;if(finished){var winner2=score[1]>=target()?1:2;scoreDisplay='<strong>Score: '+teamName(1)+' <span style="color:'+(winner2===1?'var(--green)':'var(--red)')+'">'+score[1]+'</span> – '+teamName(2)+' <span style="color:'+(winner2===2?'var(--green)':'var(--red)')+'">'+score[2]+'</span></strong>';}else scoreDisplay='<strong>Score: '+teamName(1)+' '+score[1]+' – '+teamName(2)+' '+score[2]+'</strong>';rows.push('<tr><td>Set '+s.id+'</td><td class="num">'+count1+'</td><td class="num">'+count2+'</td><td>'+status+'<br>'+scoreDisplay+'</td></tr>');}body.innerHTML=rows.join('');}
+function renderHistory(set){var body=document.getElementById('combinedHistory');if(!set.entries.length){body.innerHTML='<tr><td colspan="5" class="empty">Nog geen games bevestigd.</td></tr>';return;}var totalsNow={1:0,2:0},rows=[];for(var i=0;i<set.entries.length;i++){var e=set.entries[i];totalsNow[e.team]+=e.points;var p1=e.team===1?e.points:'—',p2=e.team===2?e.points:'—';rows.push('<tr><td>'+(i+1)+'</td><td class="num">'+(e.team===1?'+'+p1:'—')+'</td><td class="num">'+(e.team===1?totalsNow[1]:'—')+'</td><td class="num">'+(e.team===2?'+'+p2:'—')+'</td><td class="num">'+(e.team===2?totalsNow[2]:'—')+'</td></tr>');}body.innerHTML=rows.join('');}
+function renderTabs(){var el=document.getElementById('setTabs'),rows=[];for(var i=0;i<sets.length;i++){var s=sets[i];rows.push('<button type="button" class="set-tab '+(s.id===currentSetId?'active':'')+'" onclick="selectSet('+s.id+')">Set '+s.id+(isFinished(s)?' ✓':'')+'</button>');}el.innerHTML=rows.join('');}
+function undoLast(){var set=currentSet();if(!set.entries.length)return;set.entries.pop();set.finished=false;render();saveData();}
+function resetCurrentSet(){if(!confirm('Alle punten van Set '+currentSetId+' wissen? Andere sets blijven behouden.'))return;currentSet().entries=[];currentSet().finished=false;document.getElementById('points1').value='';document.getElementById('points2').value='';render();saveData();}
+loadData();syncNames();render();
+
+</script>
+</body>
+</html>
